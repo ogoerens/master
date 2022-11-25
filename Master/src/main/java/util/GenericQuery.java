@@ -7,8 +7,8 @@ import java.sql.SQLException;
 import java.util.random.*;
 
 public abstract class GenericQuery {
-    public  String query_stmt=null;
-    public  String qid;
+    public String query_stmt=null;
+    public  int qid;
 
     protected abstract PreparedStatement getStatement(Connection conn) throws SQLException;
 

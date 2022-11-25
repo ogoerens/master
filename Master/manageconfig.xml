@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+
+<parameters>
+    <amount>1</amount>
+    <!-- DataManage details -->
+    <man1>
+        <operation>updateTable</operation>
+        <table>customer</table>
+        <primaryKey>c_custkey</primaryKey>
+        <types> int int int </types>
+        <fileName>gen1_uniform.txt</fileName>
+    </man1>
+
+</parameters>

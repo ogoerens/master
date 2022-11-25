@@ -22,19 +22,21 @@ public class Worker {
         this.workerID = id;
     }
 
-    public LatencyRecord getLatencies(){
+    public LatencyRecord getLatencyRecord(){
         return  latencies;
     }
 
-    public void work(){
+    public void work(String database){
         long start=-1;
         long end=-1;
+        QueryPlanManager qpm = new QueryPlanManager(conn);
 
         for (GenericQuery query:transactionQueue){
             try{
                 start = System.nanoTime();
                 query.run(conn,rand);
                 end = System.nanoTime();
+                qpm.storeQP(query.qid, "customer", database);
             }catch(SQLException e){
                 System.out.println(query.query_stmt +" produced the following SQLException:"+e);
             }

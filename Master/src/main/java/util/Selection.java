@@ -1,12 +1,9 @@
 package util;
 
-import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.random.*;
-import util.utils;
 
 public class Selection extends GenericQuery{
 
@@ -18,7 +15,7 @@ public class Selection extends GenericQuery{
 
     public Selection(String tbl, ArrayList<String> column, String criteria){
         this.tbl=tbl;
-        this.column=utils.arrayListToSQLString(column);
+        this.column= Utils.arrayListToSQLString(column);
         this.criteria=criteria;
     }
 

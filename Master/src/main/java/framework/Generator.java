@@ -3,6 +3,7 @@ package framework;
 import java.util.ArrayList;
 import java.util.Random;
 
+import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.commons.math3.linear.BlockRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.random.*;
@@ -10,6 +11,7 @@ import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
+import util.Utils;
 
 public class Generator {
 
@@ -21,6 +23,38 @@ public class Generator {
         double[][] values ={{2,2},{2,2}};
         covMat = new BlockRealMatrix(values);
         covMat.createMatrix(2,2);
+
+    }
+
+    public void generate(XMLConfiguration conf){
+        int amount = conf.getInt("amount");
+        for (int i=1; i<= amount; i++){
+            String str = "gen"+i+"/";
+            int size = conf.getInt(str+"size");
+            String file = conf.getString(str+"fileName");
+            boolean correlated = conf.getBoolean(str+"/correlation");
+            String c=conf.getString(str + "distribution");
+            if (correlated) {
+                c=c+"Corr";
+            }
+            switch (c){
+                case "uniform":
+                    Utils.intArrayToFile(generateUniform(size,conf.getInt(str+"upperbound")),file);
+                    break;
+                case "uniformCorr":
+                    int[] v1= generateUniform(size,conf.getInt(str+"upperbound"));
+                    int[] v2= generateCorrelated(v1);
+                    ArrayList<int[]> arrays = new ArrayList<>();
+                    arrays.add(v1);
+                    arrays.add(v2);
+                    Utils.multIntArrayToFile(arrays,file,conf.getBoolean(str+"withIndex"));
+                    break;
+                case "zipf":
+                    Utils.intArrayToFile(generateZipf(size, conf.getInt(str + "numberOfElements"), conf.getInt(str + "exponent")),file);
+                    break;
+                default: ;
+            }
+        }
 
     }
 
@@ -36,10 +70,6 @@ public class Generator {
     public int[] generateUniform(int quantity, int upperbound){
         int[] values = new int[quantity];
         UniformIntegerDistribution ud = new UniformIntegerDistribution(0,upperbound);
-        for (int i=0; i<quantity; i++){
-
-
-        }
         return ud.sample(quantity);
     }
 
@@ -60,7 +90,7 @@ public class Generator {
      * @param v2
      * @return the PearsonsCorrelation coefficient
      */
-    public double correlationCoeff(double[] v1, double[] v2){
+    public static double correlationCoeff(double[] v1, double[] v2){
         PearsonsCorrelation pc = new PearsonsCorrelation();
         return pc.correlation(v1,v2);
     }
@@ -107,8 +137,15 @@ public class Generator {
         }
         return res;
     }
-    public String[] generateZipfMapped(int quantity, String[] elements, int numberOfElements, int exponent){
-        ZipfDistribution zd= new ZipfDistribution(numberOfElements, exponent);
+
+    /**
+     * @param quantity  indicates the total number  of elements drawn from the distribution
+     * @param elements  contains the values of the distribution
+     * @param exponent  ,see defintion of ZipfDistribution for definition
+     * @return
+     */
+    public String[] generateZipfMapped(int quantity, String[] elements, int exponent){
+        ZipfDistribution zd= new ZipfDistribution(elements.length, exponent);
         String[] res = new String[quantity];
         for (int i=0; i<quantity; i++){
             res[i]= elements[zd.sample()-1];

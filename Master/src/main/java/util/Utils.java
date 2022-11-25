@@ -7,7 +7,7 @@ import java.util.Random;
 ;
 
 
-public class  utils {
+public class Utils {
         public static ArrayList<Integer>   gaussianIntegers(int quantity, int mean, int std){
         Random rand = new Random();
         ArrayList<Integer> gaussian_ints = new ArrayList<Integer>(quantity);
@@ -42,6 +42,28 @@ public class  utils {
             System.out.println(e);
         }
     }
+
+    /**
+     * Prints a single String to a new file.
+     * @param str   The String to be printed.
+     * @param fileName  THe file where the String is printed.
+     */
+    public static void StrToFile(String str, String fileName){
+        try(PrintStream out = new PrintStream(fileName)){
+            int i=0;
+            out.println(str);
+        }catch (FileNotFoundException e){
+            System.out.println(e);
+        }
+    }
+
+    /**
+     * Stores the contents of a String array in a new file. Each individual String element is printed on a new line.
+     * @param values    Array containing the Strings.
+     * @param fileName  Name of the file where the array is stored.
+     * @param withIndex Indicates if each string element should be preceeded by the index at which the String was placed in the array.
+     *                  Index and String are seperated by a blankspace.
+     */
     public static void StrArrayToFile(String[] values, String fileName, Boolean withIndex){
         try(PrintStream out = new PrintStream(fileName)){
             int i=0;

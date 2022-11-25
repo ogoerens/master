@@ -16,18 +16,18 @@ public class Q0 extends GenericQuery {
 
     public Q0(){
         this.query_stmt = null;
-        this.qid="q0";
+        this.qid=999;
     }
     public Q0(boolean adapted) {
         this.adapted=adapted;
         this.query_stmt = null;
-        this.qid="q0a";
+        this.qid=999;
     }
         public void createSQL(){
         if (adapted){
-            query_stmt=queries.q0a;
+            query_stmt= Queries.q0a;
         }else{
-            query_stmt= queries.q0;
+            query_stmt= Queries.q0;
         }
     }
 

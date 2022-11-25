@@ -11,18 +11,18 @@ public class BulkInsert extends GenericQuery{
     private String tbl;
     private String defaultFieldterminator= "' '";
     private String defaultRowterminator= "'0x0A' ";
-    public String query_stmt=null;
-    public String qid="qBI";
 
     public BulkInsert(String file, String tbl){
         this.file=file;
         this.tbl=tbl;
+        qid= -1;
     }
     public BulkInsert(String file, String tbl, String fieldterminator, String rowterminator){
         this.file=file;
         this.tbl=tbl;
         this.defaultFieldterminator=fieldterminator;
         this.defaultRowterminator=rowterminator;
+        qid=-1;
     }
 
     public void createSQL(){

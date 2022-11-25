@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+
+<parameters>
+    <amount>2</amount>
+    <!-- Generation details -->
+    <gen1>
+        <distribution>uniform</distribution>
+        <size>1500</size>
+        <upperbound>1000</upperbound>
+        <correlation>true</correlation>
+        <withIndex> true </withIndex>
+        <fileName>gen1_uniform.txt</fileName>
+    </gen1>
+    <gen2>
+        <distribution>zipf</distribution>
+        <size>1500</size>
+        <numberOfElements>5</numberOfElements>
+        <exponent> 2 </exponent>
+        <correlation>true</correlation>
+        <fileName>gen2_zipf</fileName>
+    </gen2>
+
+</parameters>
