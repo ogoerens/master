@@ -133,7 +133,7 @@ public class test {
         FileBasedConfigurationBuilder<XMLConfiguration> builder = new FileBasedConfigurationBuilder<>(XMLConfiguration.class)
                 .configure(params.xml()
                         .setFileName(filename)
-                        .setListDelimiterHandler(new DefaultListDelimiterHandler(' '))
+                        .setListDelimiterHandler(new DefaultListDelimiterHandler(','))
                         .setExpressionEngine(new XPathExpressionEngine()));
 
         try {

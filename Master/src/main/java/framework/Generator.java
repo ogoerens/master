@@ -13,6 +13,8 @@ import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import util.Utils;
 
+
+
 public class Generator {
 
     private Random rand;
@@ -32,27 +34,35 @@ public class Generator {
             String str = "gen"+i+"/";
             int size = conf.getInt(str+"size");
             String file = conf.getString(str+"fileName");
-            boolean correlated = conf.getBoolean(str+"/correlation");
+            String correlation = conf.getString(str+"/correlation");
             String c=conf.getString(str + "distribution");
-            if (correlated) {
-                c=c+"Corr";
-            }
+            int[] res = new int[1];
             switch (c){
                 case "uniform":
-                    Utils.intArrayToFile(generateUniform(size,conf.getInt(str+"upperbound")),file);
+                    res= generateUniform(size,conf.getInt(str+"upperbound"));
                     break;
                 case "uniformCorr":
-                    int[] v1= generateUniform(size,conf.getInt(str+"upperbound"));
-                    int[] v2= generateCorrelated(v1);
-                    ArrayList<int[]> arrays = new ArrayList<>();
-                    arrays.add(v1);
-                    arrays.add(v2);
-                    Utils.multIntArrayToFile(arrays,file,conf.getBoolean(str+"withIndex"));
+                    res= generateUniform(size,conf.getInt(str+"upperbound"));
                     break;
                 case "zipf":
-                    Utils.intArrayToFile(generateZipf(size, conf.getInt(str + "numberOfElements"), conf.getInt(str + "exponent")),file);
+                    res= generateZipf(size, conf.getInt(str + "numberOfElements"), conf.getInt(str + "exponent"));
                     break;
                 default: ;
+            }
+            if (correlation.equals("correlated")){
+                int[] v= generateCorrelated(res);
+                ArrayList<int[]> arrays = new ArrayList<>();
+                arrays.add(res);
+                arrays.add(v);
+                Utils.multIntArrayToFile(arrays,file,conf.getBoolean(str+"withIndex"));
+            } else if (correlation.equals("functional dependent")) {
+                int[] v= generateFunctionalDependency(res, conf.getString(str+"expression"));
+                ArrayList<int[]> arrays = new ArrayList<>();
+                arrays.add(res);
+                arrays.add(v);
+                Utils.multIntArrayToFile(arrays,file,conf.getBoolean(str+"withIndex"));
+            }else{
+                Utils.intArrayToFile(res, file);
             }
         }
 
@@ -110,6 +120,14 @@ public class Generator {
         return  corr;
     }
 
+    public int[] generateFunctionalDependency(int[] v, String expr) {
+        int quantity = v.length;
+        int[] fd = new int[quantity];
+        for (int i=0; i < quantity; i++){
+            fd[i] = (int) Utils.eval(expr, v[i]);
+        }
+        return fd;
+    }
 
     public int[] generateZipf(int quantity, int numberOfElements, int exponent){
         ZipfDistribution zd= new ZipfDistribution(numberOfElements, exponent);

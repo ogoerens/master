@@ -7,7 +7,7 @@
         <operation>updateTable</operation>
         <table>customer</table>
         <primaryKey>c_custkey</primaryKey>
-        <types> int int int </types>
+        <types> int,int,int </types>
         <fileName>gen1_uniform.txt</fileName>
     </man1>
 

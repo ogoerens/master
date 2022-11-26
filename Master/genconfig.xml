@@ -7,7 +7,7 @@
         <distribution>uniform</distribution>
         <size>1500</size>
         <upperbound>1000</upperbound>
-        <correlation>true</correlation>
+        <correlation>correlated</correlation>
         <withIndex> true </withIndex>
         <fileName>gen1_uniform.txt</fileName>
     </gen1>
@@ -16,7 +16,9 @@
         <size>1500</size>
         <numberOfElements>5</numberOfElements>
         <exponent> 2 </exponent>
-        <correlation>true</correlation>
+        <correlation>functional dependent</correlation>
+        <expression> (x+2)*2</expression>
+        <withIndex>true</withIndex>
         <fileName>gen2_zipf</fileName>
     </gen2>
 
