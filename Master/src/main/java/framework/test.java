@@ -1,5 +1,6 @@
 package framework;
 
+import jdk.jshell.execution.Util;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
@@ -10,6 +11,7 @@ import util.*;
 import microbench.*;
 
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.PrintStream;
 import java.sql.*;
 import java.util.*;
@@ -21,14 +23,12 @@ import org.apache.commons.cli.*;
 public class test {
     public static void main(String[] args) throws Exception{
 
-        System.out.println(System.getProperty("user.dir"));
 
         CommandLineParser parser = new DefaultParser();
         Options options = buildOptions();
         CommandLine argsLine = parser.parse(options, args);
 
         Random rand = new Random();
-
 
         // -- Check if Generator is used. If so, create generator configuration and execute generator. File should be: genconfig.xml.
         if (argsLine.hasOption("g")){
@@ -37,7 +37,7 @@ public class test {
             g.generate(genConfiguration);
         }
 
-        // -- Create DB configuration  from configuration file
+         // -- Create DB configuration  from configuration file
         XMLConfiguration dbConfiguration= buildXMLConfiguration("benchconfig.xml");
         BenchConfiguration config = new BenchConfiguration(dbConfiguration);
         config.init();
@@ -58,9 +58,39 @@ public class test {
             }
 
             //Create queries from QueryString and add to transactionqueue
+            int numberOfQueryExecutions=1;
+            ArrayList<Integer> qIDtoqName = new ArrayList<>();
             ArrayList<String> qString = new ArrayList<>(Queries.count);
             qString.add(Queries.q0);
-            qString.add(Queries.q0a);
+            qIDtoqName.add(-1);
+            for (int i=0; i<numberOfQueryExecutions; i++){
+                qString.add(Queries.q0);
+                qIDtoqName.add(0);
+                qString.add(Queries.q1a);
+                qIDtoqName.add(1);
+                qString.add(Queries.q1b);
+                qIDtoqName.add(2);
+                qString.add(Queries.q1c);
+                qIDtoqName.add(3);
+                qString.add(Queries.q2);
+                qIDtoqName.add(4);
+                qString.add(Queries.q3);
+                qIDtoqName.add(5);
+                qString.add(Queries.q4);
+                qIDtoqName.add(6);
+                qString.add(Queries.q5);
+                qIDtoqName.add(7);
+                qString.add(Queries.q51);
+                qIDtoqName.add(8);
+                qString.add(Queries.q7);
+                qIDtoqName.add(9);
+                qString.add(Queries.q8);
+                qIDtoqName.add(10);
+                qString.add(Queries.q9);
+                qIDtoqName.add(11);
+                qString.add(Queries.q10);
+                qIDtoqName.add(12);
+            }
             //qString.add(Queries.q1);
             ArrayList<Query> qList = Query.QueryGenerator.generateQueries(qString);
 
@@ -74,16 +104,38 @@ public class test {
             Worker w = new Worker(conn, transactionqueue, rand, numberWorkers);
             w.work(config.getDatabase());
 
+            //Store cardinalities in a file
+            String directoryCardinality ="QueryCardinality";
+            HashSet<Integer> done = new HashSet();
+            try(FileWriter fos = new FileWriter(directoryCardinality + "/" +"total_rows2.txt",true)){
+                for(Map.Entry<Integer,Integer> entry :w.getCardinalities().entrySet()){
+                    int x =qIDtoqName.get(entry.getKey());
+                    if (!done.contains(x)){
+                        done.add(x);
+                        fos.write(x+": "+(entry.getValue())+"\n");
+                    }
+                }
+                fos.flush();
+            }catch (Exception e){
+                e.printStackTrace();
+            }
 
             //Stats per qids individual
-            HashMap<Integer,LatencyRecord> latencyRecPerQid= w.getLatencyRecord().attachToQuery();
+            HashMap<Integer,LatencyRecord> latencyRecPerQid= w.getLatencyRecord().attachToQuery(qIDtoqName);
             HashMap<Integer,Statistics> statsPerQid = new HashMap<>();
             for (Map.Entry<Integer, LatencyRecord> entry : latencyRecPerQid.entrySet()){
                 statsPerQid.put(entry.getKey(), Statistics.computeStatistics(entry.getValue().getLatenciesAsArray()));
             }
-            for (Map.Entry<Integer,Statistics> entry: statsPerQid.entrySet()){
-                System.out.println(entry.getKey()+" : " + entry.getValue().getAverage());
+
+
+            try (PrintStream p = new PrintStream("test.csv")){
+                p.println("Queries,time(us)");
+                for (Map.Entry<Integer,Statistics> entry: statsPerQid.entrySet()){
+                    System.out.println(entry.getKey()+" : " + entry.getValue().getAverage());
+                    p.println(entry.getKey()+"," + entry.getValue().getAverage());
+                }
             }
+
 
             //Stats for all qs together
             Statistics stats = Statistics.computeStatistics(w.getLatencyRecord().getLatenciesAsArray());
@@ -102,18 +154,17 @@ public class test {
                     try (PrintStream ps = new PrintStream(outputDirectory + "/QID" + entry.getKey() + resultsFileName)) {
                         rw.writeResults(entry.getValue(), ps);
                     } catch (FileNotFoundException e) {
-                        System.out.println(e);
+                        e.printStackTrace();
                     }
                 }else{
                     try (PrintStream ps = new PrintStream(outputDirectory + "/" + resultsFileName)) {
                         rw.writeResults(entry.getValue(), ps);
                     } catch (FileNotFoundException e) {
-                        System.out.println(e);
-                    }
+                        e.printStackTrace();                    }
                 }
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            ex.printStackTrace();
         }
     }
 
