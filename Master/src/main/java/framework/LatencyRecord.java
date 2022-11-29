@@ -25,10 +25,10 @@ public class LatencyRecord {
     }
 
 
-    public HashMap<Integer,LatencyRecord> attachToQuery(){
+    public HashMap<Integer,LatencyRecord> attachToQuery(ArrayList<Integer> qidToQName){
         HashMap<Integer,LatencyRecord> timesPerQuery = new HashMap<>();
         for (int i = 0; i < values.size(); i++) {
-            int qid =values.get(i).getQueryID();
+            int qid =qidToQName.get(values.get(i).getQueryID());
             timesPerQuery.putIfAbsent(qid, new LatencyRecord());
             timesPerQuery.get(qid).addLatency(values.get(i));
         }
