@@ -1,14 +1,70 @@
 <?xml version="1.0"?>
 
 <parameters>
-    <amount>1</amount>
+    <amount>7</amount>
     <!-- DataManage details -->
     <man1>
         <operation>updateTable</operation>
         <table>customer</table>
+        <newTable> newCustomer</newTable>
         <primaryKey>c_custkey</primaryKey>
         <types> int,int,int </types>
         <fileName>gen1_uniform.txt</fileName>
     </man1>
+    <man2>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_mktsegZipf2</newTable>
+        <column>c_mktsegment</column>
+        <primaryKey>c_custkey</primaryKey>
+        <types> int, char(10) </types>
+        <fileName>c_mktseg_zipfMapped2.txt</fileName>
+    </man2>
+    <man3>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_mktsegZipf3</newTable>
+        <column>c_mktsegment</column>
+        <primaryKey>c_custkey</primaryKey>
+        <types> int, char(10) </types>
+        <fileName>c_mktseg_zipfMapped3.txt</fileName>
+    </man3>
+    <man4>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_mktsegZipf</newTable>
+        <column>c_mktsegment</column>
+        <primaryKey>c_custkey</primaryKey>
+        <types> int, char(10) </types>
+        <fileName>c_mktseg_zipfMapped.txt</fileName>
+    </man4>
+    <man5>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_mktsegbinomial</newTable>
+        <column>c_mktsegment</column>
+        <primaryKey>c_custkey</primaryKey>
+        <types> int, char(10) </types>
+        <fileName>c_mktseg_binomialMapped.txt</fileName>
+    </man5>
+    <man6>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_phoneuniform</newTable>
+        <column>c_phone</column>
+        <primaryKey>c_custkey</primaryKey>
+        <types> int, char(15) </types>
+        <fileName>phoneNumber.txt</fileName>
+    </man6>
+    <man7>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_acctbaluniform</newTable>
+        <column>c_acctbal</column>
+        <primaryKey>c_custkey</primaryKey>
+        <types> int, float </types>
+        <fileName>c_acctbaluniform.txt</fileName>
+    </man7>
+
 
 </parameters>

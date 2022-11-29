@@ -1,8 +1,15 @@
 package framework;
 
-import java.util.ArrayList;
-import java.util.Random;
+import java.io.File;
+import java.io.FileNotFoundException;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Random;
+import java.util.Scanner;
+
+
+import microbench.utils;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.commons.math3.linear.BlockRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
@@ -37,33 +44,76 @@ public class Generator {
             String correlation = conf.getString(str+"/correlation");
             String c=conf.getString(str + "distribution");
             int[] res = new int[1];
+            double[] resDouble = new double[1];
+            String[] resStr = new String[1];
+            String returnType = "int";
             switch (c){
                 case "uniform":
                     res= generateUniform(size,conf.getInt(str+"upperbound"));
                     break;
-                case "uniformCorr":
-                    res= generateUniform(size,conf.getInt(str+"upperbound"));
+                case "uniform c_acctbal":
+                    returnType="double";
+                    int[] temp0 = res= generateUniform(size,conf.getInt(str+"upperbound"));
+                    resDouble = new double[temp0.length];
+                    Random random = new Random();
+                    for(int j=0; j<temp0.length;j++){
+                        resDouble[j]= temp0[j]/100.0 - random.nextInt(1000);
+                    }
                     break;
                 case "zipf":
                     res= generateZipf(size, conf.getInt(str + "numberOfElements"), conf.getInt(str + "exponent"));
                     break;
+                case "binomial":
+                    res= generateBinomial(size, conf.getInt(str+"trials"), conf.getDouble(str+"probabiloity"));
+                    break;
+                case "binomialMapped":
+                    returnType="String";
+                    int[] temp = generateBinomial(size, conf.getInt(str+"trials"), conf.getDouble(str+"probability"));
+                    resStr = Utils.mapIntArrayToStrArray(utils.mktsegmentValues, temp);
+                    break;
+                case "zipfMapped":
+                    returnType = "String";
+                    resStr = generateZipfMappedtoString(size, conf.getStringArray(str +"list"), conf.getInt(str + "exponent"));
+                    break;
+                case "phoneNumber":
+                    resStr=microbench.utils.generatePhoneArray(size);
+                    returnType ="String";
+                    break;
                 default: ;
             }
-            if (correlation.equals("correlated")){
-                int[] v= generateCorrelated(res);
-                ArrayList<int[]> arrays = new ArrayList<>();
-                arrays.add(res);
-                arrays.add(v);
-                Utils.multIntArrayToFile(arrays,file,conf.getBoolean(str+"withIndex"));
-            } else if (correlation.equals("functional dependent")) {
-                int[] v= generateFunctionalDependency(res, conf.getString(str+"expression"));
-                ArrayList<int[]> arrays = new ArrayList<>();
-                arrays.add(res);
-                arrays.add(v);
-                Utils.multIntArrayToFile(arrays,file,conf.getBoolean(str+"withIndex"));
+            if (returnType == "int"){
+                if (correlation.equals("correlated")){
+                    int[] v= generateCorrelated(res);
+                    ArrayList<int[]> arrays = new ArrayList<>();
+                    arrays.add(res);
+                    arrays.add(v);
+                    Utils.multIntArrayToFile(arrays,file,conf.getBoolean(str+"withIndex"));
+                } else if (correlation.equals("functional dependent")) {
+                    int[] v = generateFunctionalDependency(res, conf.getString(str+"expression"));
+                    ArrayList<int[]> arrays = new ArrayList<>();
+                    arrays.add(res);
+                    arrays.add(v);
+                    Utils.multIntArrayToFile(arrays,file,conf.getBoolean(str+"withIndex"));
+                }else{
+                    Utils.intArrayToFile(res, file);
+                }
             }else{
-                Utils.intArrayToFile(res, file);
+                if (returnType == "double"){
+                    if (correlation.equals("correlated")){
+                        //TODO
+                    } else if (correlation.equals("functional dependent")) {
+                        //TODO
+                    }else{
+                        Utils.doubleArrayToFile(resDouble, file, conf.getBoolean(str+"withIndex"));
+                    }
+                }
+                else{
+                    //TODO: correlation for string fields
+                    Utils.StrArrayToFile(resStr, file, conf.getBoolean(str+"withIndex"));
+                }
+
             }
+
         }
 
     }
@@ -143,7 +193,7 @@ public class Generator {
      * @numberOfElements indicates the number of distinct elements in the distribution.
      * @Upperbound indicates the highest possible value for each element
     */
-     public int[] generateZipfMapped(int quantity, int upperbound, int numberOfElements, int exponent){
+     public int[] generateZipfMappedtoRandom(int quantity, int upperbound, int numberOfElements, int exponent){
         ZipfDistribution zd= new ZipfDistribution(numberOfElements, exponent);
         int[] res = new int[quantity];
         int[] map = new int[numberOfElements];
@@ -158,11 +208,11 @@ public class Generator {
 
     /**
      * @param quantity  indicates the total number  of elements drawn from the distribution
-     * @param elements  contains the values of the distribution
+     * @param elements  contains the values of the distribution. Elements at the beginning of the list will have higher cardinality.
      * @param exponent  ,see defintion of ZipfDistribution for definition
      * @return
      */
-    public String[] generateZipfMapped(int quantity, String[] elements, int exponent){
+    public String[] generateZipfMappedtoString(int quantity, String[] elements, int exponent){
         ZipfDistribution zd= new ZipfDistribution(elements.length, exponent);
         String[] res = new String[quantity];
         for (int i=0; i<quantity; i++){
