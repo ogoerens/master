@@ -1,0 +1,242 @@
+<?xml version="1.0"?>
+
+<parameters>
+    <amountSQL>5</amountSQL>
+    <amountFile>21</amountFile>
+
+    <!-- DataManage details -->
+
+    <manSQL>
+        <SQLStmt>
+            SELECT *\, substring(c_phone\,1\,2)+'-000-000-0000' AS corr1 INTO customer_phone1to1 FROM customer
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+            SELECT c_custkey\, c_name\,c_address\, c_nationkey\, c_phone\, c_acctbal\, BINARY_CHECKSUM(c_mktsegment) AS c_mktsegment\, c_comment INTO customer_numericmktseg FROM customer
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+            SELECT c_custkey\, substring(c_name\, 10\,9) as c_nameShortened\, c_address\, c_nationkey\, c_phone\, c_acctbal\, c_mktsegment\, c_comment INTO customer_nameShortened FROM customer
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+            SELECT c_custkey\, c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\, c_mktsegment\, substring(c_comment\, 10\,9) as c_commentShortened INTO customer_commentShortened FROM customer
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+            Select  c_custkey\, c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\, c_mktsegment\, cast(c_comment as char(120)) as c_comment into customer_commentFixedSize from customer
+        </SQLStmt>
+    </manSQL>
+
+    <manFile>
+        <operation>updateTable</operation>
+        <table>customer</table>
+        <newTable>newCustomer</newTable>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int,int</columnTypes>
+        <columnNames>identifier,uniform1</columnNames>
+        <fileName>uniform1.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_mktsegZipf2</newTable>
+        <column>c_mktsegment</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, char(10)</columnTypes>
+        <columnNames>identifier,c_mktsegZipf</columnNames>
+        <fileName>c_mktseg_zipfMapped2.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_mktsegZipf3</newTable>
+        <column>c_mktsegment</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, char(10)</columnTypes>
+        <columnNames>identifier,c_mktsegZipf</columnNames>
+        <fileName>c_mktseg_zipfMapped3.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_mktsegZipf</newTable>
+        <column>c_mktsegment</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, char(10)</columnTypes>
+        <columnNames>identifier,c_mktsegZipf</columnNames>
+        <fileName>c_mktseg_zipfMapped.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_mktsegbinomial</newTable>
+        <column>c_mktsegment</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, char(10)</columnTypes>
+        <columnNames>identifier,c_mktsegBinomial</columnNames>
+        <fileName>c_mktseg_binomialMapped.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_phoneuniform</newTable>
+        <column>c_phone</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, char(15)</columnTypes>
+        <columnNames>identifier,c_phoneUniform</columnNames>
+        <fileName>phoneNumber.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_acctbaluniform</newTable>
+        <column>c_acctbal</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, float</columnTypes>
+        <columnNames>identifier,c_acctbalUniform</columnNames>
+        <fileName>c_acctbalUniform.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_acctbalZipf</newTable>
+        <column>c_acctbal</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, float</columnTypes>
+        <columnNames>identifier,c_acctbalZipf</columnNames>
+        <fileName>c_acctbalzipf.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_acctbalBinomial</newTable>
+        <column>c_acctbal</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, float</columnTypes>
+        <columnNames>identifier,c_acctbalBinomial</columnNames>
+        <fileName>c_acctbalBinomial.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_nationkeyZipf1</newTable>
+        <column>c_nationkey</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, int</columnTypes>
+        <columnNames>identifier,c_nationkeyZipf</columnNames>
+        <fileName>zipf_1500_25_2.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_phoneUniformOnlyPrefix</newTable>
+        <column>c_phone</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, char(15)</columnTypes>
+        <columnNames>identifier,c_phonePrefix</columnNames>
+        <fileName>phoneNumberOnlyPrefix.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_bloatedMktseg</newTable>
+        <column>c_mktsegment</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, char(10)</columnTypes>
+        <columnNames>identifier,c_mktsegBloated</columnNames>
+        <fileName>customer_bloatedMktseg.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateTable</operation>
+        <table>newCustomer</table>
+        <newTable>Customer_uncorrelated</newTable>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int,int</columnTypes>
+        <columnNames>identifier,uniform2</columnNames>
+        <fileName>uniform2.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateTable</operation>
+        <table>Customer</table>
+        <newTable>Customer_correlated</newTable>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int,int,int</columnTypes>
+        <columnNames>identifier, corr1, corr2</columnNames>
+        <fileName>uniform_correlated.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateTable</operation>
+        <table>Customer</table>
+        <newTable>Customer_fd</newTable>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int,int,int</columnTypes>
+        <columnNames>identifier, corr1, corr2</columnNames>
+        <fileName>uniform_fd.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_largerNation</newTable>
+        <column>c_nationkey</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, int</columnTypes>
+        <columnNames>identifier,c_nationkeyBigger</columnNames>
+        <fileName>uniform_100.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_smallerNation</newTable>
+        <column>c_nationkey</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, int</columnTypes>
+        <columnNames>identifier,c_nationkeySmaller</columnNames>
+        <fileName>uniform_5.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_custkeyNonDistinct</newTable>
+        <column>c_custkey</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, int</columnTypes>
+        <columnNames>identifier,c_custkeyNonDistinct</columnNames>
+        <fileName>uniform_750.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_nationkeyBinomial</newTable>
+        <column>c_nationkey</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, int</columnTypes>
+        <columnNames>identifier,c_nationkeyBinomial</columnNames>
+        <fileName>c_nationBinomial.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_nationkeyBinomial2</newTable>
+        <column>c_nationkey</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, int</columnTypes>
+        <columnNames>identifier,c_nationkeyBinomial</columnNames>
+        <fileName>c_nationBinomial2.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_nationkeyBinomial3</newTable>
+        <column>c_nationkey</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, int</columnTypes>
+        <columnNames>identifier,c_nationkeyBinomial</columnNames>
+        <fileName>c_nationBinomial3.txt</fileName>
+    </manFile>
+
+</parameters>

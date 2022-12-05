@@ -1,248 +1,342 @@
 package framework;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Random;
-import java.util.Scanner;
-
-
-import microbench.utils;
+import microbench.MicrobenchUtils;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
-import org.apache.commons.math3.linear.BlockRealMatrix;
-import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.random.*;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
+import org.apache.commons.math3.distribution.PoissonDistribution;
 import util.Utils;
-
-
 
 public class Generator {
 
-    private Random rand;
-    private RealMatrix covMat;
+  private Random rand;
 
-    public Generator(Random r){
-        this.rand=r;
-        double[][] values ={{2,2},{2,2}};
-        covMat = new BlockRealMatrix(values);
-        covMat.createMatrix(2,2);
+  public Generator(Random r) {
+    this.rand = r;
+  }
 
+  /**
+   * Analyzes an XML configuration file and generates datasets as specified in the configuration
+   * file. The generated datasets are stored in a file, where the filename is specified for each
+   * generation individually.
+   *
+   * @param conf Contains an element indicating the number of dataset generations. Each dataset
+   *     generation is then specified on its own.
+   */
+  public void generate(XMLConfiguration conf) {
+    int amount = conf.getInt("amount");
+    for (int i = 1; i <= amount; i++) {
+      HierarchicalConfiguration subConfig = conf.configurationAt("gens/gen[" + i + "]");
+      int size = subConfig.getInt("size");
+      String file = subConfig.getString("fileName");
+      String distribution = subConfig.getString("distribution");
+      int[] generatedValues = new int[0];
+      String[] generatedStringValues = new String[0];
+      String returnType = "int";
+      switch (distribution) {
+        case "binomial":
+          boolean shifted = subConfig.containsKey("shift");
+          if (shifted) {
+            generatedValues =
+                generateBinomialShifted(
+                    size,
+                    subConfig.getInt("shift"),
+                    subConfig.getInt("trials"),
+                    subConfig.getDouble("probability"));
+          } else {
+            generatedValues =
+                generateBinomial(
+                    size, subConfig.getInt("trials"), subConfig.getDouble("probability"));
+          }
+          break;
+        case "binomialMapped":
+          returnType = "String";
+          int[] temp =
+              generateBinomial(
+                  size, subConfig.getInt("trials"), subConfig.getDouble("probability"));
+          generatedStringValues =
+              Utils.mapIntArrayToStrArray(MicrobenchUtils.mktsegmentValues, temp);
+          break;
+        case "uniform":
+          if (subConfig.containsKey("type")) {
+            returnType = subConfig.getString("type");
+          }
+          generatedValues =
+              generateUniform(size, subConfig.getInt("lowerbound"), subConfig.getInt("upperbound"));
+          break;
+        case "zipf":
+          generatedValues =
+              generateZipf(
+                  size, subConfig.getInt("numberOfElements"), subConfig.getInt("exponent"));
+          break;
+
+        case "zipfMapped":
+          returnType = subConfig.getString("type");
+          if (returnType.equals("String")) {
+            generatedStringValues =
+                generateZipfMappedtoString(
+                    size, subConfig.getStringArray("list"), subConfig.getInt("exponent"));
+          } else {
+            int lowerbound = subConfig.getInt("lowerbound");
+            int upperbound = subConfig.getInt("upperbound");
+            generatedValues =
+                generateZipfMappedtoRandom(
+                    size,
+                    lowerbound,
+                    upperbound,
+                    upperbound - lowerbound,
+                    subConfig.getInt("exponent"));
+          }
+          break;
+        case "phoneNumber":
+          if (subConfig.containsKey("onlyPrefix")) {
+            generatedStringValues =
+                MicrobenchUtils.generatePhoneArray(size, subConfig.getBoolean("onlyPrefix"));
+          } else {
+            generatedStringValues = MicrobenchUtils.generatePhoneArray(size, false);
+          }
+          returnType = "String";
+          break;
+        case "bloatMktseg":
+          returnType = "String";
+          String[] mktsegValues = Utils.bloatCardinality(MicrobenchUtils.mktsegmentValues, subConfig.getInt("multiplicationFactor"));
+          generatedStringValues = generateFromStringArray(size,mktsegValues);
+      }
+
+      if (returnType.equals("String")) {
+        // TODO: correlation for string fields
+        Utils.StrArrayToFile(generatedStringValues, file, subConfig.getBoolean("withIndex"));
+        continue;
+      }
+      // Check if configuration asks for correlated arrays af values. If so, generate them.
+      // Afterwards store all the generated arrays in the specified file.
+      ArrayList<int[]> arrays = checkAndGenerateCorrelation(generatedValues, subConfig);
+      if (returnType.equals("double")) {
+        storeDoubleArrays(file, arrays, subConfig.getBoolean("withIndex"));
+      } else {
+        storeIntArrays(file, arrays, subConfig.getBoolean("withIndex"));
+      }
     }
+  }
 
-    public void generate(XMLConfiguration conf){
-        int amount = conf.getInt("amount");
-        for (int i=1; i<= amount; i++){
-            String str = "gen"+i+"/";
-            int size = conf.getInt(str+"size");
-            String file = conf.getString(str+"fileName");
-            String correlation = conf.getString(str+"/correlation");
-            String c=conf.getString(str + "distribution");
-            int[] res = new int[1];
-            double[] resDouble = new double[1];
-            String[] resStr = new String[1];
-            String returnType = "int";
-            switch (c){
-                case "uniform":
-                    res= generateUniform(size,conf.getInt(str+"upperbound"));
-                    break;
-                case "uniform c_acctbal":
-                    returnType="double";
-                    int[] temp0 = res= generateUniform(size,conf.getInt(str+"upperbound"));
-                    resDouble = new double[temp0.length];
-                    Random random = new Random();
-                    for(int j=0; j<temp0.length;j++){
-                        resDouble[j]= temp0[j]/100.0 - random.nextInt(1000);
-                    }
-                    break;
-                case "zipf":
-                    res= generateZipf(size, conf.getInt(str + "numberOfElements"), conf.getInt(str + "exponent"));
-                    break;
-                case "binomial":
-                    res= generateBinomial(size, conf.getInt(str+"trials"), conf.getDouble(str+"probabiloity"));
-                    break;
-                case "binomialMapped":
-                    returnType="String";
-                    int[] temp = generateBinomial(size, conf.getInt(str+"trials"), conf.getDouble(str+"probability"));
-                    resStr = Utils.mapIntArrayToStrArray(utils.mktsegmentValues, temp);
-                    break;
-                case "zipfMapped":
-                    returnType = "String";
-                    resStr = generateZipfMappedtoString(size, conf.getStringArray(str +"list"), conf.getInt(str + "exponent"));
-                    break;
-                case "phoneNumber":
-                    resStr=microbench.utils.generatePhoneArray(size);
-                    returnType ="String";
-                    break;
-                default: ;
-            }
-            if (returnType == "int"){
-                if (correlation.equals("correlated")){
-                    int[] v= generateCorrelated(res);
-                    ArrayList<int[]> arrays = new ArrayList<>();
-                    arrays.add(res);
-                    arrays.add(v);
-                    Utils.multIntArrayToFile(arrays,file,conf.getBoolean(str+"withIndex"));
-                } else if (correlation.equals("functional dependent")) {
-                    int[] v = generateFunctionalDependency(res, conf.getString(str+"expression"));
-                    ArrayList<int[]> arrays = new ArrayList<>();
-                    arrays.add(res);
-                    arrays.add(v);
-                    Utils.multIntArrayToFile(arrays,file,conf.getBoolean(str+"withIndex"));
-                }else{
-                    Utils.intArrayToFile(res, file);
-                }
-            }else{
-                if (returnType == "double"){
-                    if (correlation.equals("correlated")){
-                        //TODO
-                    } else if (correlation.equals("functional dependent")) {
-                        //TODO
-                    }else{
-                        Utils.doubleArrayToFile(resDouble, file, conf.getBoolean(str+"withIndex"));
-                    }
-                }
-                else{
-                    //TODO: correlation for string fields
-                    Utils.StrArrayToFile(resStr, file, conf.getBoolean(str+"withIndex"));
-                }
-
-            }
-
-        }
-
+  /**
+   * Generates either a correlated/functional dependent array of values or nothing depending on the
+   * configuration.
+   *
+   * @param inputArray Array to/on which the resulting array should be correlated/functional
+   *     dependent
+   * @param config Configuration file specifing if a correlation/functional dependency/ nothing is
+   *     asked for
+   * @return
+   */
+  public ArrayList<int[]> checkAndGenerateCorrelation(int[] inputArray, Configuration config) {
+    ArrayList<int[]> arrays = new ArrayList<>();
+    arrays.add(inputArray);
+    if (config.containsKey("correlation")) {
+      String correlation = config.getString("correlation");
+      if (correlation.equals("correlated")) {
+        arrays.add(generateCorrelated(inputArray));
+      } else if (correlation.equals("functional dependent")) {
+        arrays.add(generateFunctionalDependency(inputArray, config.getString("expression")));
+      }
     }
+    return arrays;
+  }
 
-    public ArrayList<Integer> uniformIntegers(int quantity, int upperbound){
-        ArrayList<Integer> random_ints = new ArrayList<Integer>(quantity);
-        for (int i=0; i<quantity; i++){
-            int r = rand.nextInt(upperbound);
-            random_ints.add(i,r);
-        }
-        return random_ints;
+  /**
+   * Stores the arrays contained in an ArrayList to a file.
+   *
+   * @param file
+   * @param inputArrays
+   * @param withIndex
+   */
+  public void storeIntArrays(String file, ArrayList<int[]> inputArrays, boolean withIndex) {
+    Utils.multIntArrayToFile(inputArrays, file, withIndex);
+  }
+
+  /**
+   * Stores the arrays contained in an ArrayList in double format to a file.
+   *
+   * @param file
+   * @param inputArrays
+   * @param withIndex
+   */
+  public void storeDoubleArrays(String file, ArrayList<int[]> inputArrays, boolean withIndex) {
+    ArrayList<double[]> resultingDoubleArrays = new ArrayList<>();
+    for (int[] inputArray : inputArrays) {
+      resultingDoubleArrays.add(Utils.intArraytoDoubleArray(inputArray, 100));
     }
+    Utils.multDoubleArrayToFile(resultingDoubleArrays, file, withIndex);
+  }
 
-    public int[] generateUniform(int quantity, int upperbound){
-        int[] values = new int[quantity];
-        UniformIntegerDistribution ud = new UniformIntegerDistribution(0,upperbound);
-        return ud.sample(quantity);
+  public String[] generateFromStringArray(int size, String[] inputStrings){
+    String[] resultingStrings = new String[size];
+    for (int i=0; i< size; i++){
+      resultingStrings[i] = inputStrings[rand.nextInt(inputStrings.length)];
     }
+    return resultingStrings;
+  }
+  /**
+   * @param quantity Number of elements in the resulting array
+   * @param upperbound Upperbound for the values an element in the resulting array can take.
+   *     Upperbound is inclusive
+   * @return Generates an int array following a uniform distribution
+   */
+  public int[] generateUniform(int quantity, int lowerbound, int upperbound) {
+    int[] values = new int[quantity];
+    UniformIntegerDistribution ud = new UniformIntegerDistribution(lowerbound, upperbound);
+    return ud.sample(quantity);
+  }
 
-    public String[] generateUniformMapped(int quantity, String[] tokens){
-        int[] values = new int[quantity];
-        int upperbound= tokens.length;
-        UniformIntegerDistribution ud = new UniformIntegerDistribution(0,upperbound-1);
-        String[] res= new String[quantity];
-        for (int i=0; i<quantity; i++){
-            res[i]= tokens[ud.sample()];
-        }
-        return res;
+  /**
+   * @param quantity Number of elements in the resulting array.
+   * @param tokens String values which each element in the resulting array can take
+   * @return Generates an array containing uniformly distributed String values
+   */
+  public String[] generateUniformMapped(int quantity, String[] tokens) {
+    int[] values = new int[quantity];
+    int upperbound = tokens.length;
+    UniformIntegerDistribution ud = new UniformIntegerDistribution(0, upperbound - 1);
+    String[] res = new String[quantity];
+    for (int i = 0; i < quantity; i++) {
+      res[i] = tokens[ud.sample()];
     }
+    return res;
+  }
 
+  /**
+   * @param v1 Double Array containing the values one variable.
+   * @param v2 Double Array containing the values for the other variable.
+   * @return the PearsonsCorrelation coefficient
+   */
+  public static double correlationCoeff(double[] v1, double[] v2) {
+    PearsonsCorrelation pc = new PearsonsCorrelation();
+    return pc.correlation(v1, v2);
+  }
 
-    /**
-     * @param v1
-     * @param v2
-     * @return the PearsonsCorrelation coefficient
-     */
-    public static double correlationCoeff(double[] v1, double[] v2){
-        PearsonsCorrelation pc = new PearsonsCorrelation();
-        return pc.correlation(v1,v2);
+  /**
+   * Genereates an array containing values correlated to the input array
+   *
+   * @param v original data array
+   */
+  public int[] generateCorrelated(int[] v) {
+    int quantity = v.length;
+    int[] corr = new int[quantity];
+    for (int i = 0; i < quantity; i++) {
+      int x = 100;
+      int z = rand.nextInt(x);
+      corr[i] = v[i] + (z - (x / 2));
     }
+    return corr;
+  }
 
-    /**
-     * Genereates an array containing values correlated to the input array
-     * @param v original data array
-     */
-    public int[] generateCorrelated(int[] v){
-        int quantity = v.length;
-        int[] corr = new int[quantity];
-        for (int i=0; i < quantity; i++){
-            int x= 100;
-            int z = rand.nextInt(x);
-            corr[i]= v[i]+(z-(x/2));
-        }
-        return  corr;
+  public int[] generateFunctionalDependency(int[] v, String expr) {
+    int quantity = v.length;
+    int[] fd = new int[quantity];
+    for (int i = 0; i < quantity; i++) {
+      fd[i] = (int) Utils.eval(expr, v[i]);
     }
+    return fd;
+  }
 
-    public int[] generateFunctionalDependency(int[] v, String expr) {
-        int quantity = v.length;
-        int[] fd = new int[quantity];
-        for (int i=0; i < quantity; i++){
-            fd[i] = (int) Utils.eval(expr, v[i]);
-        }
-        return fd;
+  public int[] generatePoisson(int quantity, double p) {
+    PoissonDistribution pd = new PoissonDistribution(p);
+    return pd.sample(quantity);
+  }
+
+  /**
+   * @param quantity Number of elements in the resulting array.
+   * @param numberOfElements Number of elements in the Zipf Distribution
+   * @param exponent Exponent of the Zipf distribution
+   * @return Generates an int array following an Zipf distribution
+   */
+  public int[] generateZipf(int quantity, int numberOfElements, int exponent) {
+    ZipfDistribution zd = new ZipfDistribution(numberOfElements, exponent);
+    int[] res = new int[quantity];
+    for (int i = 0; i < quantity; i++) {
+      res[i] = zd.sample();
     }
+    return res;
+  }
 
-    public int[] generateZipf(int quantity, int numberOfElements, int exponent){
-        ZipfDistribution zd= new ZipfDistribution(numberOfElements, exponent);
-        int[] res = new int[quantity];
-        for (int i=0; i<quantity; i++){
-            res[i]= zd.sample();
-        }
-
-        return res;
+  /**
+   * Creates an array with values between lowerbound and upperbound following a ZipfDistribution.
+   *
+   * @param numberOfElements indicates the number of distinct elements in the distribution.
+   * @param lowerbound indicates the inclusive lowerbound for values for each element.
+   * @param upperbound indicates the exclusive upperbound for values for each element.
+   */
+  public int[] generateZipfMappedtoRandom(
+      int quantity, int lowerbound, int upperbound, int numberOfElements, int exponent) {
+    ZipfDistribution zd = new ZipfDistribution(numberOfElements, exponent);
+    int[] res = new int[quantity];
+    int[] map = new int[upperbound - lowerbound];
+    for (int i = lowerbound; i < upperbound; i++) {
+      map[i - lowerbound] = i;
     }
-
-    /** Creates an array with [quantity] samples of a ZipfianDistribution.
-     * @numberOfElements indicates the number of distinct elements in the distribution.
-     * @Upperbound indicates the highest possible value for each element
-    */
-     public int[] generateZipfMappedtoRandom(int quantity, int upperbound, int numberOfElements, int exponent){
-        ZipfDistribution zd= new ZipfDistribution(numberOfElements, exponent);
-        int[] res = new int[quantity];
-        int[] map = new int[numberOfElements];
-        for (int i=0;i<numberOfElements; i++){
-            map[i]= rand.nextInt(upperbound);
-        }
-        for (int i=0; i<quantity; i++){
-            res[i]= map[zd.sample()-1];
-        }
-        return res;
+    map = Utils.randomizeArrayWithFixedStart(map, numberOfElements);
+    for (int i = 0; i < quantity; i++) {
+      res[i] = map[zd.sample() - 1];
     }
+    return res;
+  }
 
-    /**
-     * @param quantity  indicates the total number  of elements drawn from the distribution
-     * @param elements  contains the values of the distribution. Elements at the beginning of the list will have higher cardinality.
-     * @param exponent  ,see defintion of ZipfDistribution for definition
-     * @return
-     */
-    public String[] generateZipfMappedtoString(int quantity, String[] elements, int exponent){
-        ZipfDistribution zd= new ZipfDistribution(elements.length, exponent);
-        String[] res = new String[quantity];
-        for (int i=0; i<quantity; i++){
-            res[i]= elements[zd.sample()-1];
-        }
-        return res;
+  /**
+   * @param quantity indicates the total number of elements drawn from the distribution
+   * @param elements contains the values of the distribution. Elements at the beginning of the list
+   *     will have higher cardinality.
+   * @param exponent ,see defintion of ZipfDistribution for definition
+   * @return
+   */
+  public String[] generateZipfMappedtoString(int quantity, String[] elements, int exponent) {
+    ZipfDistribution zd = new ZipfDistribution(elements.length, exponent);
+    String[] res = new String[quantity];
+    for (int i = 0; i < quantity; i++) {
+      res[i] = elements[zd.sample() - 1];
     }
+    return res;
+  }
 
-    public int[] generateBinomial(int quantity, int trials, double p){
-        BinomialDistribution bd = new BinomialDistribution(trials, p);
-        return  bd.sample(quantity);
+  public int[] generateZipfMappedtoInt(int quantity, int[] elements, int exponent) {
+    ZipfDistribution zd = new ZipfDistribution(elements.length, exponent);
+    int[] res = new int[quantity];
+    for (int i = 0; i < quantity; i++) {
+      res[i] = elements[zd.sample() - 1];
     }
+    return res;
+  }
 
-    public void correlated(){
-        double[] mean = {10};
-        NormalizedRandomGenerator rr= new NormalizedRandomGenerator() {
-            @Override
-            public double nextNormalizedDouble() {
-                return rand.nextDouble();
-            }
-        };
-        CorrelatedRandomVectorGenerator g = new CorrelatedRandomVectorGenerator(covMat, 1,rr);
+  /**
+   * @param quantity Number of elements in the array.
+   * @param trials Number of trials in the binomial distribution.
+   * @param p Probability of success in the binomial distribution
+   * @return Generates an int array following a binomial distribution.
+   */
+  public int[] generateBinomial(int quantity, int trials, double p) {
+    BinomialDistribution bd = new BinomialDistribution(trials, p);
+    return bd.sample(quantity);
+  }
 
-
-        for (int i=0; i<10; i++){
-            double[]res = g.nextVector();
-            System.out.println(res[0]);
-        }
-        System.out.println(g.getRootMatrix().toString());
-
+  /**
+   * @param quantity Number of elements in the array.
+   * @param shift Value by which the binomial is shifted in a direction.
+   * @param trials Number of trials in the binomial distribution.
+   * @param p Probability of success in the binomial distribution.
+   * @return Generates an int array following a binomial distribution shifted into a direction
+   *     specified by the shift argument.
+   */
+  public int[] generateBinomialShifted(int quantity, int shift, int trials, double p) {
+    BinomialDistribution bd = new BinomialDistribution(trials, p);
+    int[] res = new int[quantity];
+    for (int i = 0; i < quantity; i++) {
+      res[i] = bd.sample() + shift;
     }
-
+    return res;
+  }
 }

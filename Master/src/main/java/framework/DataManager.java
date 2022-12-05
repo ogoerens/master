@@ -1,105 +1,176 @@
 package framework;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import util.BulkInsert;
 
-import java.sql.Connection;
-import java.sql.Statement;
-
 public class DataManager {
-    private Connection conn;
+  private Connection conn;
 
-    DataManager(Connection conn){
-        this.conn = conn;
+  DataManager(Connection conn) {
+    this.conn = conn;
+  }
+
+  /**
+   * Executes the operations as declared in the configuration. Checks how many SQL statement and
+   * general Updates are declared in the configuration file. It then executes first the SQL update
+   * statements, before continuing with the general updates. The general updates are divided in
+   * column updates and table updates. Depending on the case, a different function is called that
+   * takes care of the update.
+   *
+   * @param conf Configuration file containing information about tables that need to be updated or
+   *     newly created.
+   */
+  public void manage(XMLConfiguration conf) {
+    int amountSQL = conf.getInt("amountSQL");
+    int amountFile = conf.getInt("amountFile");
+    for (int i = 1; i <= amountSQL; i++) {
+      HierarchicalConfiguration subConfig = conf.configurationAt("manSQL[" + i + "]");
+      String sqlStmt = subConfig.getString("SQLStmt");
+      update(sqlStmt);
     }
-
-    /**
-     * Executes the operations as declared in the configuration.
-     * @param conf
-     */
-    public void manage(XMLConfiguration conf){
-        int amount = conf.getInt("amount");
-        for (int i = 1; i<= amount; i++){
-            String str = "man" + i + "/";
-            String directory = System.getProperty("user.dir");
-            String file = "'"+ directory+ "/" + conf.getString(str + "fileName") + "'";
-            String tbl= conf.getString(str+ "table");
-            String newTbl= conf.getString(str+ "newTable");
-            String pk = conf.getString(str+ "primaryKey");
-            String[] colTypes = conf.getStringArray(str+"types");
-            String op =conf.getString(str + "operation");
-            switch (op){
-                case "updateTable":
-                    updateTable(tbl, newTbl, pk, colTypes, file);
-                    break;
-                case "updateColumn":
-                    String column = conf.getString(str+ "column");
-                    updateColumn(tbl, newTbl, pk, column, colTypes[0], colTypes[1], file);
-                    break;
-                default: System.err.println("Non-matching operation in DataManager configuration file:" +op);
-            }
-        }
+    for (int i = 1; i <= amountFile; i++) {
+      HierarchicalConfiguration subConfig = conf.configurationAt("manFile[" + i + "]");
+      String directory = System.getProperty("user.dir");
+      String file = "'" + directory + "/" + subConfig.getString("fileName") + "'";
+      String tbl = subConfig.getString("table");
+      String newTbl = subConfig.getString("newTable");
+      String pk = subConfig.getString("primaryKey");
+      String[] colTypes = subConfig.getStringArray("columnTypes");
+      String[] colNames = subConfig.getStringArray("columnNames");
+      String op = subConfig.getString("operation");
+      switch (op) {
+        case "updateTable":
+          updateTable(tbl, newTbl, pk, colTypes, colNames, file);
+          break;
+        case "updateColumn":
+          String column = subConfig.getString("column");
+          updateColumn(tbl, newTbl, pk, column, colTypes[0], colTypes[1], colNames, file);
+          break;
+        default:
+          System.err.println("Non-matching operation in DataManager configuration file:" + op);
+      }
     }
+  }
 
-    public void updateTable(String tbl,  String primaryKey, String[] columnTypes, String dataFile){
-        String newTbl = "new"+tbl;
-        updateTable(tbl, newTbl, primaryKey,columnTypes,dataFile);
+  /**
+   * Creates a new table containing the columns of an initial table and the columns of a datafile.
+   * Initially, an intermediary table is created with a DDL statement. This table is then filled
+   * during a bulk insertion. The new table is created by joining the initial table and the
+   * temporary table on their keys. The intermediary table is dropped as it is now superfluous. The
+   * rows of the datafile are added to the initial table by joining on the primary key of the
+   * initial table and the first column of the datafile. Only the original primary key column is
+   * preserved.
+   *
+   * @param tbl The table to which the columns are added.
+   * @param newTbl The name of the newly created Table.
+   * @param primaryKey Indicates the Primary Key for tbl.
+   * @param columnTypes Must indicate the type for each column in the datafile.
+   * @param columnNames Must indicate a name for each column in the datafile.
+   * @param dataFile Can contain arbitrary number of columns. However, the first column must be a FK
+   *     column for tbl.
+   */
+  public void updateTable(
+      String tbl,
+      String newTbl,
+      String primaryKey,
+      String[] columnTypes,
+      String[] columnNames,
+      String dataFile) {
+    String str = "(";
+    int numberOfColumns = columnTypes.length;
+    for (int i = 0; i < numberOfColumns; i++) {
+      String col = columnNames[i] + " " + columnTypes[i];
+      str += i == numberOfColumns - 1 ? col + " " : col + ", ";
     }
-
-    /**
-     * Creates a new Table containing the columns from the datafile. The column names for the "i"th added columns is: corr"i".
-     * The new Table is called new"tbl".
-     * @param tbl The table to which the columns are added.
-     * @param primaryKey Indicates the Primary Key for tbl.
-     * @param columnTypes Must indicate the type for each column in the datafile
-     * @param dataFile Can contain arbitrary number of columns. However, the first column must be FK column for tbl.
-     */
-    public void updateTable(String tbl, String newTbl, String primaryKey, String[] columnTypes, String dataFile){
-        String str = "(";
-        int numberOfColumns =columnTypes.length;
-        for (int i=0; i<numberOfColumns;i++ ){
-            String corr="corr";
-            corr += Integer.toString(i)+" "+ columnTypes[i];
-            str += i==numberOfColumns-1? corr +" ":corr+", ";
-        }
-        str += ")";
-        try{
-            Statement stmt= conn.createStatement();
-            String sqlStmt= "CREATE table temp1"+str;
-            stmt.executeUpdate(sqlStmt);
-            //System.out.println(dataFile);
-            BulkInsert qNew = new BulkInsert(dataFile,"temp1");
-            qNew.update(conn);
-            str="";
-            for (int i=1; i<numberOfColumns;i++ ){
-                String corr="tbl2.corr";
-                corr+= Integer.toString(i)+" ";
-                str+= i==numberOfColumns-1? corr +" ":corr+", ";
-            }
-            String sqlStmt2= String.format("Select tbl1.*, %s into %s from %s as tbl1, temp1 as tbl2 where tbl1.%s = tbl2.corr0 ", str, newTbl, tbl ,primaryKey);
-            stmt.executeUpdate(sqlStmt2);
-            stmt.executeUpdate("DROP TABLE temp1");
-        }catch (java.sql.SQLException e){
-            e.printStackTrace();
-        }
+    str += ")";
+    try {
+      Statement stmt = conn.createStatement();
+      String sqlStmt = "CREATE table temporary1" + str;
+      stmt.executeUpdate(sqlStmt);
+      BulkInsert qNew = new BulkInsert(dataFile, "temporary1");
+      qNew.update(conn);
+      str = "";
+      for (int i = 1; i < numberOfColumns; i++) {
+        String corr = "tbl2." + columnNames[i] + " ";
+        str += i == numberOfColumns - 1 ? corr + " " : corr + ", ";
+      }
+      String key = "tbl2." + columnNames[0];
+      String sqlStmt2 =
+          String.format(
+              "Select tbl1.*, %s into %s from %s as tbl1, temporary1 as tbl2 where tbl1.%s = %s ",
+              str, newTbl, tbl, primaryKey, key);
+      stmt.executeUpdate(sqlStmt2);
+      stmt.executeUpdate("DROP TABLE temporary1");
+    } catch (java.sql.SQLException e) {
+      e.printStackTrace();
     }
+  }
 
+  public void updateColumn(
+      String tbl,
+      String pk,
+      String column,
+      String keytype,
+      String type,
+      String[] colNames,
+      String dataFile) {
+    String newTbl = tbl + "_" + column + "updated";
+    updateColumn(tbl, newTbl, pk, column, keytype, type, colNames, dataFile);
+  }
 
-    public void updateColumn(String tbl, String pk, String column, String keytype, String type, String dataFile){
-        String newTbl = tbl + "_" + column + "updated";
-        updateColumn(tbl, newTbl, pk, column,keytype,type,dataFile);
+  /**
+   * Creates a new Table where a single column has been updated with regard to the initial table.
+   * The updated column must have a different name than the original column. The initial table is
+   * preserved. The new Table is created by using the updateTable function to add the updated column
+   * to the table. Once this is done, the old column is dropped.
+   *
+   * @param tbl The name of the table for which a column is updated.
+   * @param newTbl The name of the newly created table containing the updated column
+   * @param pk The primary key of the table tbl.
+   * @param column The name of the column which is updated.
+   * @param keytype The datatype of the primary key.
+   * @param type The datatype of the column that is updated.
+   * @param columNames Contains the names for the updated column.
+   * @param dataFile The file containing the values to update the column. The file contains two
+   *     columns. The first one is an FK column for tbl, the second contains the values for the
+   *     updated column.
+   */
+  public void updateColumn(
+      String tbl,
+      String newTbl,
+      String pk,
+      String column,
+      String keytype,
+      String type,
+      String[] columNames,
+      String dataFile) {
+    try {
+      String[] typeArray = {keytype, type};
+      updateTable(tbl, newTbl, pk, typeArray, columNames, dataFile);
+      Statement stmt = conn.createStatement();
+      String sqlStmt = String.format("ALTER TABLE %s DROP COLUMN %s", newTbl, column);
+      stmt.executeUpdate(sqlStmt);
+    } catch (java.sql.SQLException e) {
+      e.printStackTrace();
     }
+  }
 
-    public void updateColumn(String tbl, String newTbl, String pk, String column, String keytype, String type, String dataFile){
-        try{
-           String[] typeArray ={keytype, type};
-           updateTable(tbl, newTbl, pk , typeArray, dataFile);
-           Statement stmt= conn.createStatement();
-           String sqlStmt= String.format("ALTER TABLE %s DROP COLUMN %s", newTbl, column);
-           stmt.executeUpdate(sqlStmt);
-        }catch (java.sql.SQLException e){
-            e.printStackTrace();
-        }
-
+  /**
+   * Executes an SQL statement.
+   *
+   * @param sqlStmt
+   */
+  public void update(String sqlStmt) {
+    try {
+      Statement stmt = conn.createStatement();
+      stmt.executeUpdate(sqlStmt);
+    } catch (SQLException e) {
+      e.printStackTrace();
     }
+  }
 }

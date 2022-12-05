@@ -4,7 +4,7 @@
     <amount>9</amount>
     <!-- Generation details -->
 
-    <gen1>
+    <gen>
         <distribution>zipfMapped</distribution>
         <size>1500</size>
         <list> FURNITURE,BUILDING,AUTOMOBILE,MACHINERY,HOUSEHOLD</list>
@@ -12,8 +12,8 @@
         <fileName>c_mktseg_zipfMapped.txt</fileName>
         <withIndex>true</withIndex>
         <exponent>2</exponent>
-    </gen1>
-    <gen8>
+    </gen>
+    <gen>
         <distribution>zipfMapped</distribution>
         <size>1500</size>
         <list> BUILDING,AUTOMOBILE,FURNITURE,MACHINERY,HOUSEHOLD</list>
@@ -21,8 +21,8 @@
         <fileName>c_mktseg_zipfMapped2.txt</fileName>
         <withIndex>true</withIndex>
         <exponent>2</exponent>
-    </gen8>
-    <gen9>
+    </gen>
+    <gen>
         <distribution>zipfMapped</distribution>
         <size>1500</size>
         <list> BUILDING,AUTOMOBILE,MACHINERY,HOUSEHOLD,FURNITURE</list>
@@ -30,16 +30,16 @@
         <fileName>c_mktseg_zipfMapped3.txt</fileName>
         <withIndex>true</withIndex>
         <exponent>2</exponent>
-    </gen9>
-    <gen2>
+    </gen>
+    <gen>
         <distribution>uniform</distribution>
         <size>1500</size>
         <upperbound>1000</upperbound>
         <correlation>correlated</correlation>
         <withIndex> true </withIndex>
         <fileName>gen1_uniform.txt</fileName>
-    </gen2>
-    <gen3>
+    </gen>
+    <gen>
         <distribution>zipf</distribution>
         <size>1500</size>
         <numberOfElements>5</numberOfElements>
@@ -48,22 +48,22 @@
         <expression> (x+2)*2</expression>
         <withIndex>true</withIndex>
         <fileName>gen2_zipf.txt</fileName>
-    </gen3>
-    <gen4>
+    </gen>
+    <gen>
         <distribution>phoneNumber</distribution>
         <size>1500</size>
         <withIndex>true</withIndex>
         <fileName>phoneNumber.txt</fileName>
-    </gen4>
-    <gen5>
+    </gen>
+    <gen>
         <distribution>uniform</distribution>
         <size>1500</size>
         <upperbound>1000</upperbound>
         <correlation>correlated</correlation>
         <withIndex> true </withIndex>
         <fileName>gen1_uniform.txt</fileName>
-    </gen5>
-    <gen6>
+    </gen>
+    <gen>
         <distribution>binomialMapped</distribution>
         <size>1500</size>
         <correlation> none</correlation>
@@ -71,15 +71,15 @@
         <withIndex>true</withIndex>
         <trials>4</trials>
         <probability>0.5</probability>
-    </gen6>
-    <gen7>
+    </gen>
+    <gen>
         <distribution>uniform c_acctbal</distribution>
         <size>1500</size>
         <upperbound>9999999</upperbound>
         <correlation> none</correlation>
         <fileName>c_acctbaluniform.txt</fileName>
         <withIndex>true</withIndex>
-    </gen7>
+    </gen>
 
 
 </parameters>
