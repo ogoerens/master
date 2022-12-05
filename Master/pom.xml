@@ -61,7 +61,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>framework.test</mainClass>
+                            <mainClass>framework.Driver</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
