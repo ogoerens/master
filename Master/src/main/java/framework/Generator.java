@@ -16,6 +16,7 @@ import util.Utils;
 public class Generator {
 
   private Random rand;
+  private final String storagefolder = System.getProperty("user.dir") + "/generated/";
 
   public Generator(Random r) {
     this.rand = r;
@@ -31,9 +32,12 @@ public class Generator {
    */
   public void generate(XMLConfiguration conf) {
     int amount = conf.getInt("amount");
+    int size = conf.getInt("defaultSize");
     for (int i = 1; i <= amount; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("gens/gen[" + i + "]");
-      int size = subConfig.getInt("size");
+      if (subConfig.containsKey("size")) {
+        size = subConfig.getInt("size");
+      }
       String file = subConfig.getString("fileName");
       String distribution = subConfig.getString("distribution");
       int[] generatedValues = new int[0];
@@ -105,22 +109,25 @@ public class Generator {
           break;
         case "bloatMktseg":
           returnType = "String";
-          String[] mktsegValues = Utils.bloatCardinality(MicrobenchUtils.mktsegmentValues, subConfig.getInt("multiplicationFactor"));
-          generatedStringValues = generateFromStringArray(size,mktsegValues);
+          String[] mktsegValues =
+              Utils.bloatCardinality(
+                  MicrobenchUtils.mktsegmentValues, subConfig.getInt("multiplicationFactor"));
+          generatedStringValues = generateFromStringArray(size, mktsegValues);
       }
 
       if (returnType.equals("String")) {
         // TODO: correlation for string fields
-        Utils.StrArrayToFile(generatedStringValues, file, subConfig.getBoolean("withIndex"));
+        Utils.StrArrayToFile(
+            generatedStringValues, storagefolder + file, subConfig.getBoolean("withIndex"));
         continue;
       }
       // Check if configuration asks for correlated arrays af values. If so, generate them.
       // Afterwards store all the generated arrays in the specified file.
       ArrayList<int[]> arrays = checkAndGenerateCorrelation(generatedValues, subConfig);
       if (returnType.equals("double")) {
-        storeDoubleArrays(file, arrays, subConfig.getBoolean("withIndex"));
+        storeDoubleArrays(storagefolder + file, arrays, subConfig.getBoolean("withIndex"));
       } else {
-        storeIntArrays(file, arrays, subConfig.getBoolean("withIndex"));
+        storeIntArrays(storagefolder + file, arrays, subConfig.getBoolean("withIndex"));
       }
     }
   }
@@ -175,9 +182,9 @@ public class Generator {
     Utils.multDoubleArrayToFile(resultingDoubleArrays, file, withIndex);
   }
 
-  public String[] generateFromStringArray(int size, String[] inputStrings){
+  public String[] generateFromStringArray(int size, String[] inputStrings) {
     String[] resultingStrings = new String[size];
-    for (int i=0; i< size; i++){
+    for (int i = 0; i < size; i++) {
       resultingStrings[i] = inputStrings[rand.nextInt(inputStrings.length)];
     }
     return resultingStrings;
@@ -189,7 +196,6 @@ public class Generator {
    * @return Generates an int array following a uniform distribution
    */
   public int[] generateUniform(int quantity, int lowerbound, int upperbound) {
-    int[] values = new int[quantity];
     UniformIntegerDistribution ud = new UniformIntegerDistribution(lowerbound, upperbound);
     return ud.sample(quantity);
   }
@@ -200,7 +206,6 @@ public class Generator {
    * @return Generates an array containing uniformly distributed String values
    */
   public String[] generateUniformMapped(int quantity, String[] tokens) {
-    int[] values = new int[quantity];
     int upperbound = tokens.length;
     UniformIntegerDistribution ud = new UniformIntegerDistribution(0, upperbound - 1);
     String[] res = new String[quantity];
