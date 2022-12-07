@@ -35,7 +35,8 @@ public class Utils {
     String[] resultStrings = new String[inputStrings.length * multiplicationFactor];
     for (int i = 0; i < multiplicationFactor; i++) {
       for (int j = 0; j < inputStrings.length; j++) {
-        String newStr= Integer.toString(i)+inputStrings[j].substring(Integer.toString(i).length());
+        String newStr =
+            Integer.toString(i) + inputStrings[j].substring(Integer.toString(i).length());
         resultStrings[i * inputStrings.length + j] = newStr;
       }
     }
@@ -105,6 +106,24 @@ public class Utils {
     } catch (FileNotFoundException e) {
       System.out.println(e);
     }
+  }
+
+  public static String surroundWithParentheses(String str){
+    return "(" + str +")";
+  }
+  public static String StrArrayToString(String[] strings, String separator, boolean parentheses) {
+    StringBuilder joinedString = new StringBuilder();
+    for (int i = 0; i < strings.length; i++) {
+      if (i != strings.length - 1) {
+        joinedString.append(strings[i]).append(separator);
+      }else{
+        joinedString.append(strings[i]);
+      }
+    }
+    if (parentheses){
+      return surroundWithParentheses(joinedString.toString());
+    }
+    return joinedString.toString();
   }
 
   public static void multIntArrayToFile(
