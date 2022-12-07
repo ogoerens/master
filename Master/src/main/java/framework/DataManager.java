@@ -1,12 +1,15 @@
 package framework;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.apache.commons.beanutils.converters.SqlDateConverter;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import util.BulkInsert;
+import util.Utils;
 
 public class DataManager {
   private Connection conn;
@@ -28,14 +31,17 @@ public class DataManager {
   public void manage(XMLConfiguration conf) {
     int amountSQL = conf.getInt("amountSQL");
     int amountFile = conf.getInt("amountFile");
+    int amountIndex = conf.getInt("amountIndex");
+    //Index for configurationAt method starts at 1!
     for (int i = 1; i <= amountSQL; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manSQL[" + i + "]");
       String sqlStmt = subConfig.getString("SQLStmt");
       update(sqlStmt);
     }
+
     for (int i = 1; i <= amountFile; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manFile[" + i + "]");
-      String directory = System.getProperty("user.dir");
+      String directory = System.getProperty("user.dir")+"/generated";
       String file = "'" + directory + "/" + subConfig.getString("fileName") + "'";
       String tbl = subConfig.getString("table");
       String newTbl = subConfig.getString("newTable");
@@ -51,9 +57,21 @@ public class DataManager {
           String column = subConfig.getString("column");
           updateColumn(tbl, newTbl, pk, column, colTypes[0], colTypes[1], colNames, file);
           break;
+        case "createIndexOnCopy":
+
         default:
           System.err.println("Non-matching operation in DataManager configuration file:" + op);
       }
+    }
+    for (int i=1; i<= amountIndex; i++){
+      HierarchicalConfiguration subConfig = conf.configurationAt("manIndex[" + i + "]");
+      String tableName = subConfig.getString("table");
+      String newTableName = subConfig.getString("newTable");
+      boolean clustered = subConfig.getBoolean("clustered");
+      String indexName = subConfig.getString("indexName");
+      String[] columns = subConfig.getStringArray("columns");
+      copyTable(tableName, newTableName);
+      createIndex(clustered,indexName,newTableName,columns);
     }
   }
 
@@ -172,5 +190,29 @@ public class DataManager {
     } catch (SQLException e) {
       e.printStackTrace();
     }
+  }
+  public void copyTable(String tableName, String copyyTableName){
+    String sqlStmt = String.format("SELECT * INTO %s FROM %s", copyyTableName, tableName);
+    try{
+      PreparedStatement stmt = conn.prepareStatement(sqlStmt);
+      stmt.executeUpdate();
+    }catch (SQLException e){
+      e.printStackTrace();
+    }
+  }
+
+
+  public void createIndex(boolean clustered, String indexName, String tableName, String[] columns){
+    String cluster = clustered? "clustered" : "";
+    String joinedColumns = Utils.StrArrayToString(columns,",", true);
+    String sqlStmt = String.format("CREATE %s INDEX %s ON %s %s", cluster, indexName, tableName, joinedColumns);
+    try{
+      PreparedStatement stmt = conn.prepareStatement(sqlStmt);
+      stmt.executeUpdate();
+    } catch (SQLException e){
+      e.printStackTrace();
+    }
+
+
   }
 }
