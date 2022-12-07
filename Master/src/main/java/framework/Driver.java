@@ -39,7 +39,7 @@ public class Driver {
       g.generate(genConfiguration);
     }
 
-    // Create DB configuration  from configuration file
+    // Create DB configuration  from configuration file.
     String dbConfigFile = "src/main/resources/benchconfig.xml";
     XMLConfiguration dbConfiguration = buildXMLConfiguration(dbConfigFile);
     BenchConfiguration config = new BenchConfiguration(dbConfiguration);
@@ -62,7 +62,7 @@ public class Driver {
         dm.manage(manConfiguration);
       }
 
-      // Create queries from QueryString and add to transactionqueue
+      // Create queries from QueryString and add to transaction queue.
       int numberOfQueryExecutions = 10;
       ArrayList<Integer> qIDtoqName = new ArrayList<>();
       ArrayList<String> qIDtoqNameS = new ArrayList<>();
@@ -70,6 +70,7 @@ public class Driver {
       qString.add(Queries.q0);
       qIDtoqName.add(-1);
       qIDtoqNameS.add("none");
+      /*
       for (int i = 0; i < numberOfQueryExecutions; i++) {
         int j = 0;
         for (String query : Queries.queryList) {
@@ -79,36 +80,50 @@ public class Driver {
           j++;
         }
       }
+    */
+
+      int j=0;
+      for (String query : Queries.queryList) {
+        for (int i = 0; i < numberOfQueryExecutions; i++) {
+          qString.add(query);
+          qIDtoqName.add(j);
+          qIDtoqNameS.add(Queries.queryListNames[j]);
+        }
+        j++;
+      }
+
 
       ArrayList<Query> qList = Query.QueryGenerator.generateQueries(qString);
 
-      // Could also define each Query as its own class
+      // Could also define each Query as its own class.
       // Q0 q0 = new Q0();
 
       ArrayList<GenericQuery> transactionqueue = new ArrayList<>(qList);
 
-      // Execute the Queries
+      // Execute the Queries.
       int numberWorkers = 1;
       Worker w = new Worker(conn, transactionqueue, rand, numberWorkers);
       w.work(config.getDatabase());
 
-      // Store cardinalities in a file
+      // Store cardinalities in a file.
       String directoryCardinality = "QueryCardinality";
+      HashMap<String,Integer> qidToCardinality= new HashMap<>();
       HashSet<String> done = new HashSet<>();
-      try (FileWriter fos = new FileWriter(directoryCardinality + "/" + "total_rows2.txt", true)) {
+      try (FileWriter cardinalityFileWriter = new FileWriter(directoryCardinality + "/" + "total_rows.txt", true)) {
         for (Map.Entry<Integer, Integer> entry : w.getCardinalities().entrySet()) {
           String x = qIDtoqNameS.get(entry.getKey());
           if (!done.contains(x)) {
             done.add(x);
-            fos.write(x + ": " + (entry.getValue()) + "\n");
+            qidToCardinality.put(x,entry.getValue());
+            cardinalityFileWriter.write(x + ": " + (entry.getValue()) + "\n");
           }
         }
-        fos.flush();
+        cardinalityFileWriter.flush();
       } catch (Exception e) {
         e.printStackTrace();
       }
 
-      // Stats per qids individual
+      // Stats per qids individual.
       LinkedHashMap<String, LatencyRecord> latencyRecPerQid =
           w.getLatencyRecord().attachToQuery(qIDtoqNameS);
       LinkedHashMap<String, Statistics> statsPerQid = new LinkedHashMap<>();
@@ -117,28 +132,29 @@ public class Driver {
             entry.getKey(), Statistics.computeStatistics(entry.getValue().getLatenciesAsArray()));
       }
 
-      try (PrintStream p = new PrintStream("test.csv")) {
-        p.println("Queries,time(us)");
+      String resultOverviewFile = "overview.csv";
+      try (PrintStream ps = new PrintStream(resultOverviewFile)) {
+        ps.println("Queries,returned rows,time(microseconds),75thPercentile(us), 90thPercentile(us)");
         for (Map.Entry<String, Statistics> entry : statsPerQid.entrySet()) {
           System.out.println(entry.getKey() + " : " + entry.getValue().getAverage());
-          p.println(entry.getKey() + "," + entry.getValue().getAverage());
+          ps.println(entry.getKey()+","+ qidToCardinality.get(entry.getKey())+ "," + entry.getValue().getAverage()+","+entry.getValue().get75thPercentile()+"," + entry.getValue().get90thPercentile());
         }
       }
 
-      // Stats for all qs together
+      // Stats for all qs together.
       Statistics stats = Statistics.computeStatistics(w.getLatencyRecord().getLatenciesAsArray());
       statsPerQid.put("-1", stats);
       System.out.println(stats.getAverage());
 
-      // Close database connection
+      // Close database connection.
       conn.close();
 
-      // Write results
+      // Write results.
       ResultWriter rw = new ResultWriter();
       String outputDirectory = "results";
       String resultsFileName = "results.csv";
       for (Map.Entry<String, Statistics> entry : statsPerQid.entrySet()) {
-        if (entry.getKey() != "-1") {
+        if (!entry.getKey().equals("-1")) {
           try (PrintStream ps =
               new PrintStream(outputDirectory + "/QID" + entry.getKey() + resultsFileName)) {
             rw.writeResults(entry.getValue(), ps);
@@ -162,6 +178,7 @@ public class Driver {
     Options options = new Options();
     options.addOption("dm", true, "DataManger is executed when set");
     options.addOption("g", true, "Generator is executed when set");
+    //currently ex is not needed to execute
     options.addOption("ex", false, "Queries are executed when set");
     return options;
   }
