@@ -3,6 +3,7 @@
 <parameters>
     <amountSQL>5</amountSQL>
     <amountFile>21</amountFile>
+    <amountIndex>3</amountIndex>
 
     <!-- DataManage details -->
 
@@ -238,5 +239,27 @@
         <columnNames>identifier,c_nationkeyBinomial</columnNames>
         <fileName>c_nationBinomial3.txt</fileName>
     </manFile>
+
+    <manIndex>
+        <table>Customer</table>
+        <newTable>CustomerClusteredIndex</newTable>
+        <clustered>true</clustered>
+        <indexName>index_custkey</indexName>
+        <columns>c_custkey</columns>
+    </manIndex>
+    <manIndex>
+        <table>Customer</table>
+        <newTable>CustomerNonClusteredIndex</newTable>
+        <clustered>false</clustered>
+        <indexName>index_custkey</indexName>
+        <columns>c_custkey</columns>
+    </manIndex>
+    <manIndex>
+        <table>customer_custkeyNonDistinct</table>
+        <newTable>CustomerClusteredIndex_custkeyNonDistinct</newTable>
+        <clustered>true</clustered>
+        <indexName>index_custkey</indexName>
+        <columns>c_custkeyNonDistinct</columns>
+    </manIndex>
 
 </parameters>
