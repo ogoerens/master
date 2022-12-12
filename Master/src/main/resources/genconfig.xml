@@ -2,7 +2,7 @@
 
 <parameters>
     <!-- Generation details -->
-    <amount>27</amount>
+    <amount>29</amount>
     <defaultSize>1500</defaultSize>
     <gens>
         <gen>
@@ -216,9 +216,19 @@
             <fileName>charUniform.txt</fileName>
         </gen>
         <gen>
+            <distribution>char</distribution>
+            <withIndex>true</withIndex>
+            <fileName>charUniform2.txt</fileName>
+        </gen>
+        <gen>
             <distribution>hexadecimal</distribution>
             <withIndex>true</withIndex>
             <fileName>hexadecimal.txt</fileName>
+        </gen>
+        <gen>
+            <distribution>hexadecimal</distribution>
+            <withIndex>true</withIndex>
+            <fileName>hexadecimal2.txt</fileName>
         </gen>
         <gen>
             <distribution>hexadecimal</distribution>
