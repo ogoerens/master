@@ -2,7 +2,7 @@
 
 <parameters>
     <!-- Generation details -->
-    <amount>23</amount>
+    <amount>27</amount>
     <defaultSize>1500</defaultSize>
     <gens>
         <gen>
@@ -18,7 +18,6 @@
             <distribution>zipfMapped</distribution>
             <type>String</type>
             <list>FURNITURE,BUILDING,AUTOMOBILE,MACHINERY,HOUSEHOLD</list>
-            <correlation>none</correlation>
             <fileName>c_mktseg_zipfMapped.txt</fileName>
             <withIndex>true</withIndex>
             <exponent>2</exponent>
@@ -28,7 +27,6 @@
             <type>String</type>
             <size>1500</size>
             <list>BUILDING,AUTOMOBILE,FURNITURE,MACHINERY,HOUSEHOLD</list>
-            <correlation>none</correlation>
             <fileName>c_mktseg_zipfMapped2.txt</fileName>
             <withIndex>true</withIndex>
             <exponent>2</exponent>
@@ -204,6 +202,30 @@
             <correlation>none</correlation>
             <withIndex>true</withIndex>
             <fileName>c_nationBinomial3.txt</fileName>
+        </gen>
+        <gen>
+            <distribution>char</distribution>
+            <correlation>functional dependent</correlation>
+            <expression>x+1</expression>
+            <withIndex>true</withIndex>
+            <fileName>charCorrelated.txt</fileName>
+        </gen>
+        <gen>
+            <distribution>char</distribution>
+            <withIndex>true</withIndex>
+            <fileName>charUniform.txt</fileName>
+        </gen>
+        <gen>
+            <distribution>hexadecimal</distribution>
+            <withIndex>true</withIndex>
+            <fileName>hexadecimal.txt</fileName>
+        </gen>
+        <gen>
+            <distribution>hexadecimal</distribution>
+            <withIndex>true</withIndex>
+            <correlation>functional dependent</correlation>
+            <expression>x+2</expression>
+            <fileName>hexadecimalFD.txt</fileName>
         </gen>
 
     </gens>
