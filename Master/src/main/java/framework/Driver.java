@@ -25,7 +25,6 @@ import util.GenericQuery;
 
 public class Driver {
     public static void main(String[] args) throws Exception {
-        stuff.test();
 
         CommandLineParser parser = new DefaultParser();
         Options options = buildOptions();
@@ -189,7 +188,7 @@ public class Driver {
         options.addOption("dm", true, "DataManger is executed when set");
         options.addOption("g", true, "Generator is executed when set");
         //currently ex is not needed to execute
-        options.addOption("c", false, "Connection is established when set");
+        options.addOption("c", true, "Connection is established when set");
         return options;
     }
 
