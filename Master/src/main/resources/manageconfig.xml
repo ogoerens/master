@@ -1,8 +1,11 @@
 <?xml version="1.0"?>
 
+<!-- usage comments: Tables are create from top to bottom, starting with the SQL statements. After creation a table can be referenced by another creation -->
+
+
 <parameters>
     <amountSQL>5</amountSQL>
-    <amountFile>21</amountFile>
+    <amountFile>27</amountFile>
     <amountIndex>3</amountIndex>
 
     <!-- DataManage details -->
@@ -14,22 +17,26 @@
     </manSQL>
     <manSQL>
         <SQLStmt>
-            SELECT c_custkey\, c_name\,c_address\, c_nationkey\, c_phone\, c_acctbal\, BINARY_CHECKSUM(c_mktsegment) AS c_mktsegment\, c_comment INTO customer_numericmktseg FROM customer
+            SELECT c_custkey\, c_name\,c_address\, c_nationkey\, c_phone\, c_acctbal\, BINARY_CHECKSUM(c_mktsegment) AS
+            c_mktsegment\, c_comment INTO customer_numericmktseg FROM customer
         </SQLStmt>
     </manSQL>
     <manSQL>
         <SQLStmt>
-            SELECT c_custkey\, substring(c_name\, 10\,9) as c_nameShortened\, c_address\, c_nationkey\, c_phone\, c_acctbal\, c_mktsegment\, c_comment INTO customer_nameShortened FROM customer
+            SELECT c_custkey\, substring(c_name\, 10\,9) as c_nameShortened\, c_address\, c_nationkey\, c_phone\,
+            c_acctbal\, c_mktsegment\, c_comment INTO customer_nameShortened FROM customer
         </SQLStmt>
     </manSQL>
     <manSQL>
         <SQLStmt>
-            SELECT c_custkey\, c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\, c_mktsegment\, substring(c_comment\, 10\,9) as c_commentShortened INTO customer_commentShortened FROM customer
+            SELECT c_custkey\, c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\, c_mktsegment\,
+            substring(c_comment\, 10\,9) as c_commentShortened INTO customer_commentShortened FROM customer
         </SQLStmt>
     </manSQL>
     <manSQL>
         <SQLStmt>
-            Select  c_custkey\, c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\, c_mktsegment\, cast(c_comment as char(120)) as c_comment into customer_commentFixedSize from customer
+            Select c_custkey\, c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\, c_mktsegment\, cast(c_comment as
+            char(120)) as c_comment into customer_commentFixedSize from customer
         </SQLStmt>
     </manSQL>
 
@@ -239,7 +246,60 @@
         <columnNames>identifier,c_nationkeyBinomial</columnNames>
         <fileName>c_nationBinomial3.txt</fileName>
     </manFile>
-
+    <manFile>
+        <operation>updateTable</operation>
+        <table>customer</table>
+        <newTable>customer_charFD</newTable>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, nchar(2), nchar(2)</columnTypes>
+        <columnNames>identifier,corr1, corr2</columnNames>
+        <fileName>charCorrelated.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateTable</operation>
+        <table>customer</table>
+        <newTable>customer_hexadecimalFD</newTable>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, nchar(4), nchar(4)</columnTypes>
+        <columnNames>identifier,corr1, corr2</columnNames>
+        <fileName>hexadecimalFD.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateTable</operation>
+        <table>customer</table>
+        <newTable>temp_customer_hexadecimal</newTable>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, nchar(4)</columnTypes>
+        <columnNames>identifier,corr1</columnNames>
+        <fileName>hexadecimal.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateTable</operation>
+        <table>temp_customer_hexadecimal</table>
+        <newTable>customer_hexadecimal</newTable>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, nchar(4)</columnTypes>
+        <columnNames>identifier,corr2</columnNames>
+        <fileName>hexadecimal2.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateTable</operation>
+        <table>customer</table>
+        <newTable>temp_customer_char</newTable>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, nchar(2)</columnTypes>
+        <columnNames>identifier,corr1</columnNames>
+        <fileName>charUniform.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateTable</operation>
+        <table>temp_customer_char</table>
+        <newTable>customer_char</newTable>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, nchar(2)</columnTypes>
+        <columnNames>identifier,corr2</columnNames>
+        <fileName>charUniform2.txt</fileName>
+    </manFile>
     <manIndex>
         <table>Customer</table>
         <newTable>CustomerClusteredIndex</newTable>
