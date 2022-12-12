@@ -3,7 +3,7 @@
 <parameters>
     <!-- Generation details -->
     <amount>29</amount>
-    <defaultSize>1500</defaultSize>
+    <defaultSize>150000</defaultSize>
     <gens>
         <gen>
             <distribution>uniform</distribution>
@@ -25,7 +25,6 @@
         <gen>
             <distribution>zipfMapped</distribution>
             <type>String</type>
-            <size>1500</size>
             <list>BUILDING,AUTOMOBILE,FURNITURE,MACHINERY,HOUSEHOLD</list>
             <fileName>c_mktseg_zipfMapped2.txt</fileName>
             <withIndex>true</withIndex>
@@ -35,7 +34,6 @@
             <distribution>zipfMapped</distribution>
             <type>String</type>
             <list>BUILDING,AUTOMOBILE,MACHINERY,HOUSEHOLD,FURNITURE</list>
-            <correlation>none</correlation>
             <fileName>c_mktseg_zipfMapped3.txt</fileName>
             <withIndex>true</withIndex>
             <exponent>2</exponent>
@@ -58,7 +56,6 @@
         </gen>
         <gen>
             <distribution>uniform</distribution>
-            <size>1500</size>
             <lowerbound>0</lowerbound>
             <upperbound>1000</upperbound>
             <correlation>correlated</correlation>
@@ -85,13 +82,11 @@
         </gen>
         <gen>
             <distribution>phoneNumber</distribution>
-            <size>1500</size>
             <withIndex>true</withIndex>
             <fileName>phoneNumber.txt</fileName>
         </gen>
         <gen>
             <distribution>binomialMapped</distribution>
-            <correlation>none</correlation>
             <fileName>c_mktseg_binomialMapped.txt</fileName>
             <withIndex>true</withIndex>
             <trials>4</trials>
@@ -107,7 +102,6 @@
         </gen>
         <gen>
             <distribution> zipfMapped</distribution>
-            <size>1500</size>
             <type>double</type>
             <lowerbound>-99999</lowerbound>
             <upperbound>999999</upperbound>
@@ -132,7 +126,6 @@
             <fileName>phoneNumberOnlyPrefix.txt</fileName>
         </gen>
         <gen>
-            <size>1500</size>
             <distribution>bloatMktseg</distribution>
             <multiplicationFactor>10</multiplicationFactor>
             <fileName>customer_bloatedMktseg.txt</fileName>
@@ -149,7 +142,6 @@
         </gen>
         <gen>
             <distribution>uniform</distribution>
-            <size>1500</size>
             <lowerbound>0</lowerbound>
             <upperbound>100</upperbound>
             <correlation>none</correlation>
@@ -174,7 +166,6 @@
         </gen>
         <gen>
             <distribution> binomial</distribution>
-            <size>1500</size>
             <type>int</type>
             <shift>0</shift>
             <trials>25</trials>
