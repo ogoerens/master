@@ -13,7 +13,7 @@ import util.Utils;
 
 public class DataManager {
   private Connection conn;
-  private String defaultFieldTerminator = "-1";
+  private final String defaultFieldTerminator = "-1";
 
   DataManager(Connection conn) {
     this.conn = conn;
@@ -34,13 +34,13 @@ public class DataManager {
     int amountFile = conf.getInt("amountFile");
     int amountIndex = conf.getInt("amountIndex");
     // Index for configurationAt method starts at 1!
-    for (int i = 1; i <= amountSQL; i++) {
-      HierarchicalConfiguration subConfig = conf.configurationAt("manSQL[" + i + "]");
-      String sqlStmt = subConfig.getString("SQLStmt");
-      update(sqlStmt);
-    }
+    manageFile(amountFile,conf);
+    manageSQL(amountSQL,conf);
+    manageIndex(amountIndex,conf);
+  }
 
-    for (int i = 1; i <= amountFile; i++) {
+  public void manageFile(int amount, XMLConfiguration conf){
+    for (int i = 1; i <= amount; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manFile[" + i + "]");
       String directory = System.getProperty("user.dir") + "/generated";
       String op = subConfig.getString("operation");
@@ -78,7 +78,17 @@ public class DataManager {
           System.err.println("Non-matching operation in DataManager configuration file:" + op);
       }
     }
-    for (int i = 1; i <= amountIndex; i++) {
+  }
+  public void manageSQL(int amount, XMLConfiguration conf){
+    for (int i = 1; i <= amount; i++) {
+      HierarchicalConfiguration subConfig = conf.configurationAt("manSQL[" + i + "]");
+      String sqlStmt = subConfig.getString("SQLStmt");
+      update(sqlStmt);
+    }
+  }
+
+  public void manageIndex(int amount, XMLConfiguration conf){
+    for (int i = 1; i <= amount; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manIndex[" + i + "]");
       String tableName = subConfig.getString("table");
       String newTableName = subConfig.getString("newTable");
@@ -90,17 +100,24 @@ public class DataManager {
     }
   }
 
+  /**
+   * Creates and populates a new Table with the data contained in the specified file.
+   *
+   * @param newTableName Name of the created table.
+   * @param file File containing the data to be inserted into the table.
+   * @param columnTypes String array containing the column types.
+   * @param columnNames String array containing the column values.
+   * @param fieldTerminator String that terminates fields in the data file.
+   */
   public void newTable(
       String newTableName,
       String file,
       String[] columnTypes,
       String[] columnNames,
       String fieldTerminator) {
-    String tableSpecifications = Utils.alternate2ArraysToString(columnNames, columnTypes, " ", ",");
-    tableSpecifications = Utils.surroundWithParentheses(tableSpecifications);
     try {
       // Creat Table without contents.
-      createTable(newTableName, tableSpecifications);
+      createTable(newTableName, columnTypes, columnNames);
       // Add data with a Bulk Insert statement.
       BulkInsert qNew;
       if (fieldTerminator.equals(defaultFieldTerminator)) {
@@ -114,7 +131,21 @@ public class DataManager {
     }
   }
 
-  public void createTable(String newTableName, String tableSpecifications) throws SQLException {
+  /**
+   * Executes a SQL statement that creates a new table with specified column names and types. No
+   * data is inserted into the table.
+   *
+   * @param newTableName Name of the newly created table.
+   * @param columnTypes String array containing the column types.
+   * @param columnNames String array containing the column names.
+   * @throws SQLException
+   */
+  public void createTable(String newTableName, String[] columnTypes, String[] columnNames)
+      throws SQLException {
+    // Format the column arrays into a String that specifies the layout of the table.
+    String tableSpecifications = Utils.alternate2ArraysToString(columnNames, columnTypes, " ", ",");
+    tableSpecifications = Utils.surroundWithParentheses(tableSpecifications);
+    // Create the SQL statement and execute it.
     Statement stmt = conn.createStatement();
     String sqlStmt = String.format("CREATE table %s %s", newTableName, tableSpecifications);
     stmt.executeUpdate(sqlStmt);
@@ -145,11 +176,11 @@ public class DataManager {
       String[] columnNames,
       String dataFile) {
     newTable("temporary1", dataFile, columnTypes, columnNames, defaultFieldTerminator);
-    StringBuilder stringBuilder= new StringBuilder();
+    StringBuilder stringBuilder = new StringBuilder();
     int numberOfColumns = columnTypes.length;
     for (int i = 1; i < numberOfColumns; i++) {
       String corr = "tbl2." + columnNames[i] + " ";
-      String s= i == numberOfColumns - 1 ? corr + " " : corr + ", ";
+      String s = i == numberOfColumns - 1 ? corr + " " : corr + ", ";
       stringBuilder.append(s);
     }
     String key = "tbl2." + columnNames[0];

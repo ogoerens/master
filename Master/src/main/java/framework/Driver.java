@@ -62,7 +62,7 @@ public class Driver {
       // Connect to database
       Connection conn = config.makeConnection();
       if (conn != null) {
-        System.out.println("Connected");
+        System.out.println("Connected.");
       }
 
       // Check if DataManager is used. If so, create DM configuration and execute DM. File should
