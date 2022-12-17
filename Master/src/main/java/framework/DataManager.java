@@ -13,6 +13,7 @@ import util.Utils;
 
 public class DataManager {
   private Connection conn;
+  private String defaultFieldTerminator = "-1";
 
   DataManager(Connection conn) {
     this.conn = conn;
@@ -32,7 +33,7 @@ public class DataManager {
     int amountSQL = conf.getInt("amountSQL");
     int amountFile = conf.getInt("amountFile");
     int amountIndex = conf.getInt("amountIndex");
-    //Index for configurationAt method starts at 1!
+    // Index for configurationAt method starts at 1!
     for (int i = 1; i <= amountSQL; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manSQL[" + i + "]");
       String sqlStmt = subConfig.getString("SQLStmt");
@@ -41,15 +42,29 @@ public class DataManager {
 
     for (int i = 1; i <= amountFile; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manFile[" + i + "]");
-      String directory = System.getProperty("user.dir")+"/generated";
+      String directory = System.getProperty("user.dir") + "/generated";
+      String op = subConfig.getString("operation");
       String file = "'" + directory + "/" + subConfig.getString("fileName") + "'";
-      String tbl = subConfig.getString("table");
+      String tbl = "";
       String newTbl = subConfig.getString("newTable");
-      String pk = subConfig.getString("primaryKey");
+      String pk = "";
       String[] colTypes = subConfig.getStringArray("columnTypes");
       String[] colNames = subConfig.getStringArray("columnNames");
-      String op = subConfig.getString("operation");
+      if (!op.equals("newTable")) {
+        tbl = subConfig.getString("table");
+        pk = subConfig.getString("primaryKey");
+      }
+
       switch (op) {
+        case "newTable":
+          String fieldTerminator;
+          if (subConfig.containsKey("fieldTerminator")) {
+            fieldTerminator = subConfig.getString("fieldTerminator");
+          } else {
+            fieldTerminator = defaultFieldTerminator;
+          }
+          newTable(newTbl, file, colTypes, colNames, fieldTerminator);
+          break;
         case "updateTable":
           updateTable(tbl, newTbl, pk, colTypes, colNames, file);
           break;
@@ -63,7 +78,7 @@ public class DataManager {
           System.err.println("Non-matching operation in DataManager configuration file:" + op);
       }
     }
-    for (int i=1; i<= amountIndex; i++){
+    for (int i = 1; i <= amountIndex; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manIndex[" + i + "]");
       String tableName = subConfig.getString("table");
       String newTableName = subConfig.getString("newTable");
@@ -71,8 +86,38 @@ public class DataManager {
       String indexName = subConfig.getString("indexName");
       String[] columns = subConfig.getStringArray("columns");
       copyTable(tableName, newTableName);
-      createIndex(clustered,indexName,newTableName,columns);
+      createIndex(clustered, indexName, newTableName, columns);
     }
+  }
+
+  public void newTable(
+      String newTableName,
+      String file,
+      String[] columnTypes,
+      String[] columnNames,
+      String fieldTerminator) {
+    String tableSpecifications = Utils.alternate2ArraysToString(columnNames, columnTypes, " ", ",");
+    tableSpecifications = Utils.surroundWithParentheses(tableSpecifications);
+    try {
+      // Creat Table without contents.
+      createTable(newTableName, tableSpecifications);
+      // Add data with a Bulk Insert statement.
+      BulkInsert qNew;
+      if (fieldTerminator.equals(defaultFieldTerminator)) {
+        qNew = new BulkInsert(file, newTableName);
+      } else {
+        qNew = new BulkInsert(file, newTableName, fieldTerminator);
+      }
+      qNew.update(conn);
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public void createTable(String newTableName, String tableSpecifications) throws SQLException {
+    Statement stmt = conn.createStatement();
+    String sqlStmt = String.format("CREATE table %s %s", newTableName, tableSpecifications);
+    stmt.executeUpdate(sqlStmt);
   }
 
   /**
@@ -99,29 +144,21 @@ public class DataManager {
       String[] columnTypes,
       String[] columnNames,
       String dataFile) {
-    String str = "(";
+    newTable("temporary1", dataFile, columnTypes, columnNames, defaultFieldTerminator);
+    StringBuilder stringBuilder= new StringBuilder();
     int numberOfColumns = columnTypes.length;
-    for (int i = 0; i < numberOfColumns; i++) {
-      String col = columnNames[i] + " " + columnTypes[i];
-      str += i == numberOfColumns - 1 ? col + " " : col + ", ";
+    for (int i = 1; i < numberOfColumns; i++) {
+      String corr = "tbl2." + columnNames[i] + " ";
+      String s= i == numberOfColumns - 1 ? corr + " " : corr + ", ";
+      stringBuilder.append(s);
     }
-    str += ")";
+    String key = "tbl2." + columnNames[0];
+    String sqlStmt2 =
+        String.format(
+            "Select tbl1.*, %s into %s from %s as tbl1, temporary1 as tbl2 where tbl1.%s = %s ",
+            stringBuilder.toString(), newTbl, tbl, primaryKey, key);
     try {
       Statement stmt = conn.createStatement();
-      String sqlStmt = "CREATE table temporary1" + str;
-      stmt.executeUpdate(sqlStmt);
-      BulkInsert qNew = new BulkInsert(dataFile, "temporary1");
-      qNew.update(conn);
-      str = "";
-      for (int i = 1; i < numberOfColumns; i++) {
-        String corr = "tbl2." + columnNames[i] + " ";
-        str += i == numberOfColumns - 1 ? corr + " " : corr + ", ";
-      }
-      String key = "tbl2." + columnNames[0];
-      String sqlStmt2 =
-          String.format(
-              "Select tbl1.*, %s into %s from %s as tbl1, temporary1 as tbl2 where tbl1.%s = %s ",
-              str, newTbl, tbl, primaryKey, key);
       stmt.executeUpdate(sqlStmt2);
       stmt.executeUpdate("DROP TABLE temporary1");
     } catch (java.sql.SQLException e) {
@@ -191,28 +228,27 @@ public class DataManager {
       e.printStackTrace();
     }
   }
-  public void copyTable(String tableName, String copyyTableName){
+
+  public void copyTable(String tableName, String copyyTableName) {
     String sqlStmt = String.format("SELECT * INTO %s FROM %s", copyyTableName, tableName);
-    try{
+    try {
       PreparedStatement stmt = conn.prepareStatement(sqlStmt);
       stmt.executeUpdate();
-    }catch (SQLException e){
+    } catch (SQLException e) {
       e.printStackTrace();
     }
   }
 
-
-  public void createIndex(boolean clustered, String indexName, String tableName, String[] columns){
-    String cluster = clustered? "clustered" : "";
-    String joinedColumns = Utils.StrArrayToString(columns,",", true);
-    String sqlStmt = String.format("CREATE %s INDEX %s ON %s %s", cluster, indexName, tableName, joinedColumns);
-    try{
+  public void createIndex(boolean clustered, String indexName, String tableName, String[] columns) {
+    String cluster = clustered ? "clustered" : "";
+    String joinedColumns = Utils.StrArrayToString(columns, ",", true);
+    String sqlStmt =
+        String.format("CREATE %s INDEX %s ON %s %s", cluster, indexName, tableName, joinedColumns);
+    try {
       PreparedStatement stmt = conn.prepareStatement(sqlStmt);
       stmt.executeUpdate();
-    } catch (SQLException e){
+    } catch (SQLException e) {
       e.printStackTrace();
     }
-
-
   }
 }
