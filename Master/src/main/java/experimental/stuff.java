@@ -31,6 +31,7 @@ public class stuff {
         System.out.println(gaussian.toString());
         */
 
+    /*
     String dbConfigFile = "src/main/resources/manageconfig.xml";
     XMLConfiguration conf = Driver.buildXMLConfiguration(dbConfigFile);
     HierarchicalConfiguration prop = conf.configurationAt("SQL");
@@ -44,6 +45,8 @@ public class stuff {
         String dist = sub.getString("distribution");
         System.out.println(dist);
     }
+
+     */
     return;
     }
 }
