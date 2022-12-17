@@ -16,6 +16,10 @@ public class Query extends GenericQuery {
         this.query_stmt = stmt;
     }
 
+    public Query(String stmt, int qid){
+        this.qid = qid;
+        this.query_stmt = stmt;
+    }
     public int getqID(){
         return qid;
     }
