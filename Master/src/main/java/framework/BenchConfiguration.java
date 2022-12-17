@@ -60,7 +60,7 @@ public class BenchConfiguration {
     String sqlStmt = "Use " + this.database;
     Query useDB = new Query(sqlStmt, -1);
     useDB.update(conn);
-    System.out.println("Using DataBase "+ this.database);
+    System.out.println("Using DataBase "+ this.database +".");
   }
 
   // sets up the driver for the JDBC connection to the database

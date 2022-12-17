@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- usage comments: Tables are create from top to bottom, starting with the SQL statements. After creation a table can be referenced by another creation -->
+<!-- usage comments: Tables are create from top to bottom. After creation a table can be referenced by another creation -->
 
 
 <parameters>
@@ -42,7 +42,7 @@
 
     <manFile>
         <operation>newTable</operation>
-        <newTable>Customer2</newTable>
+        <newTable>Customer</newTable>
         <columnTypes>BIGINT not null,VARCHAR(25) not null,VARCHAR(40) not null,INTEGER not null,CHAR(15) not null,DOUBLE
             PRECISION not null,CHAR(10) not null,VARCHAR(117) not null
         </columnTypes>
