@@ -6,6 +6,33 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 
 public class Utils {
+
+    /**
+     * Creates a String by alternating the elements form array1 and array2. A connector is added
+     * between the elements with the same index. A delimiter is inserted between elements with
+     * different index.
+     *
+     * @param array1
+     * @param array2
+     * @param connector String that is insert in between the ith element of array1 and array2.
+     * @param delimiter String that is insert after the ith element of array2 and the ith+1 element of
+     *     array1. Not inserted after the last element of array2.
+     * @return
+     */
+    public static String alternate2ArraysToString(
+            String[] array1, String[] array2, String connector, String delimiter) {
+        if (array1.length != array2.length) {
+            throw new RuntimeException("Array lengths do not match.");
+        }
+        StringBuilder stringBuilder = new StringBuilder();
+        int numberOfColumns = array1.length;
+        for (int i = 0; i < numberOfColumns; i++) {
+            String col = array1[i] + connector + array2[i];
+            String s = i == numberOfColumns - 1 ? col : col + delimiter;
+            stringBuilder.append(s);
+        }
+        return stringBuilder.toString();
+    }
     public static ArrayList<Integer> gaussianIntegers(int quantity, int mean, int std) {
         Random rand = new Random();
         ArrayList<Integer> gaussian_ints = new ArrayList<Integer>(quantity);

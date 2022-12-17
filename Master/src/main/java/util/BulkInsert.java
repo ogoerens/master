@@ -18,11 +18,17 @@ public class BulkInsert extends GenericQuery {
     qid = -1;
   }
 
+  public BulkInsert(String file, String tbl, String fieldterminator) {
+    this.file = file;
+    this.tbl = tbl;
+    this.defaultFieldterminator = "'" +fieldterminator + "'";
+    qid = -1;
+  }
   public BulkInsert(String file, String tbl, String fieldterminator, String rowterminator) {
     this.file = file;
     this.tbl = tbl;
-    this.defaultFieldterminator = fieldterminator;
-    this.defaultRowterminator = rowterminator;
+    this.defaultFieldterminator = "'" +fieldterminator + "'";
+    this.defaultRowterminator = "'" + rowterminator + "'";
     qid = -1;
   }
 

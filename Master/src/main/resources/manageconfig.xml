@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 
-<!-- usage comments: Tables are create from top to bottom, starting with the SQL statements. After creation a table can be referenced by another creation -->
+<!-- usage comments: Tables are create from top to bottom. After creation a table can be referenced by another creation -->
 
 
 <parameters>
     <amountSQL>5</amountSQL>
-    <amountFile>27</amountFile>
+    <amountFile>28</amountFile>
     <amountIndex>3</amountIndex>
 
     <!-- DataManage details -->
@@ -39,6 +39,17 @@
             char(120)) as c_comment into customer_commentFixedSize from customer
         </SQLStmt>
     </manSQL>
+
+    <manFile>
+        <operation>newTable</operation>
+        <newTable>Customer</newTable>
+        <columnTypes>BIGINT not null,VARCHAR(25) not null,VARCHAR(40) not null,INTEGER not null,CHAR(15) not null,DOUBLE
+            PRECISION not null,CHAR(10) not null,VARCHAR(117) not null
+        </columnTypes>
+        <columnNames>c_custkey,c_name,c_address,c_nationkey,c_phone,c_acctbal,c_mktsegment,c_comment</columnNames>
+        <fileName>customer.tbl</fileName>
+        <fieldTerminator>|</fieldTerminator>
+    </manFile>
 
     <manFile>
         <operation>updateTable</operation>
