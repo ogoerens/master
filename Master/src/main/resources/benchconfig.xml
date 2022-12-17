@@ -6,6 +6,7 @@
     <type>sqlserver</type>
     <driver>com.microsoft.sqlserver.jdbc.SQLServerDriver</driver>
     <url>jdbc:sqlserver://localhost:1433;encrypt=false;</url>
+    <createDatabase>false</createDatabase>
     <database>microbench1SF</database>
     <username>sa</username>
     <password>.+.QET21adg.+.</password>
