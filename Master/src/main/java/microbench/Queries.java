@@ -2,6 +2,46 @@ package microbench;
 
 public class Queries {
 
+  public static String[] tables = {
+    "testTable",
+    "customer",
+    "newCustomer",
+    "customer_mktsegZipf2",
+    "customer_mktsegZipf3",
+    "customer_mktsegZipf",
+    "customer_mktsegbinomial",
+    "customer_phoneuniform",
+    "customer_acctbaluniform",
+    "customer_acctbalZipf",
+    "customer_acctbalBinomial",
+    "customer_numericmktseg",
+    "customer_nationkeyZipf1",
+    "customer_phoneUniformOnlyPrefix",
+    "customer_bloatedmktseg",
+    "Customer_uncorrelated",
+    "Customer_correlated",
+    "Customer_fd",
+    "customer_largerNation",
+    "customer_smallerNation",
+    "customer_custkeyNonDistinct",
+    "customer_commentShortened",
+    "customer_nationkeyBinomial",
+    "customer_nationkeyBinomial2",
+    "customer_nationkeyBinomial3",
+    "customer_nameshortened",
+    "customer_charFD",
+    "customer_hexadecimalFD",
+    "temp_customer_hexadecimal",
+    "customer_hexadecimal",
+    "temp_customer_char",
+    "customer_char",
+    "CustomerClusteredIndex",
+    "CustomerNonClusteredIndex",
+    "CustomerClusteredIndex_custkeyNonDistinct",
+    "customer_commentFixedSize",
+    "customer_phone1to1",
+    "temporary1"
+  };
   public static int count = 3;
   public static String q0 = "SELECT * " + "FROM customer " + "WHERE c_mktsegment = 'Furniture'";
   public static String q0a =
@@ -69,7 +109,10 @@ public class Queries {
       "SELECT * FROM customer_uncorrelated WHERE uniform1 > 20 and uniform2 > 8";
   public static String q6a = "SELECT * FROM customer_correlated WHERE corr1 > 20 and corr2 > 40";
   public static String q6b = "SELECT * FROM customer_fd WHERE corr1 > 20 and corr2 > 40";
-
+  public static String q15 =
+          "SELECT * FROM customer_uncorrelated WHERE uniform1/2!=0 and uniform2 > 500";
+  public static String q15a = "SELECT * FROM customer_correlated WHERE corr1/2!=0 and corr2 > 500";
+  public static String q15b = "SELECT * FROM customer_fd WHERE corr1/2!=0 and corr2 > 1000";
   public static String q7 =
       "Select distinct c_nationkey " + "FROM customer " + "Where c_custkey/2!=0";
   public static String q7a =
@@ -83,15 +126,23 @@ public class Queries {
       "SELECT distinct (c_custkeyNonDistinct) " + "From customer_custkeyNonDistinct ";
   public static String q9 =
       "SELECT c_custkey, c_name " + "FROM customer " + "WHERE c_name LIKE '%5%'";
+
+  public static String q9b =
+          "SELECT c_custkey, c_name " + "FROM customer " + "WHERE c_name LIKE '%00'";
   public static String q9a =
       "SELECT c_custkey, c_nameShortened "
           + "FROM   customer_nameShortened "
           + "WHERE c_nameShortened LIKE '%5%'";
   public static String q10 = "SELECT * " + "FROM customer " + "WHERE c_comment LIKE '%regular%'";
-  public static String q10a =
-      "SELECT * " + "FROM customer_commentShortened " + "WHERE c_commentShortened LIKE '%regular%'";
+  public static String q10a = "SELECT * " + "FROM customer " + "WHERE c_comment LIKE '%ace%'";
   public static String q10b =
+      "SELECT * " + "FROM customer_commentShortened " + "WHERE c_commentShortened LIKE '%regular%'";
+  public static String q10c =
+      "SELECT * " + "FROM customer_commentShortened " + "WHERE c_commentShortened LIKE '%ace%'";
+  public static String q10d =
       "SELECT * FROM customer_commentFixedSize where c_comment like '%regular%'";
+  public static String q10e =
+      "SELECT * FROM customer_commentFixedSize where c_comment like '%ace%'";
   // Queries with Index
   public static String q11 = "SELECT * FROM customer where c_custkey< 750";
   public static String q11a = "SELECT * FROM customerClusteredIndex where c_custkey< 750";
@@ -106,13 +157,13 @@ public class Queries {
 
   public static String[] queryList = {
     q0, q0a, q0b, q0c, q0d, q0e, q1, q1a, q1b, q1c, q1d, q1e, q1f, q2, q2a, q2b, q3, q3a, q3b, q3c,
-    q4, q4a, q4b, q5, q5a, q5b, q6, q6a, q6b, q7, q7a, q7b, q8, q8a, q9, q9a, q10, q10a, q10b, q11,
-    q11a, q11b, q12, q12a, q13, q13a, q14, q14a
+    q4, q4a, q4b, q5, q5a, q5b, q6, q6a, q6b, q7, q7a, q7b, q8, q8a, q9, q9a, q9b, q10, q10a, q10b, q10c,
+    q10d, q10e, q11, q11a, q11b, q12, q12a, q13, q13a, q14, q14a, q15, q15a, q15b
   };
   public static String[] queryListNames = {
     "q0", "q0a", "q0b", "q0c", "q0d", "q0e", "q1", "q1a", "q1b", "q1c", "q1d", "q1e", "q1f", "q2",
     "q2a", "q2b", "q3", "q3a", "q3b", "q3c", "q4", "q4a", "q4b", "q5", "q5a", "q5b", "q6", "q6a",
-    "q6b", "q7", "q7a", "q7b", "q8", "q8a", "q9", "q9a", "q10", "q10a", "q10b", "q11", "q11a",
-    "q11b", "q12", "q12a", "q13", "q13a", "q14", "q14a"
+    "q6b", "q7", "q7a", "q7b", "q8", "q8a", "q9", "q9a", "q9b", "q10", "q10a", "q10b", "q10c", "q10d",
+    "q10e", "q11", "q11a", "q11b", "q12", "q12a", "q13", "q13a", "q14", "q14a", "q15", "q15a", "q15b"
   };
 }
