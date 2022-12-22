@@ -1,15 +1,19 @@
 package framework;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.*;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import com.microsoft.sqlserver.jdbc.SQLServerException;
 import experimental.stuff;
 import microbench.Queries;
 import microbench.Query;
@@ -23,10 +27,15 @@ import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.tree.xpath.XPathExpressionEngine;
 import org.apache.commons.configuration2.XMLConfiguration;
 
+import util.BulkInsert;
 import util.ResultWriter;
 import util.GenericQuery;
 
 public class Driver {
+  private static final String sourcePath = System.getProperty("user.dir");
+  private static final String outputDirectory = sourcePath + "/Results";
+  private static final String CardinalityDirectory = sourcePath + "/QueryCardinality";
+
   public static void main(String[] args) throws Exception {
 
     CommandLineParser parser = new DefaultParser();
@@ -64,6 +73,66 @@ public class Driver {
       if (conn != null) {
         System.out.println("Connected.");
       }
+
+      if (argsLine.hasOption("d")) {
+        ArrayList<Query> qList = Query.QueryGenerator.generateDropQueries(Queries.tables, "table");
+        for (Query q : qList) {
+          try {
+            q.update(conn);
+          } catch (SQLServerException e) {
+            System.err.println(
+                q.query_stmt
+                    + " failed because the table does not exist or you do not have permission.");
+          }
+        }
+        System.out.println("Drop was performed. Exiting");
+        System.exit(0);
+      }
+      /*
+      File f = new File("file12345.txt");
+      Scanner sc = new Scanner(f);
+      while (sc.hasNextLine()){
+        String x = sc.nextLine();
+        System.out.println(x);
+      }
+      */
+      /*
+      String testQ = "Select * from information_schema.tables";
+      String testQ1 = "Create table testTable (keyValue int)";
+      String testQ2 = "Insert into testTable values(789)";
+      BulkInsert bi = new BulkInsert("'" +sourcePath+"/file12345.txt'","testTable");
+      System.out.println(sourcePath);
+
+      String testQ3 = "Select keyValue from testTable";
+      Query q = new Query(testQ,-1);
+      PreparedStatement stmt = conn.prepareStatement(q.query_stmt);
+      ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+          System.out.println(rs.getString(3));
+          // do nothing
+          // System.out.println("x");
+        }
+      stmt = conn.prepareStatement(testQ1);
+      stmt.executeUpdate();
+      bi.update(conn);
+       stmt = conn.prepareStatement(testQ2);
+      stmt.executeUpdate();
+      while (rs.next()) {
+        System.out.println(rs.getString(1));
+        // do nothing
+        // System.out.println("x");
+      }
+       stmt = conn.prepareStatement(testQ3);
+       rs = stmt.executeQuery();
+      while (rs.next()) {
+        System.out.println(rs.getString(1));
+        // do nothing
+        // System.out.println("x");
+      }
+
+       */
+
+
 
       // Check if DataManager is used. If so, create DM configuration and execute DM. File should
       // be: manageconfig.xml.
@@ -119,13 +188,13 @@ public class Driver {
 
       // Store cardinalities in a file.
 
-      String directoryCardinality = "QueryCardinality";
-      Path p = Paths.get(directoryCardinality + "/" + "total_rows.txt");
+      Files.createDirectories(Paths.get(CardinalityDirectory));
+      Path p = Paths.get(CardinalityDirectory + "/" + "total_rows.txt");
       Files.deleteIfExists(p);
       HashMap<String, Integer> qidToCardinality = new HashMap<>();
       HashSet<String> done = new HashSet<>();
       try (FileWriter cardinalityFileWriter =
-          new FileWriter(directoryCardinality + "/" + "total_rows.txt", true)) {
+          new FileWriter(CardinalityDirectory + "/" + "total_rows.txt", true)) {
         for (Map.Entry<Integer, Integer> entry : w.getCardinalities().entrySet()) {
           String x = qIDtoqNameS.get(entry.getKey());
           if (!done.contains(x)) {
@@ -177,7 +246,7 @@ public class Driver {
 
       // Write results.
       ResultWriter rw = new ResultWriter();
-      String outputDirectory = "results";
+      Files.createDirectories(Paths.get(outputDirectory));
       String resultsFileName = "results.csv";
       for (Map.Entry<String, Statistics> entry : statsPerQid.entrySet()) {
         if (!entry.getKey().equals("-1")) {
@@ -206,6 +275,7 @@ public class Driver {
     options.addOption("g", true, "Generator is executed when set");
     // currently ex is not needed to execute
     options.addOption("c", true, "Connection is established when set");
+    options.addOption("d", false, "Drop tables. Only works if c is set.");
     return options;
   }
 
@@ -229,5 +299,9 @@ public class Driver {
       System.out.println("Configuration problem: " + e);
     }
     return conf;
+  }
+
+  public static String getSourcePath() {
+    return sourcePath;
   }
 }

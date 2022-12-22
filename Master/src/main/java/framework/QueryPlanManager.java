@@ -1,5 +1,8 @@
 package framework;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -10,6 +13,8 @@ public class QueryPlanManager {
   private Connection conn;
   private HashMap<Integer, Integer> cardinalities;
   private HashMap<Integer, Boolean> queryPlanStored;
+  private final String queryPlanFolder = Driver.getSourcePath() + "/QueryPlans";
+  private final String queryStmtFolder = Driver.getSourcePath() + "/QueryStmts";
 
   public QueryPlanManager(Connection conn) {
     this.queryPlanStored = new HashMap<>();
@@ -27,9 +32,20 @@ public class QueryPlanManager {
    *
    * @param qid
    * @param queryIdentifier currently not used.
-   * @param database The database for which we want to return the query plan of the last executed query.
+   * @param database The database for which we want to return the query plan of the last executed
+   *     query.
    */
-  public void storeQP(int qid, String queryIdentifier, String database) {
+  public void storeQP (int qid, String queryIdentifier, String database) {
+    //Create Folders which will store the QueryPLan and QueryStatement files.
+    try {
+      Files.createDirectories(Paths.get(queryPlanFolder));
+      Files.createDirectories(Paths.get(queryStmtFolder));
+    } catch(IOException e){
+      System.err.println("QueryPlanManager could not create the QueryPlan and QueryStatement folders!");
+      e.printStackTrace();
+    }
+
+
     if (queryPlanStored.get(qid) != null) {
       return;
     }
@@ -51,12 +67,11 @@ public class QueryPlanManager {
         String sqlText = rs.getString(2);
         int total_rows = rs.getInt(3);
         // System.out.println(sqlText);
-        String directoryPlan = "QueryPlans";
-        String directoryStmt = "QueryStmts";
+
         String filenameQP = "qid" + qid + "QueryPlan";
         String filenameSQL = "qid" + qid + "SQLText";
-        Utils.StrToFile(qp, directoryPlan + "/" + filenameQP + ".sqlplan");
-        Utils.StrToFile(sqlText, directoryStmt + "/" + filenameSQL + ".sql");
+        Utils.StrToFile(qp, queryPlanFolder + "/" + filenameQP + ".sqlplan");
+        Utils.StrToFile(sqlText, queryStmtFolder + "/" + filenameSQL + ".sql");
         // Utils.StrToFile(Integer.toString(total_rows),directoryCardinality + "/"
         // +total_rows+".txt");
         cardinalities.put(qid, total_rows);
@@ -66,5 +81,4 @@ public class QueryPlanManager {
     }
     queryPlanStored.put(qid, true);
   }
-
 }

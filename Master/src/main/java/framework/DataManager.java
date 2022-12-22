@@ -37,6 +37,7 @@ public class DataManager {
     manageFile(amountFile,conf);
     manageSQL(amountSQL,conf);
     manageIndex(amountIndex,conf);
+    System.out.println("Data Managing has been done!");
   }
 
   public void manageFile(int amount, XMLConfiguration conf){
@@ -54,7 +55,7 @@ public class DataManager {
         tbl = subConfig.getString("table");
         pk = subConfig.getString("primaryKey");
       }
-
+      System.out.println("Working on : " +file);
       switch (op) {
         case "newTable":
           String fieldTerminator;
@@ -126,6 +127,7 @@ public class DataManager {
         qNew = new BulkInsert(file, newTableName, fieldTerminator);
       }
       qNew.update(conn);
+      System.out.println("populated table with data");
     } catch (SQLException e) {
       e.printStackTrace();
     }
@@ -149,6 +151,7 @@ public class DataManager {
     Statement stmt = conn.createStatement();
     String sqlStmt = String.format("CREATE table %s %s", newTableName, tableSpecifications);
     stmt.executeUpdate(sqlStmt);
+    System.out.println("Created table: "+ newTableName);
   }
 
   /**
