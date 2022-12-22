@@ -10,6 +10,7 @@ import java.util.ArrayList;
 public class Query extends GenericQuery {
 
     private static int counter =0;
+    public static int dropQID =-2;
 
     public Query(String stmt){
         this.qid = counter++;
@@ -34,8 +35,18 @@ public class Query extends GenericQuery {
     public static class  QueryGenerator {
         public static ArrayList<Query> generateQueries(ArrayList<String> queries){
             ArrayList<Query> generatedQueries = new ArrayList<>();
-            for (String s: queries){
-                Query q = new Query(s);
+            for (String sqlStmt: queries){
+                Query q = new Query(sqlStmt);
+                generatedQueries.add(q);
+            }
+            return generatedQueries;
+        }
+
+        public static ArrayList<Query> generateDropQueries(String[] objectNames, String objectType){
+            ArrayList<Query> generatedQueries = new ArrayList<>();
+            for (String object:objectNames){
+                String sqlStmt = String.format("Drop %s %s",objectType, object);
+                Query q = new Query(sqlStmt,Query.dropQID);
                 generatedQueries.add(q);
             }
             return generatedQueries;

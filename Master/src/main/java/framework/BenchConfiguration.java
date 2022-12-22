@@ -52,6 +52,7 @@ public class BenchConfiguration {
 
   public void useDatabase() throws SQLException {
     if (createDatabase) {
+      // TODO: check if Db does not yet exist. --> if DB_ID('microbench1sf') is not NULL  print 'db exists'
       String sqlStmt = "Create database " + this.database;
       Query createDB = new Query(sqlStmt, -1);
       System.out.println("Created DataBase "+ this.database);
