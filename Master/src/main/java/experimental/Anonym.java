@@ -1,19 +1,25 @@
 package experimental;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 
+
+import framework.Anonymization.HierarchyManager;
+import framework.Anonymization.HierarchyStore;
+import framework.Driver;
+import org.apache.commons.configuration2.XMLConfiguration;
 import org.deidentifier.arx.*;
 import org.deidentifier.arx.AttributeType.Hierarchy;
 import org.deidentifier.arx.AttributeType.Hierarchy.DefaultHierarchy;
 import org.deidentifier.arx.Data.DefaultData;
+import org.deidentifier.arx.aggregates.HierarchyBuilder;
+import org.deidentifier.arx.aggregates.HierarchyBuilderGroupingBased;
 import org.deidentifier.arx.aggregates.HierarchyBuilderRedactionBased;
+import org.deidentifier.arx.aggregates.HierarchyBuilderIntervalBased;
 import org.deidentifier.arx.criteria.DistinctLDiversity;
 import org.deidentifier.arx.criteria.KAnonymity;
 import org.deidentifier.arx.criteria.RecursiveCLDiversity;
@@ -43,6 +49,46 @@ public class Anonym {
         printArray(builder.build().getHierarchy());
         System.out.println("");
 
+        HierarchyBuilderIntervalBased<Long> builder2 = HierarchyBuilderIntervalBased.create(
+                DataType.INTEGER,
+                new HierarchyBuilderIntervalBased.Range<Long>(0l,0l,Long.MIN_VALUE / 4),
+                new HierarchyBuilderIntervalBased.Range<Long>(100l, 100L,Long.MAX_VALUE / 4));
+
+        // Define base intervals
+        builder2.setAggregateFunction(DataType.INTEGER.createAggregate().createIntervalFunction(true, false));
+        builder2.addInterval(0l, 20l);
+        builder2.addInterval(20l, 30l);
+
+        // Define grouping fanouts
+        builder2.getLevel(0).addGroup(2);
+        //builder2.getLevel(1).addGroup(3);
+
+
+        System.out.println("------------------------");
+        System.out.println("INTERVAL-BASED HIERARCHY");
+        System.out.println("------------------------");
+        System.out.println("SPECIFICATION");
+
+        // Print specification
+        for (HierarchyBuilderIntervalBased.Interval<Long> interval : builder2.getIntervals()){
+            System.out.println(interval);
+        }
+
+        // Print specification
+        for (HierarchyBuilderGroupingBased.Level<Long> level : builder2.getLevels()) {
+            System.out.println(level);
+        }
+
+        // Print info about resulting levels
+        System.out.println("Resulting levels: "+Arrays.toString(builder2.prepare(getExampleData())));
+
+        System.out.println("");
+        System.out.println("RESULT");
+
+        // Print resulting hierarchy
+        printArray(builder2.build().getHierarchy());
+        System.out.println("");
+
 
 
         Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
@@ -55,7 +101,7 @@ public class Anonym {
 
         Data data = Data.create(source);
 
-        //Data data = Data.create("testdata.csv", StandardCharsets.UTF_8, ',');
+        Data data2 = Data.create("testdata.csv", StandardCharsets.UTF_8, ',');
 
         /*
         DefaultData data = Data.create();
@@ -76,9 +122,29 @@ public class Anonym {
         age.add("66", ">50", ">50");
         age.add("70", ">50", ">50");
 
-    DefaultHierarchy gender = Hierarchy.create();
+    /*DefaultHierarchy gender = Hierarchy.create();
         gender.add("male", "*");
         gender.add("female", "*");
+
+     */
+
+        HierarchyManager hierarchyBuilder = new HierarchyManager();
+        String hierarchiesFile ="/home/olivier/Documents/MasterThesis/Master/src/main/resources/hierarchies.xml";
+        XMLConfiguration hierarchyConf = Driver.buildXMLConfiguration(hierarchiesFile);
+        HierarchyStore hierarchies = new HierarchyStore();
+        try{
+            hierarchies = hierarchyBuilder.buildHierarchies(hierarchyConf);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+
+    for (String s : hierarchies.getColumnNames()) {
+            if (hierarchies.getIndexForColumnName(s)==0){
+                data.getDefinition().setAttributeType(s, hierarchies.hierarchies.get(s));
+            }else{
+                data.getDefinition().setAttributeType(s, hierarchies.hierarchyBuilders.get(s));
+            }
+        }
 
     // Only excerpts for readability
     DefaultHierarchy zipcode = Hierarchy.create();
@@ -92,9 +158,9 @@ public class Anonym {
         data.getDefinition().setAttributeType("zipcode", zipcode);
  */
 
-        data.getDefinition().setAttributeType("renamed", age);
-        data.getDefinition().setAttributeType("gender", gender);
-        data.getDefinition().setAttributeType("zipcode", zipcode);
+        //data.getDefinition().setAttributeType("renamed", age);
+        //data.getDefinition().setAttributeType("gender", gender);
+        //data.getDefinition().setAttributeType("zipcode", zipcode2);
 
         data.getDefinition().setAttributeType("illness", AttributeType.INSENSITIVE_ATTRIBUTE);
 
@@ -140,7 +206,7 @@ public class Anonym {
         }
         return result;
     }
-    protected static void printResult(final ARXResult result, final Data data) {
+    public static void printResult(final ARXResult result, final Data data) {
 
         // Print time
         final DecimalFormat df1 = new DecimalFormat("#####0.00");

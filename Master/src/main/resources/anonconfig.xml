@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<parameters>
+
+    <!-- Connection details -->
+    <technique>k</technique>
+    <factor>2</factor>
+    <InsensitiveArgs>illness</InsensitiveArgs>
+
+</parameters>
