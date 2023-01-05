@@ -26,6 +26,13 @@ public abstract class GenericQuery {
     return countRows;
   }
 
+  public ResultSet runAndReturnResultSet(Connection conn, RandomGenerator rand) throws SQLException {
+    int countRows = 0;
+    PreparedStatement stmt = getStatement(conn);
+    ResultSet rs = stmt.executeQuery();
+    return rs;
+  }
+
   public void update(Connection conn) throws SQLException {
 
     try (PreparedStatement stmt = getStatement(conn)) {

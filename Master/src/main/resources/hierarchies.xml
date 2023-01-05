@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+
+<parameters>
+    <amountFile>2</amountFile>
+    <amountLogic>1</amountLogic>
+    <!-- Connection details -->
+    <hierarchyFile>
+        <columnName>gender</columnName>
+        <file>/home/olivier/Documents/MasterThesis/Master/hierarchies/hier.csv</file>
+    </hierarchyFile>
+    <hierarchyFile>
+        <columnName>age</columnName>
+        <file>/home/olivier/Documents/MasterThesis/Master/hierarchies/age.csv</file>
+    </hierarchyFile>
+    <hierarchyLogic>
+        <columnName>zipcode</columnName>
+        <logic>maskRightToLeft</logic>
+    </hierarchyLogic>
+
+
+</parameters>
