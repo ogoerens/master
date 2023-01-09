@@ -16,10 +16,7 @@ import org.deidentifier.arx.*;
 import org.deidentifier.arx.AttributeType.Hierarchy;
 import org.deidentifier.arx.AttributeType.Hierarchy.DefaultHierarchy;
 import org.deidentifier.arx.Data.DefaultData;
-import org.deidentifier.arx.aggregates.HierarchyBuilder;
-import org.deidentifier.arx.aggregates.HierarchyBuilderGroupingBased;
-import org.deidentifier.arx.aggregates.HierarchyBuilderRedactionBased;
-import org.deidentifier.arx.aggregates.HierarchyBuilderIntervalBased;
+import org.deidentifier.arx.aggregates.*;
 import org.deidentifier.arx.criteria.DistinctLDiversity;
 import org.deidentifier.arx.criteria.KAnonymity;
 import org.deidentifier.arx.criteria.RecursiveCLDiversity;
@@ -29,15 +26,23 @@ import org.deidentifier.arx.risk.RiskModelAttributes;
 public class Anonym {
     public void work() throws IOException, java.lang.ClassNotFoundException, java.sql.SQLException{
 
-        HierarchyBuilderRedactionBased<?> builder = HierarchyBuilderRedactionBased.create(HierarchyBuilderRedactionBased.Order.LEFT_TO_RIGHT,
-                HierarchyBuilderRedactionBased.Order.LEFT_TO_RIGHT,
-                ' ', '*');
+        HierarchyBuilderOrderBased<Long> builder = HierarchyBuilderOrderBased.create(DataType.INTEGER, false);
 
-        System.out.println("-------------------------");
-        System.out.println("REDACTION-BASED HIERARCHY");
-        System.out.println("-------------------------");
+        // Define grouping fanouts
+        builder.getLevel(0).addGroup(5, DataType.INTEGER.createAggregate().createIntervalFunction());
+        builder.getLevel(1).addGroup(5, DataType.INTEGER.createAggregate().createIntervalFunction());
+        builder.getLevel(2).addGroup(2, DataType.INTEGER.createAggregate().createIntervalFunction());
+
+        System.out.println("---------------------");
+        System.out.println("ORDER-BASED HIERARCHY");
+        System.out.println("---------------------");
         System.out.println("");
         System.out.println("SPECIFICATION");
+
+        // Print specification
+        for (HierarchyBuilderGroupingBased.Level<Long> level : builder.getLevels()) {
+            System.out.println(level);
+        }
 
         // Print info about resulting groups
         System.out.println("Resulting levels: "+Arrays.toString(builder.prepare(getExampleData())));
@@ -49,19 +54,39 @@ public class Anonym {
         printArray(builder.build().getHierarchy());
         System.out.println("");
 
+        HierarchyBuilderRedactionBased<?> builderr = HierarchyBuilderRedactionBased.create(HierarchyBuilderRedactionBased.Order.LEFT_TO_RIGHT,
+                HierarchyBuilderRedactionBased.Order.LEFT_TO_RIGHT,
+                ' ', '*');
+
+        System.out.println("-------------------------");
+        System.out.println("REDACTION-BASED HIERARCHY");
+        System.out.println("-------------------------");
+        System.out.println("");
+        System.out.println("SPECIFICATION");
+
+        // Print info about resulting groups
+        System.out.println("Resulting levels: "+Arrays.toString(builderr.prepare(getExampleData())));
+
+        System.out.println("");
+        System.out.println("RESULT");
+
+        // Print resulting hierarchy
+        printArray(builderr.build().getHierarchy());
+        System.out.println("");
+
         HierarchyBuilderIntervalBased<Long> builder2 = HierarchyBuilderIntervalBased.create(
                 DataType.INTEGER,
                 new HierarchyBuilderIntervalBased.Range<Long>(0l,0l,Long.MIN_VALUE / 4),
-                new HierarchyBuilderIntervalBased.Range<Long>(100l, 100L,Long.MAX_VALUE / 4));
+                new HierarchyBuilderIntervalBased.Range<Long>(50l, 50L,Long.MAX_VALUE / 4));
 
         // Define base intervals
         builder2.setAggregateFunction(DataType.INTEGER.createAggregate().createIntervalFunction(true, false));
-        builder2.addInterval(0l, 20l);
-        builder2.addInterval(20l, 30l);
+        builder2.addInterval(0l, 10l);
+        //builder2.addInterval(10l, 15l);
 
         // Define grouping fanouts
-        builder2.getLevel(0).addGroup(2);
-        //builder2.getLevel(1).addGroup(3);
+        builder2.getLevel(0).addGroup(4);
+        builder2.getLevel(1).addGroup(3);
 
 
         System.out.println("------------------------");

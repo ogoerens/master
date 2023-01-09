@@ -3,6 +3,8 @@ package framework.Anonymization;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.deidentifier.arx.AttributeType.Hierarchy;
+import org.deidentifier.arx.DataType;
+import org.deidentifier.arx.aggregates.HierarchyBuilderIntervalBased;
 import org.deidentifier.arx.aggregates.HierarchyBuilderRedactionBased;
 import org.deidentifier.arx.aggregates.HierarchyBuilder;
 
@@ -50,10 +52,10 @@ public class HierarchyManager {
       HierarchicalConfiguration subConfig = config.configurationAt("hierarchyLogic[" + i + "]");
       String logic = subConfig.getString("logic");
       String columnName = subConfig.getString("columnName");
-      hierarchyBuilders.put(columnName, buildHierarchyFromLogic(logic));
+      hierarchyBuilders.put(columnName, buildHierarchyFromLogic(logic, subConfig));
     }
 
-    return new HierarchyStore(hierarchies,hierarchyBuilders);
+    return new HierarchyStore(hierarchies, hierarchyBuilders);
   }
 
   /**
@@ -70,22 +72,50 @@ public class HierarchyManager {
     return Hierarchy.create(filename, charset, delimiter);
   }
 
-  public HierarchyBuilder<?> buildHierarchyFromLogic(String logic) throws Exception{
-    switch (logic){
+  public HierarchyBuilder<?> buildHierarchyFromLogic(
+      String logic, HierarchicalConfiguration subconfig) throws Exception {
+    switch (logic) {
       case "maskRightToLeft":
-        HierarchyBuilderRedactionBased<?> builder = HierarchyBuilderRedactionBased.create(HierarchyBuilderRedactionBased.Order.RIGHT_TO_LEFT,
+        HierarchyBuilderRedactionBased<?> builder =
+            HierarchyBuilderRedactionBased.create(
                 HierarchyBuilderRedactionBased.Order.RIGHT_TO_LEFT,
-                ' ', '*');
+                HierarchyBuilderRedactionBased.Order.RIGHT_TO_LEFT,
+                ' ',
+                '*');
         return builder;
       case "maskLeftToRight":
-        builder = HierarchyBuilderRedactionBased.create(HierarchyBuilderRedactionBased.Order.LEFT_TO_RIGHT,
+        builder =
+            HierarchyBuilderRedactionBased.create(
                 HierarchyBuilderRedactionBased.Order.LEFT_TO_RIGHT,
-                ' ', '*');
+                HierarchyBuilderRedactionBased.Order.LEFT_TO_RIGHT,
+                ' ',
+                '*');
         return builder;
+      case "interval":
+        int interval = subconfig.getInt("intervalLength");
+        long lowerbound = subconfig.getInt("lowerbound");
+        long upperbound = subconfig.getInt("upperbound");
+        HierarchyBuilderIntervalBased<Long> intervalBasedBuilder =
+            HierarchyBuilderIntervalBased.create(
+                DataType.INTEGER,
+                new HierarchyBuilderIntervalBased.Range<Long>(
+                    lowerbound, lowerbound, Long.MIN_VALUE / 4),
+                new HierarchyBuilderIntervalBased.Range<Long>(
+                    upperbound, upperbound, Long.MAX_VALUE / 4));
+
+        intervalBasedBuilder.addInterval(lowerbound, upperbound + interval);
+        intervalBasedBuilder.setAggregateFunction(
+            DataType.INTEGER.createAggregate().createIntervalFunction(true, false));
+        intervalBasedBuilder.getLevel(0).addGroup(4);
+
+        return intervalBasedBuilder;
+        // interval length
+        // number levels
+        // lower bound and upper bound
+
       default:
         String errorMsg = String.format("The indicated Hierarchy logic '%s' was not found.", logic);
         throw new Exception(errorMsg);
     }
   }
 }
-

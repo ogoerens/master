@@ -16,6 +16,14 @@
         <columnName>zipcode</columnName>
         <logic>maskRightToLeft</logic>
     </hierarchyLogic>
+    <hierarchyLogic>
+        <columnName>random</columnName>
+        <logic>interval</logic>
+        <intervalLength>10</intervalLength>
+        <lowerbound>0</lowerbound>
+        <upperbound>100</upperbound>
+    </hierarchyLogic>
+
 
 
 </parameters>
