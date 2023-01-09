@@ -1,5 +1,6 @@
 package framework;
 
+import microbench.Query;
 import util.GenericQuery;
 
 import java.sql.Connection;
@@ -52,6 +53,9 @@ public class Worker {
         cardinalities.put(query.qid, countrows);
         end = System.nanoTime();
         qpm.storeQP(query.qid, "customer", database);
+        //Clears the data cache in MSSQL Server and removes all cached execution plans
+        Query q = new Query("CHECKPOINT; DBCC DROPCLEANBUFFERS; DBCC FREEPROCCACHE",-1);
+        q.update(conn);
       } catch (SQLException e) {
         System.out.println(query.query_stmt + " produced the following SQLException:" + e);
       }
