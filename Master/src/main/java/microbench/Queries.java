@@ -3,8 +3,10 @@ package microbench;
 public class Queries {
 
   public static String[] tables = {
-    "testTable",
+    "nation",
     "customer",
+    "customerFK",
+    "customerPK",
     "newCustomer",
     "customer_mktsegZipf2",
     "customer_mktsegZipf3",
@@ -15,9 +17,12 @@ public class Queries {
     "customer_acctbalZipf",
     "customer_acctbalBinomial",
     "customer_numericmktseg",
+    "customer_bloatednumericmktseg",
+    "customer_bloated2numericmktseg",
     "customer_nationkeyZipf1",
     "customer_phoneUniformOnlyPrefix",
     "customer_bloatedmktseg",
+    "customer_bloated2mktseg",
     "Customer_uncorrelated",
     "Customer_correlated",
     "Customer_fd",
@@ -99,6 +104,14 @@ public class Queries {
       "SELECT c_mktsegBloated, avg(c_ACCTBAL) "
           + "FROM customer_bloatedmktseg "
           + "GROUP BY c_mktsegBloated";
+  public static String q4c =
+      "SELECT c_mktsegment, avg(c_ACCTBAL) "
+          + "FROM customer_bloatednumericmktseg "
+          + "GROUP BY c_mktsegment";
+  public static String q4d =
+      "SELECT c_mktsegment, avg(c_ACCTBAL) "
+          + "FROM customer_bloated2numericmktseg "
+          + "GROUP BY c_mktsegment";
   public static String q5 =
       "SELECT  count(*) " + "FROM customer_uncorrelated " + "Group by uniform1/5, uniform2/5";
   public static String q5a =
@@ -110,7 +123,7 @@ public class Queries {
   public static String q6a = "SELECT * FROM customer_correlated WHERE corr1 > 20 and corr2 > 40";
   public static String q6b = "SELECT * FROM customer_fd WHERE corr1 > 20 and corr2 > 40";
   public static String q15 =
-          "SELECT * FROM customer_uncorrelated WHERE uniform1/2!=0 and uniform2 > 500";
+      "SELECT * FROM customer_uncorrelated WHERE uniform1/2!=0 and uniform2 > 500";
   public static String q15a = "SELECT * FROM customer_correlated WHERE corr1/2!=0 and corr2 > 500";
   public static String q15b = "SELECT * FROM customer_fd WHERE corr1/2!=0 and corr2 > 1000";
   public static String q7 =
@@ -128,7 +141,7 @@ public class Queries {
       "SELECT c_custkey, c_name " + "FROM customer " + "WHERE c_name LIKE '%5%'";
 
   public static String q9b =
-          "SELECT c_custkey, c_name " + "FROM customer " + "WHERE c_name LIKE '%00'";
+      "SELECT c_custkey, c_name " + "FROM customer " + "WHERE c_name LIKE '%00'";
   public static String q9a =
       "SELECT c_custkey, c_nameShortened "
           + "FROM   customer_nameShortened "
@@ -154,16 +167,39 @@ public class Queries {
   public static String q13a = "SELECT * FROM Customer_charFD where corr1 not like corr2";
   public static String q14 = "SELECT * FROM Customer_hexadecimal where corr1 not like corr2";
   public static String q14a = "SELECT * FROM Customer_hexadecimalFD where corr1 not like corr2";
-
+  public static String q16 = "SELECT * FROM customer WHERE c_mktsegment like '%ure'";
+  public static String q16a =
+      "SELECT * FROM customer_bloatedMktseg WHERE c_mktsegBloated like '%ure'";
+  public static String q16b =
+      "SELECT * FROM customer_bloated2Mktseg WHERE c_mktsegBloated like '%ure'";
+  public static String q17 =
+      "SELECT c_mktsegment FROM customer WHERE c_mktsegment like 'Automobile'";
+  public static String q17a =
+      "SELECT c_mktsegBloated FROM customer_bloated2mktseg WHERE c_mktsegBloated like '394omobile'";
+  public static String q17b =
+      "SELECT c_mktsegment FROM customer_numericmktseg WHERE c_mktsegment = 194734533";
+  public static String q17c =
+      "SELECT c_mktsegment FROM customer_bloated2numericmktseg WHERE c_mktsegment = 194735759";
+  public static String q18 = "SELECT distinct c_nationkey from customer";
+  public static String q18a = "SELECT distinct c_nationkey from customer";
+  public static String q19 = "SELECT distinct c_nationkey from customer where c_nationkey<10";
+  public static String q19a = "SELECT distinct c_nationkey from customerFK where c_nationkey<10";
+  public static String q20 = "SELECT * from customer where c_nationkey<10";
+  public static String q20a = "SELECT * from customerFK where c_nationkey<10";
+  public static String q21 = "SELECT distinct c_custkey FROM customer";
+  public static String q21a = "SELECT distinct c_custkey FROM customerPK";
   public static String[] queryList = {
     q0, q0a, q0b, q0c, q0d, q0e, q1, q1a, q1b, q1c, q1d, q1e, q1f, q2, q2a, q2b, q3, q3a, q3b, q3c,
-    q4, q4a, q4b, q5, q5a, q5b, q6, q6a, q6b, q7, q7a, q7b, q8, q8a, q9, q9a, q9b, q10, q10a, q10b, q10c,
-    q10d, q10e, q11, q11a, q11b, q12, q12a, q13, q13a, q14, q14a, q15, q15a, q15b
+    q4, q4a, q4b, q4c, q4d, q5, q5a, q5b, q6, q6a, q6b, q7, q7a, q7b, q8, q8a, q9, q9a, q9b, q10,
+    q10a, q10b, q10c, q10d, q10e, q11, q11a, q11b, q12, q12a, q13, q13a, q14, q14a, q15, q15a, q15b,
+    q16, q16a, q16b, q17, q17a, q17b, q17c, q18, q18a, q19, q19a, q20, q20a, q21, q21a
   };
   public static String[] queryListNames = {
     "q0", "q0a", "q0b", "q0c", "q0d", "q0e", "q1", "q1a", "q1b", "q1c", "q1d", "q1e", "q1f", "q2",
-    "q2a", "q2b", "q3", "q3a", "q3b", "q3c", "q4", "q4a", "q4b", "q5", "q5a", "q5b", "q6", "q6a",
-    "q6b", "q7", "q7a", "q7b", "q8", "q8a", "q9", "q9a", "q9b", "q10", "q10a", "q10b", "q10c", "q10d",
-    "q10e", "q11", "q11a", "q11b", "q12", "q12a", "q13", "q13a", "q14", "q14a", "q15", "q15a", "q15b"
+    "q2a", "q2b", "q3", "q3a", "q3b", "q3c", "q4", "q4a", "q4b", "q4c", "q4d", "q5", "q5a", "q5b",
+    "q6", "q6a", "q6b", "q7", "q7a", "q7b", "q8", "q8a", "q9", "q9a", "q9b", "q10", "q10a", "q10b",
+    "q10c", "q10d", "q10e", "q11", "q11a", "q11b", "q12", "q12a", "q13", "q13a", "q14", "q14a",
+    "q15", "q15a", "q15b", "q16", "q16a", "q16b", "q17", "q17a", "q17b", "q17c", "q18", "q18a",
+    "q19a", "q19b", "q20a", "q20b", "q21", "q21a"
   };
 }

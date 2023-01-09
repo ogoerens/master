@@ -4,21 +4,44 @@
 
 
 <parameters>
-    <amountSQL>5</amountSQL>
-    <amountFile>28</amountFile>
+    <amountSQL>9</amountSQL>
+    <amountFile>30</amountFile>
     <amountIndex>3</amountIndex>
 
     <!-- DataManage details -->
-
     <manSQL>
         <SQLStmt>
-            SELECT *\, substring(c_phone\,1\,2)+'-000-000-0000' AS corr1 INTO customer_phone1to1 FROM customer
+            SELECT * INTO customerPK FROM customer;
+            ALTER TABLE customerPK ADD CONSTRAINT fk_constraint PRIMARY KEY (c_nationkey)
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+            SELECT * INTO customerFK FROM customer;
+            ALTER TABLE customerFK ADD CONSTRAINT fk_constraint FOREIGN KEY (c_nationkey) REFERENCES Nation(n_nationkey)
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+            SELECT *\, substring(c_phone\,1\,2)+'-000-000-0000' AS corr1 INTO customer_phone1to1 FROM customer;
         </SQLStmt>
     </manSQL>
     <manSQL>
         <SQLStmt>
             SELECT c_custkey\, c_name\,c_address\, c_nationkey\, c_phone\, c_acctbal\, BINARY_CHECKSUM(c_mktsegment) AS
             c_mktsegment\, c_comment INTO customer_numericmktseg FROM customer
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+            SELECT c_custkey\, c_name\,c_address\, c_nationkey\, c_phone\, c_acctbal\, BINARY_CHECKSUM(c_mktsegBloated) AS
+            c_mktsegment\, c_comment INTO customer_bloatednumericmktseg FROM customer_bloatedMktseg;
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+            SELECT c_custkey\, c_name\,c_address\, c_nationkey\, c_phone\, c_acctbal\, BINARY_CHECKSUM(c_mktsegBloated) AS
+            c_mktsegment\, c_comment INTO customer_bloated2numericmktseg FROM customer_bloated2Mktseg
         </SQLStmt>
     </manSQL>
     <manSQL>
@@ -50,7 +73,15 @@
         <fileName>customer.tbl</fileName>
         <fieldTerminator>|</fieldTerminator>
     </manFile>
-
+    <manFile>
+        <operation>newTable</operation>
+        <newTable>Nation</newTable>
+        <columnTypes>  INTEGER not null PRIMARY KEY, CHAR(25) not null, INTEGER not null, VARCHAR(152)
+        </columnTypes>
+        <columnNames>n_nationkey,n_name,n_regionkey,n_comment</columnNames>
+        <fileName>nation.tbl</fileName>
+        <fieldTerminator>|</fieldTerminator>
+    </manFile>
     <manFile>
         <operation>updateTable</operation>
         <table>customer</table>
@@ -169,6 +200,16 @@
         <columnTypes>int, char(10)</columnTypes>
         <columnNames>identifier,c_mktsegBloated</columnNames>
         <fileName>customer_bloatedMktseg.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_bloated2Mktseg</newTable>
+        <column>c_mktsegment</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, char(10)</columnTypes>
+        <columnNames>identifier,c_mktsegBloated</columnNames>
+        <fileName>customer_bloated2Mktseg.txt</fileName>
     </manFile>
     <manFile>
         <operation>updateTable</operation>

@@ -2,7 +2,7 @@
 
 <parameters>
     <!-- Generation details -->
-    <amount>29</amount>
+    <amount>30</amount>
     <defaultSize>150000</defaultSize>
     <gens>
         <gen>
@@ -131,6 +131,12 @@
             <fileName>customer_bloatedMktseg.txt</fileName>
             <withIndex>true</withIndex>
         </gen>
+        <gen>
+        <distribution>bloatMktseg</distribution>
+        <multiplicationFactor>1000</multiplicationFactor>
+        <fileName>customer_bloated2Mktseg.txt</fileName>
+        <withIndex>true</withIndex>
+    </gen>
         <gen>
             <distribution>zipf</distribution>
             <numberOfElements>10000</numberOfElements>
