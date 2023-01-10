@@ -108,10 +108,16 @@ public class Queries {
       "SELECT c_mktsegment, avg(c_ACCTBAL) "
           + "FROM customer_bloatednumericmktseg "
           + "GROUP BY c_mktsegment";
+
   public static String q4d =
+      "SELECT c_mktsegBloated, avg(c_ACCTBAL) "
+          + "FROM customer_bloated2mktseg "
+          + "GROUP BY c_mktsegBloated";
+  public static String q4e =
       "SELECT c_mktsegment, avg(c_ACCTBAL) "
           + "FROM customer_bloated2numericmktseg "
           + "GROUP BY c_mktsegment";
+
   public static String q5 =
       "SELECT  count(*) " + "FROM customer_uncorrelated " + "Group by uniform1/5, uniform2/5";
   public static String q5a =
@@ -127,13 +133,13 @@ public class Queries {
   public static String q15a = "SELECT * FROM customer_correlated WHERE corr1/2!=0 and corr2 > 500";
   public static String q15b = "SELECT * FROM customer_fd WHERE corr1/2!=0 and corr2 > 1000";
   public static String q7 =
-      "Select distinct c_nationkey " + "FROM customer " + "Where c_custkey/2!=0";
+      "Select distinct c_nationkey " + "FROM customer " + "Where c_custkey%2!=0";
   public static String q7a =
-      "Select distinct c_nationkeyBigger " + "FROM customer_largerNation " + "Where c_custkey/2!=0";
+      "Select distinct c_nationkeyBigger " + "FROM customer_largerNation " + "Where c_custkey%2!=0";
   public static String q7b =
       "Select distinct c_nationkeySmaller "
           + "FROM customer_smallerNation "
-          + "Where c_custkey/2!=0";
+          + "Where c_custkey%2!=0";
   public static String q8 = "SELECT distinct (c_custkey) " + "From customer ";
   public static String q8a =
       "SELECT distinct (c_custkeyNonDistinct) " + "From customer_custkeyNonDistinct ";
@@ -181,25 +187,36 @@ public class Queries {
   public static String q17c =
       "SELECT c_mktsegment FROM customer_bloated2numericmktseg WHERE c_mktsegment = 194735759";
   public static String q18 = "SELECT distinct c_nationkey from customer";
-  public static String q18a = "SELECT distinct c_nationkey from customer";
+  public static String q18a = "SELECT distinct c_nationkey from customerFK";
   public static String q19 = "SELECT distinct c_nationkey from customer where c_nationkey<10";
   public static String q19a = "SELECT distinct c_nationkey from customerFK where c_nationkey<10";
   public static String q20 = "SELECT * from customer where c_nationkey<10";
   public static String q20a = "SELECT * from customerFK where c_nationkey<10";
   public static String q21 = "SELECT distinct c_custkey FROM customer";
   public static String q21a = "SELECT distinct c_custkey FROM customerPK";
+  public static String q22 = "SELECT * FROM customer where c_custkey%2!=0";
+  public static String q22a = "SELECT * FROM customerClusteredIndex where c_custkey%2!=0";
+  public static String q22b = "SELECT * FROM customerNonClusteredIndex where c_custkey%2!=0";
+  public static String q23 =
+      "SELECT * FROM customer where c_custkey>10000 and c_custkey<15000 and c_nationkey=13";
+  public static String q23a =
+      "SELECT * FROM customerClusteredIndex where c_custkey>10000 and c_custkey<15000 and c_nationkey=13";
+  public static String q23b =
+      "SELECT * FROM customerNonClusteredIndex where c_custkey>10000 and c_custkey<15000 and c_nationkey=13";
   public static String[] queryList = {
     q0, q0a, q0b, q0c, q0d, q0e, q1, q1a, q1b, q1c, q1d, q1e, q1f, q2, q2a, q2b, q3, q3a, q3b, q3c,
-    q4, q4a, q4b, q4c, q4d, q5, q5a, q5b, q6, q6a, q6b, q7, q7a, q7b, q8, q8a, q9, q9a, q9b, q10,
-    q10a, q10b, q10c, q10d, q10e, q11, q11a, q11b, q12, q12a, q13, q13a, q14, q14a, q15, q15a, q15b,
-    q16, q16a, q16b, q17, q17a, q17b, q17c, q18, q18a, q19, q19a, q20, q20a, q21, q21a
+    q4, q4a, q4b, q4c, q4d, q4e, q5, q5a, q5b, q6, q6a, q6b, q7, q7a, q7b, q8, q8a, q9, q9a, q9b,
+    q10, q10a, q10b, q10c, q10d, q10e, q11, q11a, q11b, q12, q12a, q13, q13a, q14, q14a, q15, q15a,
+    q15b, q16, q16a, q16b, q17, q17a, q17b, q17c, q18, q18a, q19, q19a, q20, q20a, q21, q21a, q22,
+    q22a, q22b, q23, q23a, q23b
   };
   public static String[] queryListNames = {
     "q0", "q0a", "q0b", "q0c", "q0d", "q0e", "q1", "q1a", "q1b", "q1c", "q1d", "q1e", "q1f", "q2",
-    "q2a", "q2b", "q3", "q3a", "q3b", "q3c", "q4", "q4a", "q4b", "q4c", "q4d", "q5", "q5a", "q5b",
-    "q6", "q6a", "q6b", "q7", "q7a", "q7b", "q8", "q8a", "q9", "q9a", "q9b", "q10", "q10a", "q10b",
-    "q10c", "q10d", "q10e", "q11", "q11a", "q11b", "q12", "q12a", "q13", "q13a", "q14", "q14a",
-    "q15", "q15a", "q15b", "q16", "q16a", "q16b", "q17", "q17a", "q17b", "q17c", "q18", "q18a",
-    "q19a", "q19b", "q20a", "q20b", "q21", "q21a"
+    "q2a", "q2b", "q3", "q3a", "q3b", "q3c", "q4", "q4a", "q4b", "q4c", "q4d", "q4e", "q5", "q5a",
+    "q5b", "q6", "q6a", "q6b", "q7", "q7a", "q7b", "q8", "q8a", "q9", "q9a", "q9b", "q10", "q10a",
+    "q10b", "q10c", "q10d", "q10e", "q11", "q11a", "q11b", "q12", "q12a", "q13", "q13a", "q14",
+    "q14a", "q15", "q15a", "q15b", "q16", "q16a", "q16b", "q17", "q17a", "q17b", "q17c", "q18",
+    "q18a", "q19", "q19a", "q20", "q20a", "q21", "q21a", "q22", "q22a", "q22b", "q23", "q23a",
+    "q23b"
   };
 }

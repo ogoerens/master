@@ -4,7 +4,7 @@
 
 
 <parameters>
-    <amountSQL>9</amountSQL>
+    <amountSQL>10</amountSQL>
     <amountFile>30</amountFile>
     <amountIndex>3</amountIndex>
 
@@ -12,7 +12,12 @@
     <manSQL>
         <SQLStmt>
             SELECT * INTO customerPK FROM customer;
-            ALTER TABLE customerPK ADD CONSTRAINT fk_constraint PRIMARY KEY (c_nationkey)
+            ALTER TABLE customerPK ADD CONSTRAINT pk_constraint_cust PRIMARY KEY (c_custkey)
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+            ALTER TABLE nation ADD CONSTRAINT pk_constraint_nation PRIMARY KEY (n_nationkey)
         </SQLStmt>
     </manSQL>
     <manSQL>
@@ -76,7 +81,7 @@
     <manFile>
         <operation>newTable</operation>
         <newTable>Nation</newTable>
-        <columnTypes>  INTEGER not null PRIMARY KEY, CHAR(25) not null, INTEGER not null, VARCHAR(152)
+        <columnTypes>  INTEGER not null, CHAR(25) not null, INTEGER not null, VARCHAR(152)
         </columnTypes>
         <columnNames>n_nationkey,n_name,n_regionkey,n_comment</columnNames>
         <fileName>nation.tbl</fileName>
