@@ -165,6 +165,9 @@ public class Driver {
       */
 
       int j = 0;
+      if (Queries.queryList.length != Queries.queryListNames.length){
+        throw new Exception("Amount of queries and querynames do not overlap");
+      }
       for (String query : Queries.queryList) {
         for (int i = 0; i < numberOfQueryExecutions; i++) {
           qString.add(query);
