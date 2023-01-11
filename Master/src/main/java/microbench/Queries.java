@@ -3,7 +3,6 @@ package microbench;
 public class Queries {
 
   public static String[] tables = {
-    "nation",
     "customer",
     "customerFK",
     "customerPK",
@@ -45,6 +44,7 @@ public class Queries {
     "CustomerClusteredIndex_custkeyNonDistinct",
     "customer_commentFixedSize",
     "customer_phone1to1",
+    "nation",
     "temporary1"
   };
   public static int count = 3;
@@ -105,19 +105,19 @@ public class Queries {
           + "GROUP BY cast(round(c_acctbalBinomial,0)/ 1000 as int)";
   public static String q3d =
       "SELECT count(*) as count, cast(round(c_acctbal,0)/ 1000 as int) as acctbalDimension , sum(c_acctbal) "
-          + "FROM customer WHERE c_acctbal >1000 and c_acctbal<3000 "
+          + "FROM customer WHERE c_acctbal >3000 and c_acctbal<5999 "
           + "GROUP BY cast(round(c_acctbal,0)/ 1000 as int)";
   public static String q3e =
       "SELECT count(*) as count, cast(round(c_acctbalUniform,0)/ 1000 as int) as acctbalDimension , sum(c_acctbalUniform) "
-          + "FROM customer_acctbaluniform WHERE c_acctbalUniform >1000 and c_acctbalUniform<3000 "
+          + "FROM customer_acctbaluniform WHERE c_acctbalUniform >3000 and c_acctbalUniform<5999 "
           + "GROUP BY cast(round(c_acctbalUniform,0)/ 1000 as int)";
   public static String q3f =
       "SELECT count(*) as count, cast(round(c_acctbalZipf,0)/ 1000 as int) as acctbalDimension , sum(c_acctbalZipf) "
-          + "FROM customer_acctbalzipf WHERE c_acctbalZipf >1000 and c_acctbalZipf<3000 "
+          + "FROM customer_acctbalzipf WHERE c_acctbalZipf >3000 and c_acctbalZipf<5999 "
           + "GROUP BY cast(round(c_acctbalZipf,0)/ 1000 as int)";
   public static String q3g =
       "SELECT count(*) as count, cast(round(c_acctbalBinomial,0)/ 1000 as int) as acctbalDimension , sum(c_acctbalBinomial) "
-          + "FROM customer_acctbalBinomial WHERE c_acctbalBinomial >1000 and c_acctbalBinomial<3000 "
+          + "FROM customer_acctbalBinomial WHERE c_acctbalBinomial >3000 and c_acctbalBinomial<5999 "
           + "GROUP BY cast(round(c_acctbalBinomial,0)/ 1000 as int)";
 
   public static String q4 =
@@ -232,8 +232,8 @@ public class Queries {
     q1f, q1g, q1h, q2, q2a, q2b, q3, q3a, q3b, q3c, q3d, q3e, q3f, q3g, q4, q4a, q4b, q4c, q4d, q4e,
     q5, q5a, q5b, q6, q6a, q6b, q7, q7a, q7b, q8, q8a, q9, q9a, q9b, q10, q10a, q10b, q10c, q10d,
     q10e, q11, q11a, q11b, q12, q12a, q13, q13a, q13b, q14, q14a, q15, q15a, q15b, q16, q16a, q16b,
-    q17, q17a, q17b, q17c, q17d, q18, q18a, q19, q19a, q20, q20a, q21, q21a, q21b, q22, q22a, q22b, q23,
-    q23a, q23b
+    q17, q17a, q17b, q17c, q17d, q18, q18a, q19, q19a, q20, q20a, q21, q21a, q21b, q22, q22a, q22b,
+    q23, q23a, q23b
   };
   public static String[] queryListNames = {
     "q0", "q0a", "q0b", "q0c", "q0d", "q0e", "q0f", "q0g", "q0h", "q0i", "q0j", "q0k", "q0l", "q1",
@@ -242,7 +242,7 @@ public class Queries {
     "q6", "q6a", "q6b", "q7", "q7a", "q7b", "q8", "q8a", "q9", "q9a", "q9b", "q10", "q10a", "q10b",
     "q10c", "q10d", "q10e", "q11", "q11a", "q11b", "q12", "q12a", "q13", "q13a", "q13b", "q14",
     "q14a", "q15", "q15a", "q15b", "q16", "q16a", "q16b", "q17", "q17a", "q17b", "q17c", "q17d",
-    "q18", "q18a", "q19", "q19a", "q20", "q20a", "q21", "q21a", "q21b", "q22", "q22a", "q22b", "q23",
-    "q23a", "q23b"
+    "q18", "q18a", "q19", "q19a", "q20", "q20a", "q21", "q21a", "q21b", "q22", "q22a", "q22b",
+    "q23", "q23a", "q23b"
   };
 }
