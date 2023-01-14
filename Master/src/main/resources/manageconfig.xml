@@ -4,7 +4,7 @@
 
 
 <parameters>
-    <amountSQL>10</amountSQL>
+    <amountSQL>13</amountSQL>
     <amountFile>30</amountFile>
     <amountIndex>3</amountIndex>
 
@@ -64,7 +64,25 @@
     <manSQL>
         <SQLStmt>
             Select c_custkey\, c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\, c_mktsegment\, cast(c_comment as
-            char(120)) as c_comment into customer_commentFixedSize from customer
+            char(117)) as c_comment into customer_commentFixedSize from customer
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+            Select c_custkey\, cast(c_name as char(25)) as c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\,
+            c_mktsegment\, c_comment into customer_nameFixedSize from customer
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+            SELECT * INTO customerUnique FROM customer;
+            ALTER TABLE customerPK ADD CONSTRAINT unique_constraint_cust UNIQUE (c_custkey)
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+            Select c_custkey/2 as c_custkey\, c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\,
+            c_mktsegment\, c_comment into customerNonDistinct from customer
         </SQLStmt>
     </manSQL>
 

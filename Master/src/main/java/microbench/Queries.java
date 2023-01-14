@@ -7,6 +7,9 @@ public class Queries {
     "customerFK",
     "customerPK",
     "newCustomer",
+    "customerUnique",
+    "customerNonDistinct",
+    "customer_nameFixedSize",
     "customer_mktsegZipf2",
     "customer_mktsegZipf3",
     "customer_mktsegZipf",
@@ -158,21 +161,23 @@ public class Queries {
       "SELECT * FROM customer_uncorrelated WHERE uniform1/2!=0 and uniform2 > 500";
   public static String q15a = "SELECT * FROM customer_correlated WHERE corr1/2!=0 and corr2 > 500";
   public static String q15b = "SELECT * FROM customer_fd WHERE corr1/2!=0 and corr2 > 1000";
-  public static String q7 = "Select distinct c_nationkey FROM customer Where c_custkey%2!=0";
+  public static String q7 = "SELECT distinct c_nationkey FROM customer Where c_custkey%2!=0";
   public static String q7a =
-      "Select distinct c_nationkeyBigger FROM customer_largerNation Where c_custkey%2!=0";
+      "SELECT distinct c_nationkeyBigger FROM customer_largerNation Where c_custkey%2!=0";
   public static String q7b =
-      "Select distinct c_nationkeySmaller "
-          + "FROM customer_smallerNation "
-          + "Where c_custkey%2!=0";
-  public static String q8 = "SELECT distinct (c_custkey) From customer ";
-  public static String q8a =
-      "SELECT distinct (c_custkeyNonDistinct) From customer_custkeyNonDistinct ";
+      "Select distinct c_nationkeySmaller FROM customer_smallerNation Where c_custkey%2!=0";
+  public static String q8 = "SELECT DISTINCT (c_custkey) From customer ";
+  public static String q8a = "SELECT DISTINCT (c_custkey) FROM customerUnique ";
+  public static String q8b = "SELECT DISTINCT (c_custkey) FROM customerNonDistinct ";
   public static String q9 = "SELECT c_custkey, c_name FROM customer WHERE c_name LIKE '%5%'";
 
-  public static String q9b = "SELECT c_custkey, c_name FROM customer WHERE c_name LIKE '%00'";
   public static String q9a =
       "SELECT c_custkey, c_nameShortened FROM   customer_nameShortened WHERE c_nameShortened LIKE '%5%'";
+  public static String q9b = "SELECT c_custkey, c_name FROM customer WHERE c_name LIKE '%00'";
+  public static String q9c =
+      "SELECT c_custkey, c_nameShortened FROM   customer_nameShortened WHERE c_nameShortened LIKE '%00'";
+  public static String q9d =
+      "SELECT c_custkey, c_name FROM customer_nameFixedSize WHERE c_name LIKE '%5%'";
   public static String q10 = "SELECT * FROM customer WHERE c_comment LIKE '%regular%'";
   public static String q10a = "SELECT * FROM customer WHERE c_comment LIKE '%ace%'";
   public static String q10b =
@@ -187,9 +192,10 @@ public class Queries {
   public static String q11 = "SELECT * FROM customer where c_custkey< 750";
   public static String q11a = "SELECT * FROM customerClusteredIndex where c_custkey< 750";
   public static String q11b = "SELECT * FROM customerNonClusteredIndex where c_custkey< 750";
-  public static String q12 = "SELECT DISTINCT(c_custkey) from customerClusteredIndex";
+  public static String q12 =
+      "SELECT DISTINCT(c_custkey) from customerClusteredIndex where c_custkey >7500 and c_custkey< 15000";
   public static String q12a =
-      "SELECT DISTINCT(c_custkeyNonDistinct)FROM CustomerClusteredIndex_custkeyNonDistinct";
+      "SELECT DISTINCT(c_custkeyNonDistinct)FROM CustomerClusteredIndex_custkeyNonDistinct c_custkeyNonDistinct > 7500 and c_custkeyNonDistinct < 15000";
   public static String q13 = "SELECT * FROM Customer_char where corr1 not like corr2";
   public static String q13a = "SELECT * FROM Customer_charFD where corr1 not like corr2";
   public static String q13b = "SELECT * FROM Customer_char where corr1 != corr2";
@@ -209,6 +215,10 @@ public class Queries {
       "SELECT c_mktsegment FROM customer_bloated2numericmktseg WHERE c_mktsegment = 194735759";
   public static String q17d =
       "SELECT c_mktsegment FROM customer WHERE c_mktsegment like 'Automobile'";
+  public static String q17e =
+      "SELECT c_mktsegment FROM customer WHERE c_mktsegment like 'Automob%'";
+  public static String q17f =
+      "SELECT c_mktsegment FROM customer WHERE c_mktsegment like '%omobile'";
   public static String q18 = "SELECT distinct c_nationkey from customer";
   public static String q18a = "SELECT distinct c_nationkey from customerFK";
   public static String q19 = "SELECT distinct c_nationkey from customer where c_nationkey<10";
@@ -230,19 +240,19 @@ public class Queries {
   public static String[] queryList = {
     q0, q0a, q0b, q0c, q0d, q0e, q0f, q0g, q0h, q0i, q0j, q0k, q0l, q1, q1a, q1b, q1c, q1d, q1e,
     q1f, q1g, q1h, q2, q2a, q2b, q3, q3a, q3b, q3c, q3d, q3e, q3f, q3g, q4, q4a, q4b, q4c, q4d, q4e,
-    q5, q5a, q5b, q6, q6a, q6b, q7, q7a, q7b, q8, q8a, q9, q9a, q9b, q10, q10a, q10b, q10c, q10d,
-    q10e, q11, q11a, q11b, q12, q12a, q13, q13a, q13b, q14, q14a, q15, q15a, q15b, q16, q16a, q16b,
-    q17, q17a, q17b, q17c, q17d, q18, q18a, q19, q19a, q20, q20a, q21, q21a, q21b, q22, q22a, q22b,
-    q23, q23a, q23b
+    q5, q5a, q5b, q6, q6a, q6b, q7, q7a, q7b, q8, q8a, q8b, q9, q9a, q9b, q9c, q9d, q10, q10a, q10b,
+    q10c, q10d, q10e, q11, q11a, q11b, q12, q12a, q13, q13a, q13b, q14, q14a, q15, q15a, q15b, q16,
+    q16a, q16b, q17, q17a, q17b, q17c, q17d, q17e, q17f, q18, q18a, q19, q19a, q20, q20a, q21, q21a,
+    q21b, q22, q22a, q22b, q23, q23a, q23b
   };
   public static String[] queryListNames = {
     "q0", "q0a", "q0b", "q0c", "q0d", "q0e", "q0f", "q0g", "q0h", "q0i", "q0j", "q0k", "q0l", "q1",
     "q1a", "q1b", "q1c", "q1d", "q1e", "q1f", "q1g", "q1h", "q2", "q2a", "q2b", "q3", "q3a", "q3b",
     "q3c", "q3d", "q3e", "q3f", "q3g", "q4", "q4a", "q4b", "q4c", "q4d", "q4e", "q5", "q5a", "q5b",
-    "q6", "q6a", "q6b", "q7", "q7a", "q7b", "q8", "q8a", "q9", "q9a", "q9b", "q10", "q10a", "q10b",
-    "q10c", "q10d", "q10e", "q11", "q11a", "q11b", "q12", "q12a", "q13", "q13a", "q13b", "q14",
-    "q14a", "q15", "q15a", "q15b", "q16", "q16a", "q16b", "q17", "q17a", "q17b", "q17c", "q17d",
-    "q18", "q18a", "q19", "q19a", "q20", "q20a", "q21", "q21a", "q21b", "q22", "q22a", "q22b",
-    "q23", "q23a", "q23b"
+    "q6", "q6a", "q6b", "q7", "q7a", "q7b", "q8", "q8a", "q8b", "q9", "q9a", "q9b", "q9c", "q9d",
+    "q10", "q10a", "q10b", "q10c", "q10d", "q10e", "q11", "q11a", "q11b", "q12", "q12a", "q13",
+    "q13a", "q13b", "q14", "q14a", "q15", "q15a", "q15b", "q16", "q16a", "q16b", "q17", "q17a",
+    "q17b", "q17c", "q17d", "q17e", "q17f", "q18", "q18a", "q19", "q19a", "q20", "q20a", "q21",
+    "q21a", "q21b", "q22", "q22a", "q22b", "q23", "q23a", "q23b"
   };
 }

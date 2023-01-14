@@ -165,7 +165,7 @@ public class Driver {
       */
 
       int j = 0;
-      if (Queries.queryList.length != Queries.queryListNames.length){
+      if (Queries.queryList.length != Queries.queryListNames.length) {
         throw new Exception("Amount of queries and querynames do not overlap");
       }
       for (String query : Queries.queryList) {
@@ -223,7 +223,7 @@ public class Driver {
       String resultOverviewFile = "overview.csv";
       try (PrintStream ps = new PrintStream(resultOverviewFile)) {
         ps.println(
-            "Queries,returned rows,time(microseconds),75thPercentile(us), 90thPercentile(us)");
+            "Queries,returned rows,average time(microseconds), minimum time, 75thPercentile(us), 90thPercentile(us)");
         for (Map.Entry<String, Statistics> entry : statsPerQid.entrySet()) {
           System.out.println(entry.getKey() + " : " + entry.getValue().getAverage());
           ps.println(
@@ -232,6 +232,8 @@ public class Driver {
                   + qidToCardinality.get(entry.getKey())
                   + ","
                   + entry.getValue().getAverage()
+                  + ","
+                  + entry.getValue().getMinimum()
                   + ","
                   + entry.getValue().get75thPercentile()
                   + ","
