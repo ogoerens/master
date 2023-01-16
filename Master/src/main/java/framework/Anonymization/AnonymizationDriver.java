@@ -53,7 +53,7 @@ public class AnonymizationDriver {
     DataLoader dataLoader = new DataLoader();
     Data data =
         dataLoader.loadJDBC(
-            "jdbc:sqlserver://localhost:1433;encrypt=false;database="+database+";",
+            "jdbc:sqlserver://localhost:1433;encrypt=false;database=" + database + ";",
             "sa",
             ".+.QET21adg.+.",
             tableName);

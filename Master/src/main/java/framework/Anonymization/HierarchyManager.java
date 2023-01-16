@@ -130,9 +130,12 @@ public class HierarchyManager {
 
     HierarchyBuilderIntervalBased<?> intervalBasedBuilder;
     if (subconfig.getString("datatype").equals("integer")) {
-      intervalBasedBuilder = buildIntervalHierarchyBuilderInteger(lowerbound, upperbound, intervalLength);
+      intervalBasedBuilder =
+          buildIntervalHierarchyBuilderInteger(lowerbound, upperbound, intervalLength);
     } else {
-      intervalBasedBuilder = buildIntervalHierarchyBuilderDouble((double) lowerbound, (double) upperbound, intervalLength);
+      intervalBasedBuilder =
+          buildIntervalHierarchyBuilderDouble(
+              (double) lowerbound, (double) upperbound, intervalLength);
     }
     double numberOfLevels =
         Math.log((upperbound - lowerbound) / intervalLength) / Math.log(groupingAmount);

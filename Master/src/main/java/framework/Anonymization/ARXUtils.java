@@ -29,14 +29,13 @@ public class ARXUtils {
     }
   }
 
-  public static HashMap extractGeneralizationLevels(ARXResult result, ArrayList<String> columns){
+  public static HashMap extractGeneralizationLevels(ARXResult result, ArrayList<String> columns) {
     final ARXLattice.ARXNode optimum = result.getGlobalOptimum();
-    HashMap<String,Integer> generalizations = new HashMap<>();
-    for (String col: columns){
+    HashMap<String, Integer> generalizations = new HashMap<>();
+    for (String col : columns) {
       int generaliztionFactor = optimum.getGeneralization(col);
       generalizations.put(col, generaliztionFactor);
     }
     return generalizations;
   }
-
 }

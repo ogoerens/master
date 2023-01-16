@@ -13,52 +13,52 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class AnonymizationConfiguration {
-    public static final Charset charset = StandardCharsets.UTF_8;
-    public static final char hierarchyValueDelimiter = ';';
-    private String anonymizationTechnique ;
-    private ArrayList<String> insensitiveArgs;
-    private int k;
-    private int l;
-    private int t;
-    private ARXConfiguration config;
+  public static final Charset charset = StandardCharsets.UTF_8;
+  public static final char hierarchyValueDelimiter = ';';
+  private String anonymizationTechnique;
+  private ArrayList<String> insensitiveArgs;
+  private int k;
+  private int l;
+  private int t;
+  private ARXConfiguration config;
 
-    public AnonymizationConfiguration(XMLConfiguration config){
-        anonymizationTechnique = config.getString("technique");
-        if (anonymizationTechnique.equals("k")){
-            k = config.getInt("k-factor");
-        }
-        if (anonymizationTechnique.equals("l")){
-            l = config.getInt("l");
-        }
-        if (anonymizationTechnique.equals("t")){
-            t = config.getInt("t");
-        }
-        insensitiveArgs = new ArrayList<>(Arrays.asList(config.getStringArray("InsensitiveArgs")));
+  public AnonymizationConfiguration(XMLConfiguration config) {
+    anonymizationTechnique = config.getString("technique");
+    if (anonymizationTechnique.equals("k")) {
+      k = config.getInt("k-factor");
     }
+    if (anonymizationTechnique.equals("l")) {
+      l = config.getInt("l");
+    }
+    if (anonymizationTechnique.equals("t")) {
+      t = config.getInt("t");
+    }
+    insensitiveArgs = new ArrayList<>(Arrays.asList(config.getStringArray("InsensitiveArgs")));
+  }
 
-    public int getK() {
-        return k;
-    }
+  public int getK() {
+    return k;
+  }
 
-    public String getAnonymizationTechnique() {
-        return anonymizationTechnique;
-    }
+  public String getAnonymizationTechnique() {
+    return anonymizationTechnique;
+  }
 
-    public ARXConfiguration getARXConfig() {
-        return config;
-    }
+  public ARXConfiguration getARXConfig() {
+    return config;
+  }
 
-    public void create(){
-        this.config = ARXConfiguration.create();
-        switch (anonymizationTechnique){
-            case "k":
-                config.addPrivacyModel(new KAnonymity(this.k));
-        }
+  public void create() {
+    this.config = ARXConfiguration.create();
+    switch (anonymizationTechnique) {
+      case "k":
+        config.addPrivacyModel(new KAnonymity(this.k));
     }
+  }
 
-    public void applyConfigToData(Data data){
-        for (String s: insensitiveArgs){
-            data.getDefinition().setAttributeType(s, AttributeType.INSENSITIVE_ATTRIBUTE);
-        }
+  public void applyConfigToData(Data data) {
+    for (String s : insensitiveArgs) {
+      data.getDefinition().setAttributeType(s, AttributeType.INSENSITIVE_ATTRIBUTE);
     }
+  }
 }
