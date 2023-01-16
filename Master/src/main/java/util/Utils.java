@@ -139,6 +139,24 @@ public class Utils {
         }
     }
 
+    public static void storeNestedArray(String[][] array, String fileName, String separatorInnerArrays , String separatorElements) {
+        StringBuffer stringBuffer = new StringBuffer();
+        for (int j = 0; j < array.length; j++) {
+            String[] next = array[j];
+            for (int i = 0; i < next.length; i++) {
+                String string = next[i];
+                stringBuffer.append(string);
+                if (i < next.length - 1) {
+                    stringBuffer.append(separatorElements);
+                }
+            }
+            if (j < array.length - 1) {
+                stringBuffer.append(separatorInnerArrays);
+            }
+        }
+        Utils.StrToFile(stringBuffer.toString(), fileName);
+    }
+
     public static String surroundWithParentheses(String str) {
         return "(" + str + ")";
     }

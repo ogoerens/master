@@ -24,14 +24,14 @@ public class AnonymizationConfiguration {
 
     public AnonymizationConfiguration(XMLConfiguration config){
         anonymizationTechnique = config.getString("technique");
-        if (config.containsKey("k")){
-            k = config.getInt("k");
+        if (anonymizationTechnique.equals("k")){
+            k = config.getInt("k-factor");
         }
-        if (config.containsKey("l")){
-            k = config.getInt("l");
+        if (anonymizationTechnique.equals("l")){
+            l = config.getInt("l");
         }
-        if (config.containsKey("t")){
-            k = config.getInt("t");
+        if (anonymizationTechnique.equals("t")){
+            t = config.getInt("t");
         }
         insensitiveArgs = new ArrayList<>(Arrays.asList(config.getStringArray("InsensitiveArgs")));
     }
@@ -52,11 +52,11 @@ public class AnonymizationConfiguration {
         this.config = ARXConfiguration.create();
         switch (anonymizationTechnique){
             case "k":
-                config.addPrivacyModel(new KAnonymity(2));
+                config.addPrivacyModel(new KAnonymity(this.k));
         }
     }
 
-    public void applyToData(Data data){
+    public void applyConfigToData(Data data){
         for (String s: insensitiveArgs){
             data.getDefinition().setAttributeType(s, AttributeType.INSENSITIVE_ATTRIBUTE);
         }

@@ -4,7 +4,7 @@
 
     <!-- Connection details -->
     <technique>k</technique>
-    <factor>2</factor>
+    <k-factor>2</k-factor>
     <InsensitiveArgs>illness</InsensitiveArgs>
 
 </parameters>

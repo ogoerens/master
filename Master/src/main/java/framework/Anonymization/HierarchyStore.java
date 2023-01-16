@@ -30,6 +30,20 @@ public class HierarchyStore {
     }
   }
 
+  /**
+   * Returns true if the HierarchyStore contains either a hierarchy or hierarchyBuilder for the given name.
+   * @param name
+   * @return
+   */
+  public Boolean contains(String name){
+    return map.containsKey(name);
+  }
+
+  /**
+   * Returns an index indicating whether there is a Hierarchy or a HierarchyBuilder stored for the given key.
+   * @param key
+   * @return 0 stands for Hierarchy. 1 stands for HierarchyBuilder.
+   */
   public Integer getIndexForColumnName (String key){
     return map.get(key);
   }

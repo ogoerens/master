@@ -1,7 +1,13 @@
 package framework.Anonymization;
 
+import org.deidentifier.arx.ARXLattice;
+import org.deidentifier.arx.ARXResult;
 import org.deidentifier.arx.Data;
 import org.deidentifier.arx.DataType;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 public class ARXUtils {
   public static DataType convertSQLServerDataType(String SqlServerDatatype)
@@ -22,4 +28,15 @@ public class ARXUtils {
                 SqlServerDatatype));
     }
   }
+
+  public static HashMap extractGeneralizationLevels(ARXResult result, ArrayList<String> columns){
+    final ARXLattice.ARXNode optimum = result.getGlobalOptimum();
+    HashMap<String,Integer> generalizations = new HashMap<>();
+    for (String col: columns){
+      int generaliztionFactor = optimum.getGeneralization(col);
+      generalizations.put(col, generaliztionFactor);
+    }
+    return generalizations;
+  }
+
 }

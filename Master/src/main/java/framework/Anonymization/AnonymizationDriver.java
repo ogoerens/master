@@ -1,60 +1,102 @@
 package framework.Anonymization;
 
 import experimental.Anonym;
+import framework.BenchConfiguration;
 import framework.Driver;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.deidentifier.arx.*;
+import org.deidentifier.arx.aggregates.HierarchyBuilder;
+import util.StringUtil;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.*;
 
 public class AnonymizationDriver {
 
-    public void anonymize() throws Exception{
-        String anonConfigFile="/home/olivier/Documents/MasterThesis/Master/src/main/resources/anonconfig.xml";
-        String hierarchiesFile ="/home/olivier/Documents/MasterThesis/Master/src/main/resources/hierarchies.xml";
+  public void anonymize() throws SQLException, Exception {
+    String anonConfigFile =
+        "/home/olivier/Documents/MasterThesis/Master/src/main/resources/anonconfigCustomer.xml";
+    String hierarchiesFile =
+        "/home/olivier/Documents/MasterThesis/Master/src/main/resources/hierarchies.xml";
+    String tableName = "customer";
 
-        XMLConfiguration anonConfig = Driver.buildXMLConfiguration(anonConfigFile);
-        AnonymizationConfiguration config = new AnonymizationConfiguration(anonConfig);
-        config.create();
+    String dbConfigFile = "src/main/resources/benchconfigAnon.xml";
 
-        HierarchyManager hierarchyManager = new HierarchyManager();
-        XMLConfiguration hierarchyConf = Driver.buildXMLConfiguration(hierarchiesFile);
-        HierarchyStore hierarchies = hierarchyManager.buildHierarchies(hierarchyConf);
+    XMLConfiguration dbConfiguration = Driver.buildXMLConfiguration(dbConfigFile);
+    BenchConfiguration dbConfig = new BenchConfiguration(dbConfiguration);
+    String database = dbConfig.getDatabase();
+    dbConfig.init();
+    Connection dbConnection = dbConfig.makeConnection();
 
-        try{
-            hierarchies = hierarchyManager.buildHierarchies(hierarchyConf);
-        }catch(Exception e){
-            e.printStackTrace();
-        }
+    ArrayList<String> colNames = util.SQLServerUtils.getColumnNames(dbConnection, tableName);
 
-        DataLoader dataLoader = new DataLoader();
-        Data data = dataLoader.loadJDBC("jdbc:sqlserver://localhost:1433;encrypt=false;database=test;","sa",".+.QET21adg.+.","testdata");
+    // Close the DB connection. All necessary information from the DB has been gathered.
+    dbConnection.close();
 
+    XMLConfiguration xmlAnonConfig = Driver.buildXMLConfiguration(anonConfigFile);
+    AnonymizationConfiguration anonConfig = new AnonymizationConfiguration(xmlAnonConfig);
+    anonConfig.create();
 
-        for (String s : hierarchies.getColumnNames()) {
-            if (hierarchies.getIndexForColumnName(s)==0){
-                data.getDefinition().setAttributeType(s, hierarchies.hierarchies.get(s));
-            }else{
-                data.getDefinition().setAttributeType(s, hierarchies.hierarchyBuilders.get(s));
-            }
-        }
-         config.applyToData(data);
+    HierarchyManager hierarchyManager = new HierarchyManager();
+    XMLConfiguration hierarchyConf = Driver.buildXMLConfiguration(hierarchiesFile);
+    HierarchyStore hierarchies = hierarchyManager.buildHierarchies(hierarchyConf);
 
-        ARXAnonymizer anonymizer = new ARXAnonymizer();
-        ARXResult res = anonymizer.anonymize(data, config.getARXConfig());
-        Anonym.printResult(res, data);
-        System.out.println(" - Transformed data:");
-        Iterator<String[]> transformed = res.getOutput(false).iterator();
-        while (transformed.hasNext()) {
-            System.out.print("   ");
-            System.out.println(Arrays.toString(transformed.next()));
-        }
-
-
-
+    try {
+      hierarchies = hierarchyManager.buildHierarchies(hierarchyConf);
+    } catch (Exception e) {
+      e.printStackTrace();
     }
+
+    DataLoader dataLoader = new DataLoader();
+    Data data =
+        dataLoader.loadJDBC(
+            "jdbc:sqlserver://localhost:1433;encrypt=false;database="+database+";",
+            "sa",
+            ".+.QET21adg.+.",
+            tableName);
+
+    // Add a hierarchy or a hierarchyBilder to each column (which needs a hierarchy, for example is
+    // not an insensitve columne) in the table.
+    for (String s : colNames) {
+      if (!hierarchies.contains(s)) {
+        continue;
+      }
+      if (hierarchies.getIndexForColumnName(s) == 0) {
+        data.getDefinition().setAttributeType(s, hierarchies.hierarchies.get(s));
+      } else {
+        data.getDefinition().setAttributeType(s, hierarchies.hierarchyBuilders.get(s));
+      }
+    }
+    anonConfig.applyConfigToData(data);
+
+    ARXAnonymizer anonymizer = new ARXAnonymizer();
+    ARXResult arxResult = anonymizer.anonymize(data, anonConfig.getARXConfig());
+
+    // Store the hierarchies for all hierarchies that are built using a HierarchyBuilder, i.e. by a
+    // Logic rather than an existing hierarchy file.
+    for (String col : colNames) {
+      if (!hierarchies.contains(col)) {
+        continue;
+      }
+      if (hierarchies.getIndexForColumnName(col) == 1) {
+        String fileName =
+            StringUtil.createFileName(HierarchyManager.getHierarchyDirectory(), col, "csv");
+        HierarchyManager.storeHierarchy(arxResult, col, fileName);
+      }
+    }
+
+    // Anonym.printResult(arxResult, data);
+    System.out.println(" - Transformed data:");
+    Iterator<String[]> transformed = arxResult.getOutput(false).iterator();
+    while (transformed.hasNext()) {
+      System.out.print("   ");
+      System.out.println(Arrays.toString(transformed.next()));
+    }
+
+    AnonymizationStatistics anonStats = new AnonymizationStatistics(arxResult, colNames);
+    anonStats.printStats();
+  }
 }
