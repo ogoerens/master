@@ -10,7 +10,9 @@ import java.util.*;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import experimental.Anonym;
 import experimental.stuff;
+import framework.Anonymization.AnonymizationDriver;
 import microbench.Queries;
 import microbench.Query;
 import org.apache.commons.cli.CommandLine;
@@ -28,6 +30,10 @@ import util.GenericQuery;
 
 public class Driver {
   public static void main(String[] args) throws Exception {
+    AnonymizationDriver ad = new AnonymizationDriver();
+    ad.anonymize();
+    //Anonym a = new Anonym();
+    //a.work();
 
     CommandLineParser parser = new DefaultParser();
     Options options = buildOptions();
