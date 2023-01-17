@@ -3,8 +3,15 @@
 <parameters>
 
     <!-- Connection details -->
-    <technique>k</technique>
-    <k-factor>2</k-factor>
-    <InsensitiveArgs>illness</InsensitiveArgs>
+    <technique>KAnonymity</technique>
+    <KAnonymity>
+        <factors>2</factors>
+    </KAnonymity>
+    <anonymizationAlgorithm>OPTIMAL</anonymizationAlgorithm>
+    <InsensitiveAttributes>illness</InsensitiveAttributes>
+    <SensitiveAttributes></SensitiveAttributes>
+    <IdentifyingAttributes></IdentifyingAttributes>
+    <QuasiIdentifyingAttributes></QuasiIdentifyingAttributes>
+    <SuppressionLimit></SuppressionLimit>
 
 </parameters>

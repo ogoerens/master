@@ -38,7 +38,7 @@ public class AnonymizationDriver {
 
     XMLConfiguration xmlAnonConfig = Driver.buildXMLConfiguration(anonConfigFile);
     AnonymizationConfiguration anonConfig = new AnonymizationConfiguration(xmlAnonConfig);
-    anonConfig.create();
+    anonConfig.createARXConfig();
 
     HierarchyManager hierarchyManager = new HierarchyManager();
     XMLConfiguration hierarchyConf = Driver.buildXMLConfiguration(hierarchiesFile);
@@ -90,6 +90,7 @@ public class AnonymizationDriver {
 
     // Anonym.printResult(arxResult, data);
     System.out.println(" - Transformed data:");
+    //TODO if not result possible with ldiversity. Check if can get ouput or output null.
     Iterator<String[]> transformed = arxResult.getOutput(false).iterator();
     while (transformed.hasNext()) {
       System.out.print("   ");

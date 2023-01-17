@@ -1,5 +1,8 @@
 package util;
 
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.XMLConfiguration;
+
 import java.util.*;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -395,6 +398,22 @@ public class Utils {
             return Arrays.copyOfRange(inputArray, 0, outputsize);
         } else {
             return inputArray;
+        }
+    }
+
+    public static String checkAndGetString(String key, XMLConfiguration config){
+        if (config.containsKey(key)){
+            return config.getString(key);
+        }
+        else return "";
+    }
+    public static String[] checkAndGetArray(String key, Configuration config){
+        if (config.containsKey(key)){
+            return config.getStringArray(key);
+        }
+        else {
+            String[] res ={};
+            return res;
         }
     }
 

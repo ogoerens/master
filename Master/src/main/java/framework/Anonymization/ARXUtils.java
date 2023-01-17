@@ -10,6 +10,12 @@ import java.util.HashMap;
 import java.util.List;
 
 public class ARXUtils {
+  /**
+   * Converts the MSSQL Server datatypes to ARX datatypes.
+   * @param SqlServerDatatype The SQL Server datatype that is converted.
+   * @return The ARX datatype corresponding to the specified SQL Server datatype.
+   * @throws RuntimeException
+   */
   public static DataType convertSQLServerDataType(String SqlServerDatatype)
       throws RuntimeException {
     switch (SqlServerDatatype) {
