@@ -44,43 +44,26 @@ public class AnonymizationDriver {
     XMLConfiguration hierarchyConf = Driver.buildXMLConfiguration(hierarchiesFile);
     HierarchyStore hierarchies = hierarchyManager.buildHierarchies(hierarchyConf);
 
-    try {
-      hierarchies = hierarchyManager.buildHierarchies(hierarchyConf);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
 
-    DataLoader dataLoader = new DataLoader();
-    Data data =
-        dataLoader.loadJDBC(
-            "jdbc:sqlserver://localhost:1433;encrypt=false;database=" + database + ";",
-            "sa",
-            ".+.QET21adg.+.",
-            tableName);
 
-    // Add a hierarchy or a hierarchyBilder to each column (which needs a hierarchy, for example is
-    // not an insensitve columne) in the table.
-    for (String s : colNames) {
-      if (!hierarchies.contains(s)) {
-        continue;
-      }
-      if (hierarchies.getIndexForColumnName(s) == 0) {
-        data.getDefinition().setAttributeType(s, hierarchies.hierarchies.get(s));
-      } else {
-        data.getDefinition().setAttributeType(s, hierarchies.hierarchyBuilders.get(s));
-      }
-    }
-    anonConfig.applyConfigToData(data);
+    DataHandler dataHandler = new DataHandler();
 
+    dataHandler.loadJDBC(
+        "jdbc:sqlserver://localhost:1433;encrypt=false;database=" + database + ";",
+        "sa",
+        ".+.QET21adg.+.",
+        tableName);
+    dataHandler.applyConfigToData(anonConfig);
+    dataHandler.addHierarchiesToData( hierarchies);
+
+    // Run the anonymization.
     ARXAnonymizer anonymizer = new ARXAnonymizer();
-    ARXResult arxResult = anonymizer.anonymize(data, anonConfig.getARXConfig());
+    ARXResult arxResult = anonymizer.anonymize(dataHandler.getData(), anonConfig.getARXConfig());
 
     // Store the hierarchies for all hierarchies that are built using a HierarchyBuilder, i.e. by a
     // Logic rather than an existing hierarchy file.
-    for (String col : colNames) {
-      if (!hierarchies.contains(col)) {
-        continue;
-      }
+
+    for (String col : dataHandler.getData().getDefinition().getQuasiIdentifyingAttributes()) {
       if (hierarchies.getIndexForColumnName(col) == 1) {
         String fileName =
             StringUtil.createFileName(HierarchyManager.getHierarchyDirectory(), col, "csv");
@@ -90,7 +73,7 @@ public class AnonymizationDriver {
 
     // Anonym.printResult(arxResult, data);
     System.out.println(" - Transformed data:");
-    //TODO if not result possible with ldiversity. Check if can get ouput or output null.
+    // TODO if not result possible with ldiversity. Check if can get ouput or output null.
     Iterator<String[]> transformed = arxResult.getOutput(false).iterator();
     while (transformed.hasNext()) {
       System.out.print("   ");

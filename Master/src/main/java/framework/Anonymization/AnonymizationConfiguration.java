@@ -55,6 +55,22 @@ public class AnonymizationConfiguration {
     return config;
   }
 
+  public ArrayList<String> getSensitiveAttributes() {
+    return sensitiveAttributes;
+  }
+
+  public ArrayList<String> getInsensitiveAttributes() {
+    return insensitiveAttributes;
+  }
+
+  public ArrayList<String> getQuasiIdentifyingAttributes() {
+    return quasiIdentifyingAttributes;
+  }
+
+  public ArrayList<String> getIdentifyingAttributes() {
+    return identifyingAttributes;
+  }
+
   /**
    * Creates the ARXConfiguration. The ARXConfiguration is the internal configuration of the ARX
    * library that the ARXAnonymizer takes as argument when anonymizing the data. Additionally, it
@@ -79,27 +95,6 @@ public class AnonymizationConfiguration {
           config.addPrivacyModel(
               new OrderedDistanceTCloseness(args.argument, (Double) args.factor));
       }
-    }
-  }
-
-  /**
-   * Sets the attribute types for the attributes in the ARXData. Attributes can be either
-   * insensitive, sensitive, identifying or quasi-identifying.
-   *
-   * @param data
-   */
-  public void applyConfigToData(Data data) {
-    for (String s : insensitiveAttributes) {
-      data.getDefinition().setAttributeType(s, AttributeType.INSENSITIVE_ATTRIBUTE);
-    }
-    for (String s : sensitiveAttributes) {
-      data.getDefinition().setAttributeType(s, AttributeType.SENSITIVE_ATTRIBUTE);
-    }
-    for (String s : identifyingAttributes) {
-      data.getDefinition().setAttributeType(s, AttributeType.IDENTIFYING_ATTRIBUTE);
-    }
-    for (String s : quasiIdentifyingAttributes) {
-      data.getDefinition().setAttributeType(s, AttributeType.QUASI_IDENTIFYING_ATTRIBUTE);
     }
   }
 
