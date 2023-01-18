@@ -1,10 +1,9 @@
 package framework.Anonymization;
 
+import framework.Driver;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.deidentifier.arx.ARXConfiguration;
-import org.deidentifier.arx.AttributeType;
-import org.deidentifier.arx.Data;
 import org.deidentifier.arx.criteria.DistinctLDiversity;
 import org.deidentifier.arx.criteria.EntropyLDiversity;
 import org.deidentifier.arx.criteria.KAnonymity;
@@ -19,7 +18,7 @@ import java.util.Arrays;
 public class AnonymizationConfiguration {
   public static final Charset charset = StandardCharsets.UTF_8;
   public static final char hierarchyValueDelimiter = ';';
-  private ArrayList<PrivacyModelArguments> anonymizationCriterias;
+  private ArrayList<PrivacyModelArguments> privacyModels;
   private ArrayList<String> insensitiveAttributes;
   private ArrayList<String> sensitiveAttributes;
   private ArrayList<String> identifyingAttributes;
@@ -32,8 +31,12 @@ public class AnonymizationConfiguration {
 
   private ARXConfiguration config;
 
+  public AnonymizationConfiguration(String configurationFile)
+  {
+    this(Driver.buildXMLConfiguration(configurationFile));
+  }
   public AnonymizationConfiguration(XMLConfiguration config) {
-    gatherAnonymizationCriterias(config);
+    gatherprivacyModels(config);
 
     insensitiveAttributes =
         new ArrayList<>(Arrays.asList(Utils.checkAndGetArray("InsensitiveAttributes", config)));
@@ -80,7 +83,7 @@ public class AnonymizationConfiguration {
     this.config = ARXConfiguration.create();
     setARXAnonymizationAlgorithm(specifiedAnonymizationAlgorithm, this.config);
     this.config.setSuppressionLimit(this.suppressionLimit);
-    for (PrivacyModelArguments args : this.anonymizationCriterias) {
+    for (PrivacyModelArguments args : this.privacyModels) {
       switch (args.privacyModel) {
         case "KAnonymity":
           config.addPrivacyModel(new KAnonymity((Integer) args.factor));
@@ -132,15 +135,15 @@ public class AnonymizationConfiguration {
 
   /**
    * Gathers the privacy models from the configuration file and adds them to the
-   * anonymizationCriterias variable.
+   * PrivacyModel list.
    *
    * @param config XMLConfiguration that contains the anonymization configuration.
    */
-  private void gatherAnonymizationCriterias(XMLConfiguration config) {
+  private void gatherprivacyModels(XMLConfiguration config) {
     String[] anonymizationCriteriasArray = config.getStringArray("anonymizationCriterias");
-    this.anonymizationCriterias = new ArrayList<>();
+    this.privacyModels = new ArrayList<>();
     for (String criteria : anonymizationCriteriasArray) {
-      retrieveAnonymizationCriterias(criteria, config);
+      retrievePrivacyModel(criteria, config);
     }
   }
 
@@ -150,44 +153,44 @@ public class AnonymizationConfiguration {
    * comes with a factor and possibly with an attribute on which it is applied. These factors and
    * attributes are also retrieved.
    *
-   * @param criteria The privacy model that should be retrieved.
+   * @param privacyModel The privacy model that should be retrieved.
    * @param config The XMLConfiguration representing the configuration file.
    */
-  private void retrieveAnonymizationCriterias(String criteria, XMLConfiguration config) {
+  private void retrievePrivacyModel(String privacyModel, XMLConfiguration config) {
     // Retrieve for k-anonymity.
-    HierarchicalConfiguration subconfig = config.configurationAt(criteria);
-    switch (criteria) {
+    HierarchicalConfiguration subconfig = config.configurationAt(privacyModel);
+    switch (privacyModel) {
       case "KAnonymity":
         int factor = subconfig.getInt("factors");
-        this.anonymizationCriterias.add(new PrivacyModelArguments<Integer>(criteria, factor, ""));
+        this.privacyModels.add(new PrivacyModelArguments<Integer>(privacyModel, factor, ""));
         break;
       case "DistinctLDiversity":
         Object factorsObject = subconfig.getArray(Integer.class, "factors");
         if (factorsObject == null) {
-          throwExceptionMissingFactors(criteria);
+          throwExceptionMissingFactors(privacyModel);
         }
         Integer[] factors = (Integer[]) factorsObject;
         String[] attributes = Utils.checkAndGetArray("arguments", subconfig);
-        addAnonymizationCriterias(criteria, factors, attributes);
+        addPrivacyModel(privacyModel, factors, attributes);
         break;
       case "EntropyLDiversity":
       case "OrderedDistanceTCloseness":
         factorsObject = subconfig.getArray(Double.class, "factors");
         if (factorsObject == null) {
-          throwExceptionMissingFactors(criteria);
+          throwExceptionMissingFactors(privacyModel);
         }
         Double[] factorsD = (Double[]) factorsObject;
         attributes = Utils.checkAndGetArray("arguments", subconfig);
-        addAnonymizationCriterias(criteria, factorsD, attributes);
+        addPrivacyModel(privacyModel, factorsD, attributes);
         break;
       default:
         throw new RuntimeException(
-            "The specified privacy model (" + criteria + ") has not been implemented yet");
+            "The specified privacy model (" + privacyModel + ") has not been implemented yet");
     }
   }
 
   /**
-   * Adds a privacy model to the anonymizationCriterias list. A single call can add multiple
+   * Adds a privacy model to the Privacy Model list. A single call can add multiple
    * instance of a single privacy model.
    *
    * @param criteria The privacy Model that gets added.
@@ -195,10 +198,10 @@ public class AnonymizationConfiguration {
    * @param attributes Contains the attributes on which each instance of the privacy model is
    *     applied.
    */
-  private void addAnonymizationCriterias(String criteria, Integer[] factors, String[] attributes) {
+  private void addPrivacyModel(String criteria, Integer[] factors, String[] attributes) {
     if (factors.length == attributes.length) {
       for (int i = 0; i < factors.length; i++) {
-        this.anonymizationCriterias.add(
+        this.privacyModels.add(
             new PrivacyModelArguments<Integer>(criteria, factors[i], attributes[i]));
       }
     } else {
@@ -207,7 +210,7 @@ public class AnonymizationConfiguration {
   }
 
   /**
-   * Adds a privacy model to the anonymizationCriterias list. A single call can add mulitple
+   * Adds a privacy model to the Privacy Model list. A single call can add mulitple
    * instance of a single privacy model.
    *
    * @param criteria The privacy Model that gets added.
@@ -215,10 +218,10 @@ public class AnonymizationConfiguration {
    * @param attributes Contains the attributes on which each instance of the privacy model is
    *     applied.
    */
-  private void addAnonymizationCriterias(String criteria, Double[] factors, String[] attributes) {
+  private void addPrivacyModel(String criteria, Double[] factors, String[] attributes) {
     if (factors.length == attributes.length) {
       for (int i = 0; i < factors.length; i++) {
-        this.anonymizationCriterias.add(
+        this.privacyModels.add(
             new PrivacyModelArguments<Double>(criteria, factors[i], attributes[i]));
       }
     } else {
@@ -229,7 +232,7 @@ public class AnonymizationConfiguration {
   private void throwExceptionNonmatchingLengths(String criteria) throws RuntimeException {
     String errMsg =
         String.format(
-            "Number of factors and arguments in the configuration file does match for the $s anonymization criteria",
+            "Number of factors and arguments in the configuration file does match for the $s privacy model",
             criteria);
     throw new RuntimeException(errMsg);
   }
@@ -237,7 +240,7 @@ public class AnonymizationConfiguration {
   private void throwExceptionMissingFactors(String criteria) throws RuntimeException {
     String errMsg =
         String.format(
-            "Missing the factors for the %s anonymization criteria. Please check that the factors are specified in the anonymization configuration file using the tag <factors>.",
+            "Missing the factors for the %s privacy model. Please check that the factors are specified in the anonymization configuration file using the tag <factors>.",
             criteria);
     throw new RuntimeException(errMsg);
   }

@@ -4,15 +4,19 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.deidentifier.arx.ARXResult;
 import org.deidentifier.arx.AttributeType.Hierarchy;
+import org.deidentifier.arx.Data;
 import org.deidentifier.arx.DataType;
 import org.deidentifier.arx.aggregates.HierarchyBuilderIntervalBased;
 import org.deidentifier.arx.aggregates.HierarchyBuilderRedactionBased;
 import org.deidentifier.arx.aggregates.HierarchyBuilder;
+import util.StringUtil;
 import util.Utils;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 public class HierarchyManager {
   private static final HierarchyBuilderRedactionBased.Order defaultAlignmentOrder =
@@ -22,14 +26,17 @@ public class HierarchyManager {
   private static final char defaultPaddingCharacter = ' ';
   private static final char defaultMaskingCharacter = '*';
   private static final String hierarchyDirectory = "Hierarchies2";
+  private HierarchyStore hierarchyStore;
+  private XMLConfiguration hierarchyConfiguration;
+  private HashMap<String, String[][]> materializedHierarchies;
 
-  /*
-  TODO:
-      * public ArrayList<Hierarchies> buildHierarchies(){}
-          builds all hierarchies and returns them
-   */
+  public HierarchyManager(XMLConfiguration hierarchyConfiguration) {
+    this.hierarchyConfiguration = hierarchyConfiguration;
+    materializedHierarchies = new HashMap<>();
+  }
 
-  public HierarchyStore buildHierarchies(XMLConfiguration config) throws Exception {
+  public void buildHierarchies() throws Exception {
+    XMLConfiguration config = this.hierarchyConfiguration;
     HashMap<String, Hierarchy> hierarchies = new HashMap<>();
     HashMap<String, HierarchyBuilder> hierarchyBuilders = new HashMap<>();
     int amountFile = 0;
@@ -64,8 +71,7 @@ public class HierarchyManager {
       String columnName = subConfig.getString("columnName");
       hierarchyBuilders.put(columnName, buildHierarchyFromLogic(logic, subConfig));
     }
-
-    return new HierarchyStore(hierarchies, hierarchyBuilders);
+    this.hierarchyStore = new HierarchyStore(hierarchies, hierarchyBuilders);
   }
 
   /**
@@ -177,6 +183,10 @@ public class HierarchyManager {
     return hierarchyDirectory;
   }
 
+  public HierarchyStore getHierarchyStore() {
+    return hierarchyStore;
+  }
+
   /**
    * Stores a nested String array in an indicated file. Each inner array is printed to anew line.
    * Elements from inner arrays are seperated by a specified character.
@@ -184,11 +194,25 @@ public class HierarchyManager {
    * @param array
    * @param fileName
    */
-  public static void storeHierarchy(String[][] array, String fileName) {
+  public static void storeHierarchyToFile(String[][] array, String fileName) {
     Utils.storeNestedArray(array, fileName, "\n", ";");
   }
 
-  public static void storeHierarchy(ARXResult arxResult, String hierarchyName, String fileName) {
-    storeHierarchy(arxResult.getDataDefinition().getHierarchy(hierarchyName), fileName);
+  public void storeMaterializedHierarchies(Data data, ARXResult arxResult) {
+    for (String attribute : data.getDefinition().getQuasiIdentifyingAttributes()) {
+      this.materializedHierarchies.put(
+          attribute, arxResult.getDataDefinition().getHierarchy(attribute));
+    }
+  }
+
+  public void storeMaterializedHierarchiesToFile(){
+    for (Map.Entry<String,String[][]> entry : this.materializedHierarchies.entrySet()) {
+      String attribute = entry.getKey();
+      if (this.hierarchyStore.getIndexForColumnName(attribute) == 1) {
+        String fileName =
+                StringUtil.createFileName(HierarchyManager.getHierarchyDirectory(), attribute, "csv");
+        HierarchyManager.storeHierarchyToFile(entry.getValue(), fileName);
+      }
+    }
   }
 }

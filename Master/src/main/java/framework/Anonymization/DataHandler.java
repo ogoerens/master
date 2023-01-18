@@ -1,5 +1,8 @@
 package framework.Anonymization;
 
+import framework.BenchConfiguration;
+import framework.Driver;
+import org.apache.commons.configuration2.XMLConfiguration;
 import org.deidentifier.arx.Data;
 import org.deidentifier.arx.*;
 import util.SQLServerUtils;
@@ -13,6 +16,13 @@ import java.util.ArrayList;
 
 public class DataHandler {
   private Data data;
+  private BenchConfiguration dbConfiguration;
+  private Connection dbConnection;
+
+    public void connectToDB() throws SQLException{
+      dbConfiguration.init();
+      this.dbConnection = dbConfiguration.makeConnection();
+    }
   /**
    * Loads Data from a file into the ARX datatype Data.
    *
@@ -106,5 +116,22 @@ public class DataHandler {
 
   public Data getData() {
     return data;
+  }
+
+  public BenchConfiguration getDbConfiguration() {
+    return dbConfiguration;
+  }
+
+  public Connection getDbConnection() {
+    return dbConnection;
+  }
+
+  public void setDbConfiguration(BenchConfiguration dbConfiguration) {
+    this.dbConfiguration = dbConfiguration;
+  }
+
+  public void setDbConfiguration(String dbConfigFile){
+    XMLConfiguration dbConfiguration = Driver.buildXMLConfiguration(dbConfigFile);
+    this.dbConfiguration = new BenchConfiguration(dbConfiguration);
   }
 }

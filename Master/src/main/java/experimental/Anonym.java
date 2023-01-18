@@ -162,14 +162,15 @@ public class Anonym {
        gender.add("female", "*");
 
     */
-
-    HierarchyManager hierarchyBuilder = new HierarchyManager();
     String hierarchiesFile =
-        "/home/olivier/Documents/MasterThesis/Master/src/main/resources/hierarchies.xml";
+            "/home/olivier/Documents/MasterThesis/Master/src/main/resources/hierarchies.xml";
     XMLConfiguration hierarchyConf = Driver.buildXMLConfiguration(hierarchiesFile);
+    HierarchyManager hierarchyBuilder = new HierarchyManager(hierarchyConf);
+
     HierarchyStore hierarchies = new HierarchyStore();
     try {
-      hierarchies = hierarchyBuilder.buildHierarchies(hierarchyConf);
+      hierarchyBuilder.buildHierarchies();
+      hierarchies = hierarchyBuilder.getHierarchyStore();
     } catch (Exception e) {
       e.printStackTrace();
     }

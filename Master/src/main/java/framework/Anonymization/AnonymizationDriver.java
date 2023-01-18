@@ -15,61 +15,54 @@ import java.sql.SQLException;
 import java.util.*;
 
 public class AnonymizationDriver {
+  String anonConfigFile =
+      "/home/olivier/Documents/MasterThesis/Master/src/main/resources/anonconfigCustomer.xml";
+  String hierarchiesFile =
+      "/home/olivier/Documents/MasterThesis/Master/src/main/resources/hierarchies.xml";
+  String tableName = "customer";
+  String dbConfigFile = "src/main/resources/benchconfigAnon.xml";
 
   public void anonymize() throws SQLException, Exception {
-    String anonConfigFile =
-        "/home/olivier/Documents/MasterThesis/Master/src/main/resources/anonconfigCustomer.xml";
-    String hierarchiesFile =
-        "/home/olivier/Documents/MasterThesis/Master/src/main/resources/hierarchies.xml";
-    String tableName = "customer";
-
-    String dbConfigFile = "src/main/resources/benchconfigAnon.xml";
-
-    XMLConfiguration dbConfiguration = Driver.buildXMLConfiguration(dbConfigFile);
-    BenchConfiguration dbConfig = new BenchConfiguration(dbConfiguration);
-    String database = dbConfig.getDatabase();
-    dbConfig.init();
-    Connection dbConnection = dbConfig.makeConnection();
-
-    ArrayList<String> colNames = util.SQLServerUtils.getColumnNames(dbConnection, tableName);
-
-    // Close the DB connection. All necessary information from the DB has been gathered.
-    dbConnection.close();
-
-    XMLConfiguration xmlAnonConfig = Driver.buildXMLConfiguration(anonConfigFile);
-    AnonymizationConfiguration anonConfig = new AnonymizationConfiguration(xmlAnonConfig);
+    // Create the configuration for the anonymization process.
+    AnonymizationConfiguration anonConfig = new AnonymizationConfiguration(anonConfigFile);
     anonConfig.createARXConfig();
 
-    HierarchyManager hierarchyManager = new HierarchyManager();
+    // Build the hierarchies needed later on during tha anonymization algorithm.
     XMLConfiguration hierarchyConf = Driver.buildXMLConfiguration(hierarchiesFile);
-    HierarchyStore hierarchies = hierarchyManager.buildHierarchies(hierarchyConf);
+    HierarchyManager hierarchyManager = new HierarchyManager(hierarchyConf);
+    hierarchyManager.buildHierarchies();
+    HierarchyStore hierarchies = hierarchyManager.getHierarchyStore();
 
-
-
+    // Load the data and all other information needed from the DB server.
     DataHandler dataHandler = new DataHandler();
+    dataHandler.setDbConfiguration(dbConfigFile);
+    dataHandler.connectToDB();
 
+    ArrayList<String> colNames =
+        util.SQLServerUtils.getColumnNames(dataHandler.getDbConnection(), tableName);
+
+    // Close the DB connection. All necessary information from the DB has been gathered.
+    dataHandler.getDbConnection().close();
+    // The load function has its own connection to the DB server.
     dataHandler.loadJDBC(
-        "jdbc:sqlserver://localhost:1433;encrypt=false;database=" + database + ";",
+        "jdbc:sqlserver://localhost:1433;encrypt=false;database="
+            + dataHandler.getDbConfiguration().getDatabase()
+            + ";",
         "sa",
         ".+.QET21adg.+.",
         tableName);
+    // Enhance the data with the information contained in the configuration and add the hierarchies.
     dataHandler.applyConfigToData(anonConfig);
-    dataHandler.addHierarchiesToData( hierarchies);
+    dataHandler.addHierarchiesToData(hierarchies);
 
     // Run the anonymization.
     ARXAnonymizer anonymizer = new ARXAnonymizer();
     ARXResult arxResult = anonymizer.anonymize(dataHandler.getData(), anonConfig.getARXConfig());
 
     // Store the hierarchies for all hierarchies that are built using a HierarchyBuilder, i.e. by a
-    // Logic rather than an existing hierarchy file.
-
-    for (String col : dataHandler.getData().getDefinition().getQuasiIdentifyingAttributes()) {
-      if (hierarchies.getIndexForColumnName(col) == 1) {
-        String fileName =
-            StringUtil.createFileName(HierarchyManager.getHierarchyDirectory(), col, "csv");
-        HierarchyManager.storeHierarchy(arxResult, col, fileName);
-      }
-    }
+    // Logic rather than an existing hierarchy file. Hierarchies are only built during the
+    // anonymization process. Thus they cannot be stored ahead of it.
+    hierarchyManager.storeMaterializedHierarchies(dataHandler.getData(),arxResult);
 
     // Anonym.printResult(arxResult, data);
     System.out.println(" - Transformed data:");
