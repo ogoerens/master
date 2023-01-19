@@ -165,10 +165,10 @@
         <gen>
             <distribution>uniform</distribution>
             <lowerbound>1</lowerbound>
-            <upperbound>750</upperbound>
+            <upperbound>1500000</upperbound>
             <correlation>none</correlation>
             <withIndex>true</withIndex>
-            <fileName>uniform_750.txt</fileName>
+            <fileName>uniform_1500000.txt</fileName>
         </gen>
         <gen>
             <distribution> binomial</distribution>

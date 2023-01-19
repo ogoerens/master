@@ -4,7 +4,7 @@
 
 
 <parameters>
-    <amountSQL>13</amountSQL>
+    <amountSQL>17</amountSQL>
     <amountFile>30</amountFile>
     <amountIndex>3</amountIndex>
 
@@ -83,6 +83,40 @@
         <SQLStmt>
             Select c_custkey/2 as c_custkey\, c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\,
             c_mktsegment\, c_comment into customerNonDistinct from customer
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+        SELECT c_custkey\, c_name\, c_address\, c_nationkey\, c_phone \, c_acctbal\,c_mktsegment \,
+        CASE  WHEN  DATALENGTH(c_comment) &lt;100 THEN CONCAT(c_comment\,'123456789 abcde')
+        WHEN  DATALENGTH(c_comment) &lt;80 THEN CONCAT(c_comment\,'123456789 abcde 123456789 dcba')
+        ELSE c_comment
+        end as c_comment
+        INTO CustomerExtendedComment
+        FROM CUSTOMER
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+            SELECT c_custkey\, c_name\, c_address\, c_nationkey\, c_phone \, c_acctbal\,c_mktsegment \,
+            CASE  WHEN  DATALENGTH(c_comment) &lt;100 THEN CONCAT(c_comment\,'123456789 abcde')
+            WHEN  DATALENGTH(c_comment) &lt;80 THEN CONCAT(c_comment\,'123456789 abcde 123456789 dcba')
+            ELSE c_comment
+            end as c_comment
+            INTO CustomerExtendedComment2
+            FROM CustomerExtendedComment
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+            Select c_custkey\, c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\, c_mktsegment\, cast(c_comment as
+            char(117)) as c_comment into customerExtendedCommentFixedSize from customerExtendedComment
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+            Select c_custkey\, c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\, c_mktsegment\, cast(c_comment as
+            char(117)) as c_comment into customerExtendedCommentFixedSize2 from customerExtendedComment2
         </SQLStmt>
     </manSQL>
 
@@ -289,7 +323,7 @@
         <primaryKey>c_custkey</primaryKey>
         <columnTypes>int, int</columnTypes>
         <columnNames>identifier,c_custkeyNonDistinct</columnNames>
-        <fileName>uniform_750.txt</fileName>
+        <fileName>uniform_1500000.txt</fileName>
     </manFile>
     <manFile>
         <operation>updateColumn</operation>

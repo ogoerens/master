@@ -10,6 +10,10 @@ public class Queries {
     "customerUnique",
     "customerNonDistinct",
     "customer_nameFixedSize",
+    "CustomerExtendedComment",
+    "CustomerExtendedComment2",
+    "CustomerExtendedCommentFixedSize",
+    "CustomerExtendedCommentFixedSize2",
     "customer_mktsegZipf2",
     "customer_mktsegZipf3",
     "customer_mktsegZipf",
@@ -188,6 +192,14 @@ public class Queries {
       "SELECT * FROM customer_commentFixedSize where c_comment like '%regular%'";
   public static String q10e =
       "SELECT * FROM customer_commentFixedSize where c_comment like '%ace%'";
+  public static String q10f =
+      "SELECT * FROM customerExtendedComment where c_comment like '%regular%'";
+  public static String q10g =
+      "SELECT * FROM customerExtendedComment2 where c_comment like '%regular%'";
+  public static String q10h =
+      "SELECT * FROM customerExtendedCommentFixedSize where c_comment like '%regular%'";
+  public static String q10i =
+      "SELECT * FROM customerExtendedCommentFixedSize2 where c_comment like '%regular%'";
   // Queries with Index
   public static String q11 = "SELECT * FROM customer where c_custkey< 750";
   public static String q11a = "SELECT * FROM customerClusteredIndex where c_custkey< 750";
@@ -195,7 +207,7 @@ public class Queries {
   public static String q12 =
       "SELECT DISTINCT(c_custkey) from customerClusteredIndex where c_custkey >7500 and c_custkey< 15000";
   public static String q12a =
-      "SELECT DISTINCT(c_custkeyNonDistinct)FROM CustomerClusteredIndex_custkeyNonDistinct c_custkeyNonDistinct > 7500 and c_custkeyNonDistinct < 15000";
+      "SELECT DISTINCT(c_custkeyNonDistinct) FROM CustomerClusteredIndex_custkeyNonDistinct where c_custkeyNonDistinct > 7500 and c_custkeyNonDistinct < 15000";
   public static String q13 = "SELECT * FROM Customer_char where corr1 not like corr2";
   public static String q13a = "SELECT * FROM Customer_charFD where corr1 not like corr2";
   public static String q13b = "SELECT * FROM Customer_char where corr1 != corr2";
@@ -228,6 +240,7 @@ public class Queries {
   public static String q21 = "SELECT distinct c_custkey FROM customer";
   public static String q21a = "SELECT distinct c_custkey FROM customerPK";
   public static String q21b = "SELECT distinct c_custkey FROM customerClusteredIndex";
+  public static String q21c = "SELECT distinct c_custkey FROM customerUnique";
   public static String q22 = "SELECT * FROM customer where c_custkey%2!=0";
   public static String q22a = "SELECT * FROM customerClusteredIndex where c_custkey%2!=0";
   public static String q22b = "SELECT * FROM customerNonClusteredIndex where c_custkey%2!=0";
@@ -241,18 +254,19 @@ public class Queries {
     q0, q0a, q0b, q0c, q0d, q0e, q0f, q0g, q0h, q0i, q0j, q0k, q0l, q1, q1a, q1b, q1c, q1d, q1e,
     q1f, q1g, q1h, q2, q2a, q2b, q3, q3a, q3b, q3c, q3d, q3e, q3f, q3g, q4, q4a, q4b, q4c, q4d, q4e,
     q5, q5a, q5b, q6, q6a, q6b, q7, q7a, q7b, q8, q8a, q8b, q9, q9a, q9b, q9c, q9d, q10, q10a, q10b,
-    q10c, q10d, q10e, q11, q11a, q11b, q12, q12a, q13, q13a, q13b, q14, q14a, q15, q15a, q15b, q16,
-    q16a, q16b, q17, q17a, q17b, q17c, q17d, q17e, q17f, q18, q18a, q19, q19a, q20, q20a, q21, q21a,
-    q21b, q22, q22a, q22b, q23, q23a, q23b
+    q10c, q10d, q10e, q10f, q10g, q10h, q10i, q11, q11a, q11b, q12, q12a, q13, q13a, q13b, q14,
+    q14a, q15, q15a, q15b, q16, q16a, q16b, q17, q17a, q17b, q17c, q17d, q17e, q17f, q18, q18a, q19,
+    q19a, q20, q20a, q21, q21a, q21b, q21c, q22, q22a, q22b, q23, q23a, q23b
   };
   public static String[] queryListNames = {
     "q0", "q0a", "q0b", "q0c", "q0d", "q0e", "q0f", "q0g", "q0h", "q0i", "q0j", "q0k", "q0l", "q1",
     "q1a", "q1b", "q1c", "q1d", "q1e", "q1f", "q1g", "q1h", "q2", "q2a", "q2b", "q3", "q3a", "q3b",
     "q3c", "q3d", "q3e", "q3f", "q3g", "q4", "q4a", "q4b", "q4c", "q4d", "q4e", "q5", "q5a", "q5b",
     "q6", "q6a", "q6b", "q7", "q7a", "q7b", "q8", "q8a", "q8b", "q9", "q9a", "q9b", "q9c", "q9d",
-    "q10", "q10a", "q10b", "q10c", "q10d", "q10e", "q11", "q11a", "q11b", "q12", "q12a", "q13",
-    "q13a", "q13b", "q14", "q14a", "q15", "q15a", "q15b", "q16", "q16a", "q16b", "q17", "q17a",
-    "q17b", "q17c", "q17d", "q17e", "q17f", "q18", "q18a", "q19", "q19a", "q20", "q20a", "q21",
-    "q21a", "q21b", "q22", "q22a", "q22b", "q23", "q23a", "q23b"
+    "q10", "q10a", "q10b", "q10c", "q10d", "q10e", "q10f", "q10g", "q10h", "q10i", "q11", "q11a",
+    "q11b", "q12", "q12a", "q13", "q13a", "q13b", "q14", "q14a", "q15", "q15a", "q15b", "q16",
+    "q16a", "q16b", "q17", "q17a", "q17b", "q17c", "q17d", "q17e", "q17f", "q18", "q18a", "q19",
+    "q19a", "q20", "q20a", "q21", "q21a", "q21b", "q21c", "q22", "q22a", "q22b", "q23", "q23a",
+    "q23b"
   };
 }
