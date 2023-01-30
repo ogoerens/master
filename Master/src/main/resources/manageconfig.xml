@@ -4,7 +4,7 @@
 
 
 <parameters>
-    <amountSQL>17</amountSQL>
+    <amountSQL>18</amountSQL>
     <amountFile>30</amountFile>
     <amountIndex>3</amountIndex>
 
@@ -28,7 +28,8 @@
     </manSQL>
     <manSQL>
         <SQLStmt>
-            SELECT *\, substring(c_phone\,1\,2)+'-000-000-0000' AS corr1 INTO customer_phone1to1 FROM customer;
+            SELECT c_custkey\, c_name\,c_address\, c_nationkey\, substring(c_phone\,1\,2)+'-000-000-0000' AS corr1\, c_acctbal\, c_mktsegment AS
+            c_mktsegment\, c_comment  INTO customer_phone1to1 FROM customer;
         </SQLStmt>
     </manSQL>
     <manSQL>
@@ -58,7 +59,13 @@
     <manSQL>
         <SQLStmt>
             SELECT c_custkey\, c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\, c_mktsegment\,
-            substring(c_comment\, 10\,9) as c_commentShortened INTO customer_commentShortened FROM customer
+            substring(c_comment\, 10\,40) as c_commentShortened INTO customer_commentShortened FROM customer
+        </SQLStmt>
+    </manSQL>
+    <manSQL>
+        <SQLStmt>
+            Select c_custkey\, c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\, c_mktsegment\, cast(c_commentShortened as
+            char(117)) as c_comment into customer_ShortenedcommentFixedSize from customer_commentShortened
         </SQLStmt>
     </manSQL>
     <manSQL>
@@ -76,7 +83,7 @@
     <manSQL>
         <SQLStmt>
             SELECT * INTO customerUnique FROM customer;
-            ALTER TABLE customerPK ADD CONSTRAINT unique_constraint_cust UNIQUE (c_custkey)
+            ALTER TABLE customerUnique ADD CONSTRAINT unique_constraint_cust UNIQUE (c_custkey)
         </SQLStmt>
     </manSQL>
     <manSQL>
@@ -303,7 +310,7 @@
         <primaryKey>c_custkey</primaryKey>
         <columnTypes>int, int</columnTypes>
         <columnNames>identifier,c_nationkeyBigger</columnNames>
-        <fileName>uniform_100.txt</fileName>
+        <fileName>uniform_5000.txt</fileName>
     </manFile>
     <manFile>
         <operation>updateColumn</operation>

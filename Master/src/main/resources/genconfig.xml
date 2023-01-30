@@ -149,10 +149,10 @@
         <gen>
             <distribution>uniform</distribution>
             <lowerbound>0</lowerbound>
-            <upperbound>100</upperbound>
+            <upperbound>5000</upperbound>
             <correlation>none</correlation>
             <withIndex>true</withIndex>
-            <fileName>uniform_100.txt</fileName>
+            <fileName>uniform_5000.txt</fileName>
         </gen>
         <gen>
             <distribution>uniform</distribution>

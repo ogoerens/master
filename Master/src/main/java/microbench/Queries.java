@@ -14,6 +14,7 @@ public class Queries {
     "CustomerExtendedComment2",
     "CustomerExtendedCommentFixedSize",
     "CustomerExtendedCommentFixedSize2",
+    "customer_ShortenedcommentFixedSize",
     "customer_mktsegZipf2",
     "customer_mktsegZipf3",
     "customer_mktsegZipf",
@@ -65,7 +66,7 @@ public class Queries {
       "SELECT * FROM customer_bloatedmktseg WHERE c_mktsegBloated like '%iture'";
   public static String q0f = "SELECT * FROM customer WHERE c_mktsegment = 'Automobile'";
   public static String q0g = "SELECT * FROM customer WHERE c_mktsegment = 'Building'";
-  public static String q0h = "SELECT * FROM customer WHERE c_mktsegment = 'Machinery'";
+  public static String q0h = "SELECT * FROM customer WHERE c_mktsegment = 'Household'";
   public static String q0i =
       "SELECT * FROM customer_mktsegBinomial WHERE c_mktsegBinomial = 'Automobile'";
   public static String q0j =
@@ -74,15 +75,21 @@ public class Queries {
       "SELECT * FROM customer_mktsegBinomial WHERE c_mktsegBinomial = 'Machinery'";
   public static String q0l = "SELECT * FROM customer_mktsegZipf WHERE c_mktsegZipf = 'Building'";
   public static String q1 = "SELECT * FROM  customer  WHERE c_nationkey = 19";
-  public static String q1a = "SELECT * FROM  customer_nationkeyZipf1  WHERE c_nationkeyZipf = 1";
-  public static String q1b = "SELECT * FROM  customer_nationkeyZipf1  WHERE c_nationkeyZipf = 4";
-  public static String q1c = "SELECT * FROM  customer_nationkeyZipf1   WHERE c_nationkeyZipf = 6";
+  public static String q1a = "SELECT * FROM  customer_nationkeyZipf1  WHERE c_nationkeyZipf = 1  ";
+  public static String q1b = "SELECT * FROM  customer_nationkeyZipf1  WHERE c_nationkeyZipf = 4  ";
+  public static String q1c = "SELECT * FROM  customer_nationkeyZipf1   WHERE c_nationkeyZipf = 6 ";
+  /*
+    public static String q1a = "SELECT * FROM  customer_nationkeyZipf1  WHERE c_nationkeyZipf = 1  OPTION(QUERYTRACEON 8649)";
+  public static String q1b = "SELECT * FROM  customer_nationkeyZipf1  WHERE c_nationkeyZipf = 4  OPTION(QUERYTRACEON 8649)";
+  public static String q1c = "SELECT * FROM  customer_nationkeyZipf1   WHERE c_nationkeyZipf = 6  OPTION(QUERYTRACEON 8649)";
+
+   */
   public static String q1d =
       "SELECT * FROM  customer_nationkeyBinomial   WHERE c_nationkeyBinomial = 8";
   public static String q1e =
       "SELECT * FROM  customer_nationkeyBinomial2   WHERE c_nationkeyBinomial = 17";
   public static String q1f =
-      "SELECT * FROM  customer_nationkeyBinomial3   WHERE c_nationkeyBinomial = 8";
+      "SELECT * FROM  customer_nationkeyBinomial3   WHERE c_nationkeyBinomial = 9";
   public static String q1g = "SELECT * FROM  customer  WHERE c_nationkey = 9";
   public static String q1h = "SELECT * FROM  customer  WHERE c_nationkey = 20";
 
@@ -200,6 +207,11 @@ public class Queries {
       "SELECT * FROM customerExtendedCommentFixedSize where c_comment like '%regular%'";
   public static String q10i =
       "SELECT * FROM customerExtendedCommentFixedSize2 where c_comment like '%regular%'";
+  public static String q10j =
+          "SELECT * FROM customer_ShortenedcommentFixedSize where c_comment like '%regular%'";
+  public static String q10k =
+          "SELECT * FROM customer_ShortenedcommentFixedSize where c_comment like '%ace%'";
+
   // Queries with Index
   public static String q11 = "SELECT * FROM customer where c_custkey< 750";
   public static String q11a = "SELECT * FROM customerClusteredIndex where c_custkey< 750";
@@ -250,11 +262,14 @@ public class Queries {
       "SELECT * FROM customerClusteredIndex where c_custkey>10000 and c_custkey<15000 and c_nationkey=13";
   public static String q23b =
       "SELECT * FROM customerNonClusteredIndex where c_custkey>10000 and c_custkey<15000 and c_nationkey=13";
+
+  public static String q24 = "SELECT * FROM customer_char WHERE corr1 > 'q' and corr2 >'q'";
+  public static String q24a = "SELECT * FROM customer_charFD WHERE corr1 > 'q' and corr2 >'q'";
   public static String[] queryList = {
     q0, q0a, q0b, q0c, q0d, q0e, q0f, q0g, q0h, q0i, q0j, q0k, q0l, q1, q1a, q1b, q1c, q1d, q1e,
     q1f, q1g, q1h, q2, q2a, q2b, q3, q3a, q3b, q3c, q3d, q3e, q3f, q3g, q4, q4a, q4b, q4c, q4d, q4e,
     q5, q5a, q5b, q6, q6a, q6b, q7, q7a, q7b, q8, q8a, q8b, q9, q9a, q9b, q9c, q9d, q10, q10a, q10b,
-    q10c, q10d, q10e, q10f, q10g, q10h, q10i, q11, q11a, q11b, q12, q12a, q13, q13a, q13b, q14,
+    q10c, q10d, q10e, q10f, q10g, q10h, q10i, q10j, q10k, q11, q11a, q11b, q12, q12a, q13, q13a, q13b, q14,
     q14a, q15, q15a, q15b, q16, q16a, q16b, q17, q17a, q17b, q17c, q17d, q17e, q17f, q18, q18a, q19,
     q19a, q20, q20a, q21, q21a, q21b, q21c, q22, q22a, q22b, q23, q23a, q23b
   };
@@ -263,10 +278,10 @@ public class Queries {
     "q1a", "q1b", "q1c", "q1d", "q1e", "q1f", "q1g", "q1h", "q2", "q2a", "q2b", "q3", "q3a", "q3b",
     "q3c", "q3d", "q3e", "q3f", "q3g", "q4", "q4a", "q4b", "q4c", "q4d", "q4e", "q5", "q5a", "q5b",
     "q6", "q6a", "q6b", "q7", "q7a", "q7b", "q8", "q8a", "q8b", "q9", "q9a", "q9b", "q9c", "q9d",
-    "q10", "q10a", "q10b", "q10c", "q10d", "q10e", "q10f", "q10g", "q10h", "q10i", "q11", "q11a",
-    "q11b", "q12", "q12a", "q13", "q13a", "q13b", "q14", "q14a", "q15", "q15a", "q15b", "q16",
-    "q16a", "q16b", "q17", "q17a", "q17b", "q17c", "q17d", "q17e", "q17f", "q18", "q18a", "q19",
-    "q19a", "q20", "q20a", "q21", "q21a", "q21b", "q21c", "q22", "q22a", "q22b", "q23", "q23a",
-    "q23b"
+    "q10", "q10a", "q10b", "q10c", "q10d", "q10e", "q10f", "q10g", "q10h", "q10i", "q10j", "q10k",
+    "q11", "q11a", "q11b", "q12", "q12a", "q13", "q13a", "q13b", "q14", "q14a", "q15", "q15a",
+    "q15b", "q16", "q16a", "q16b", "q17", "q17a", "q17b", "q17c", "q17d", "q17e", "q17f", "q18",
+    "q18a", "q19", "q19a", "q20", "q20a", "q21", "q21a", "q21b", "q21c", "q22", "q22a", "q22b",
+    "q23", "q23a", "q23b"
   };
 }

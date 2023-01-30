@@ -132,8 +132,6 @@ public class Driver {
 
        */
 
-
-
       // Check if DataManager is used. If so, create DM configuration and execute DM. File should
       // be: manageconfig.xml.
       // DataManager is used to create/update the tables with generated data from files.
@@ -145,7 +143,7 @@ public class Driver {
       }
 
       // Create queries from QueryString and add to transaction queue.
-      int numberOfQueryExecutions = 10;
+      int numberOfQueryExecutions = 30;
       ArrayList<Integer> qIDtoqName = new ArrayList<>();
       ArrayList<String> qIDtoqNameS = new ArrayList<>();
       ArrayList<String> qString = new ArrayList<>(Queries.count);
@@ -164,18 +162,32 @@ public class Driver {
         }
       */
 
+      ArrayList<QueryBool> qNew = new ArrayList<>();
+
       int j = 0;
       if (Queries.queryList.length != Queries.queryListNames.length) {
         throw new Exception("Amount of queries and querynames do not overlap");
       }
+
+      String prevQuery="none";
       for (String query : Queries.queryList) {
         for (int i = 0; i < numberOfQueryExecutions; i++) {
           qString.add(query);
           qIDtoqName.add(j);
           qIDtoqNameS.add(Queries.queryListNames[j]);
+          if (prevQuery.equals(query)){
+            qNew.add(new QueryBool(new Query(query),true));
+          }
+          else{
+            qNew.add(new QueryBool(new Query(query),false));
+            prevQuery=query;
+          }
+
         }
         j++;
       }
+
+
 
       ArrayList<Query> qList = Query.QueryGenerator.generateQueries(qString);
 
@@ -186,7 +198,7 @@ public class Driver {
 
       // Execute the Queries.
       int numberWorkers = 1;
-      Worker w = new Worker(conn, transactionqueue, rand, numberWorkers);
+      Worker w = new Worker(conn, qNew, rand, numberWorkers);
       w.work(config.getDatabase());
 
       // Store cardinalities in a file.
@@ -308,5 +320,15 @@ public class Driver {
 
   public static String getSourcePath() {
     return sourcePath;
+  }
+
+  public static class QueryBool {
+    public GenericQuery query;
+    public boolean time;
+
+    QueryBool(GenericQuery q, boolean b) {
+      this.query = q;
+      this.time = b;
+    }
   }
 }
