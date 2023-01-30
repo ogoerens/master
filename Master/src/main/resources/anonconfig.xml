@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<parameters>
+
+    <!-- Connection details -->
+    <technique>KAnonymity</technique>
+    <KAnonymity>
+        <factors>2</factors>
+    </KAnonymity>
+    <anonymizationAlgorithm>OPTIMAL</anonymizationAlgorithm>
+    <InsensitiveAttributes>illness</InsensitiveAttributes>
+    <SensitiveAttributes></SensitiveAttributes>
+    <IdentifyingAttributes></IdentifyingAttributes>
+    <QuasiIdentifyingAttributes></QuasiIdentifyingAttributes>
+    <SuppressionLimit></SuppressionLimit>
+
+</parameters>

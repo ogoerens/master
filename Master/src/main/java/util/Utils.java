@@ -1,5 +1,8 @@
 package util;
 
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.XMLConfiguration;
+
 import java.util.*;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -137,6 +140,24 @@ public class Utils {
         } catch (FileNotFoundException e) {
             System.out.println(e);
         }
+    }
+
+    public static void storeNestedArray(String[][] array, String fileName, String separatorInnerArrays , String separatorElements) {
+        StringBuffer stringBuffer = new StringBuffer();
+        for (int j = 0; j < array.length; j++) {
+            String[] next = array[j];
+            for (int i = 0; i < next.length; i++) {
+                String string = next[i];
+                stringBuffer.append(string);
+                if (i < next.length - 1) {
+                    stringBuffer.append(separatorElements);
+                }
+            }
+            if (j < array.length - 1) {
+                stringBuffer.append(separatorInnerArrays);
+            }
+        }
+        Utils.StrToFile(stringBuffer.toString(), fileName);
     }
 
     public static String surroundWithParentheses(String str) {
@@ -377,6 +398,22 @@ public class Utils {
             return Arrays.copyOfRange(inputArray, 0, outputsize);
         } else {
             return inputArray;
+        }
+    }
+
+    public static String checkAndGetString(String key, XMLConfiguration config){
+        if (config.containsKey(key)){
+            return config.getString(key);
+        }
+        else return "";
+    }
+    public static String[] checkAndGetArray(String key, Configuration config){
+        if (config.containsKey(key)){
+            return config.getStringArray(key);
+        }
+        else {
+            String[] res ={};
+            return res;
         }
     }
 

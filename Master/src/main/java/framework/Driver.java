@@ -13,8 +13,11 @@ import java.util.*;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+
 import com.microsoft.sqlserver.jdbc.SQLServerException;
+import experimental.Anonym;
 import experimental.stuff;
+import framework.Anonymization.AnonymizationDriver;
 import microbench.Queries;
 import microbench.Query;
 import org.apache.commons.cli.CommandLine;
@@ -37,6 +40,10 @@ public class Driver {
   private static final String CardinalityDirectory = sourcePath + "/QueryCardinality";
 
   public static void main(String[] args) throws Exception {
+    AnonymizationDriver ad = new AnonymizationDriver();
+    ad.anonymize();
+    //Anonym a = new Anonym();
+    //a.work();
 
     CommandLineParser parser = new DefaultParser();
     Options options = buildOptions();

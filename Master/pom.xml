@@ -14,8 +14,20 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>local-maven-repo</id>
+            <url>file:///${project.basedir}/local-maven-repo</url>
+        </repository>
+    </repositories>
 
-            <dependencies>
+
+    <dependencies>
+                <dependency>
+                    <groupId>org.deidentifier.arx</groupId>
+                    <artifactId>libarx</artifactId>
+                    <version>3.9.1</version>
+                </dependency>
                 <dependency>
                     <groupId>com.microsoft.sqlserver</groupId>
                     <artifactId>mssql-jdbc</artifactId>

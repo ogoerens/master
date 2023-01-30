@@ -68,21 +68,6 @@ public class stuff {
     comments.toArray(coco);
 
 
-
-    /*
-    String dbConfigFile = "src/main/resources/manageconfig.xml";
-    XMLConfiguration conf = Driver.buildXMLConfiguration(dbConfigFile);
-    HierarchicalConfiguration prop = conf.configurationAt("SQL");
-    //HierarchicalConfiguration sub= conf.configurationAt("gen[1]");
-    //int c = sub.getInt("exponent");
-    System.out.println(prop.size());
-
-    int n= conf.getInt("amount");
-    for (int i=0; i<n; i++){
-        HierarchicalConfiguration sub= conf.configurationAt("gen["+(i+1)+"]");
-        String dist = sub.getString("distribution");
-        System.out.println(dist);
-    }
      */
     return;
   }

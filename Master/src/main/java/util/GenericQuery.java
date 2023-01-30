@@ -27,6 +27,7 @@ public abstract class GenericQuery {
     return countRows;
   }
 
+
   public void runAndStore(Connection connection, int numberOfArguments, String delimiter, String fileName) throws SQLException{
     StringBuilder result = new StringBuilder();
     try (PreparedStatement stmt = getStatement(connection);
@@ -42,6 +43,7 @@ public abstract class GenericQuery {
     }
     Utils.StrToFile(result.toString(),fileName);
   }
+  
   public ArrayList<String> runAndStoreFirstArgument(Connection connection) throws SQLException{
     ArrayList<String> result = new ArrayList<>();
     try (PreparedStatement stmt = getStatement(connection);
@@ -51,6 +53,12 @@ public abstract class GenericQuery {
       }
     }
     return result;
+    
+  public ResultSet runAndReturnResultSet(Connection conn, RandomGenerator rand) throws SQLException {
+    int countRows = 0;
+    PreparedStatement stmt = getStatement(conn);
+    ResultSet rs = stmt.executeQuery();
+    return rs;
   }
 
   public void update(Connection conn) throws SQLException {

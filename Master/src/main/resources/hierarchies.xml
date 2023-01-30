@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+
+<parameters>
+    <amountFile>4</amountFile>
+    <amountLogic>6</amountLogic>
+    <!-- Connection details -->
+    <hierarchyFile>
+        <columnName>gender2</columnName>
+        <file>/home/olivier/Documents/MasterThesis/Master/hierarchies/hier.csv</file>
+    </hierarchyFile>
+    <hierarchyFile>
+        <columnName>age2</columnName>
+        <file>/home/olivier/Documents/MasterThesis/Master/hierarchies/age.csv</file>
+    </hierarchyFile>
+    <hierarchyFile>
+        <columnName>c_nationkey</columnName>
+        <file>/home/olivier/Documents/MasterThesis/Master/hierarchies/nationkey.csv</file>
+    </hierarchyFile>
+    <hierarchyFile>
+        <columnName>age4</columnName>
+        <file>/home/olivier/Documents/MasterThesis/Master/hierarchies/interval.csv</file>
+    </hierarchyFile>
+    <hierarchyLogic>
+        <columnName>zipcode</columnName>
+        <logic>mask</logic>
+        <alignmentOrder>rightToRight</alignmentOrder>
+        <redactionOrder>rightToLeft</redactionOrder>
+    </hierarchyLogic>
+    <hierarchyLogic>
+        <columnName>gender</columnName>
+        <logic>mask</logic>
+        <alignmentOrder>leftToRight</alignmentOrder>
+        <redactionOrder>rightToLeft</redactionOrder>
+    </hierarchyLogic>
+    <hierarchyLogic>
+        <columnName>age</columnName>
+        <logic>interval</logic>
+        <datatype>decimal</datatype>
+        <intervalLength>5</intervalLength>
+        <groupingAmount>2</groupingAmount>
+        <lowerbound>0</lowerbound>
+        <upperbound>100</upperbound>
+    </hierarchyLogic>
+    <hierarchyLogic>
+        <columnName>c_custkey</columnName>
+        <logic>interval</logic>
+        <datatype>integer</datatype>
+        <intervalLength>10</intervalLength>
+        <groupingAmount>10</groupingAmount>
+        <lowerbound>0</lowerbound>
+        <upperbound>1500</upperbound>
+    </hierarchyLogic>
+    <hierarchyLogic>
+        <columnName>c_name</columnName>
+        <logic>mask</logic>
+        <alignmentOrder>leftToRight</alignmentOrder>
+        <redactionOrder>rightToLeft</redactionOrder>
+    </hierarchyLogic>
+    <hierarchyLogic>
+        <columnName>c_acctbal</columnName>
+        <logic>interval</logic>
+        <datatype>decimal</datatype>
+        <intervalLength>1000</intervalLength>
+        <groupingAmount>2</groupingAmount>
+        <lowerbound>-10000</lowerbound>
+        <upperbound>10000</upperbound>
+    </hierarchyLogic>
+
+
+
+
+</parameters>
