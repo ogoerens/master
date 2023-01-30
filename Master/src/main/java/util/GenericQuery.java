@@ -43,16 +43,17 @@ public abstract class GenericQuery {
     }
     Utils.StrToFile(result.toString(),fileName);
   }
-  
-  public ArrayList<String> runAndStoreFirstArgument(Connection connection) throws SQLException{
+
+  public ArrayList<String> runAndStoreFirstArgument(Connection connection) throws SQLException {
     ArrayList<String> result = new ArrayList<>();
     try (PreparedStatement stmt = getStatement(connection);
-         ResultSet rs = stmt.executeQuery()) {
+        ResultSet rs = stmt.executeQuery()) {
       while (rs.next()) {
         result.add(rs.getString(1));
       }
     }
     return result;
+    }
     
   public ResultSet runAndReturnResultSet(Connection conn, RandomGenerator rand) throws SQLException {
     int countRows = 0;

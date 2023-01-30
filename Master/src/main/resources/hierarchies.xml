@@ -48,7 +48,7 @@
         <intervalLength>10</intervalLength>
         <groupingAmount>10</groupingAmount>
         <lowerbound>0</lowerbound>
-        <upperbound>1500</upperbound>
+        <upperbound>150001</upperbound>
     </hierarchyLogic>
     <hierarchyLogic>
         <columnName>c_name</columnName>
