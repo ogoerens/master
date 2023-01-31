@@ -35,9 +35,53 @@ public class stuff {
     ArrayList<Integer> gaussian= utils.gaussianIntegers(100, 50, 25);
     System.out.println(gaussian.toString());
     */
+    /*
+      File f = new File("file12345.txt");
+      Scanner sc = new Scanner(f);
+      while (sc.hasNextLine()){
+        String x = sc.nextLine();
+        System.out.println(x);
+      }
+      */
+      /*
+      String testQ = "Select * from information_schema.tables";
+      String testQ1 = "Create table testTable (keyValue int)";
+      String testQ2 = "Insert into testTable values(789)";
+      BulkInsert bi = new BulkInsert("'" +sourcePath+"/file12345.txt'","testTable");
+      System.out.println(sourcePath);
+
+      String testQ3 = "Select keyValue from testTable";
+      Query q = new Query(testQ,-1);
+      PreparedStatement stmt = conn.prepareStatement(q.query_stmt);
+      ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+          System.out.println(rs.getString(3));
+          // do nothing
+          // System.out.println("x");
+        }
+      stmt = conn.prepareStatement(testQ1);
+      stmt.executeUpdate();
+      bi.update(conn);
+       stmt = conn.prepareStatement(testQ2);
+      stmt.executeUpdate();
+      while (rs.next()) {
+        System.out.println(rs.getString(1));
+        // do nothing
+        // System.out.println("x");
+      }
+       stmt = conn.prepareStatement(testQ3);
+       rs = stmt.executeQuery();
+      while (rs.next()) {
+        System.out.println(rs.getString(1));
+        // do nothing
+        // System.out.println("x");
+      }
+
+       */
+
 
     String queryString = "Select c_comment from customer";
-    Query query = new Query(queryString);
+    Query query = new Query(queryString, false);
     ArrayList<String> comments = new ArrayList<>();
     try {
       comments = query.runAndStoreFirstArgument(conn);

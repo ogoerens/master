@@ -1,14 +1,13 @@
 package framework.Anonymization;
 
-import framework.BenchConfiguration;
-import framework.Driver;
+import framework.DatabaseConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.deidentifier.arx.Data;
 import org.deidentifier.arx.*;
 import util.SQLServerUtils;
+import util.Utils;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -16,7 +15,7 @@ import java.util.ArrayList;
 
 public class DataHandler {
   private Data data;
-  private BenchConfiguration dbConfiguration;
+  private DatabaseConfiguration dbConfiguration;
   private Connection dbConnection;
 
     public void connectToDB() throws SQLException{
@@ -118,7 +117,7 @@ public class DataHandler {
     return data;
   }
 
-  public BenchConfiguration getDbConfiguration() {
+  public DatabaseConfiguration getDbConfiguration() {
     return dbConfiguration;
   }
 
@@ -126,12 +125,12 @@ public class DataHandler {
     return dbConnection;
   }
 
-  public void setDbConfiguration(BenchConfiguration dbConfiguration) {
+  public void setDbConfiguration(DatabaseConfiguration dbConfiguration) {
     this.dbConfiguration = dbConfiguration;
   }
 
   public void setDbConfiguration(String dbConfigFile){
-    XMLConfiguration dbConfiguration = Driver.buildXMLConfiguration(dbConfigFile);
-    this.dbConfiguration = new BenchConfiguration(dbConfiguration);
+    XMLConfiguration dbConfiguration = Utils.buildXMLConfiguration(dbConfigFile);
+    this.dbConfiguration = new DatabaseConfiguration(dbConfiguration);
   }
 }

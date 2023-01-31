@@ -164,7 +164,7 @@ public class Anonym {
     */
     String hierarchiesFile =
             "/home/olivier/Documents/MasterThesis/Master/src/main/resources/hierarchies.xml";
-    XMLConfiguration hierarchyConf = Driver.buildXMLConfiguration(hierarchiesFile);
+    XMLConfiguration hierarchyConf = Utils.buildXMLConfiguration(hierarchiesFile);
     HierarchyManager hierarchyBuilder = new HierarchyManager(hierarchyConf);
 
     HierarchyStore hierarchies = new HierarchyStore();

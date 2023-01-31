@@ -27,9 +27,9 @@ public class LatencyRecord {
     return values.get(i);
   }
 
-  public LinkedHashMap<String, LatencyRecord> attachToQuery(ArrayList<String> qidToQName) {
+  public LinkedHashMap<String, LatencyRecord> groupQueriesPerName(ArrayList<String> qidToQName) {
     LinkedHashMap<String, LatencyRecord> timesPerQuery = new LinkedHashMap<>();
-    for (int i = 0; i < values.size(); i++) {
+    for (int i = 0; i < this.values.size(); i++) {
       String qid = qidToQName.get(values.get(i).getQueryID());
       timesPerQuery.putIfAbsent(qid, new LatencyRecord());
       timesPerQuery.get(qid).addLatency(values.get(i));

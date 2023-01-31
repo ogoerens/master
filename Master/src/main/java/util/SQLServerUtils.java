@@ -15,7 +15,7 @@ public class SQLServerUtils {
     String sqlStmt =
         String.format(
             "SELECT column_name FROM information_schema.columns WHERE table_name ='%s'", tablename);
-    Query q = new Query(sqlStmt);
+    Query q = new Query(sqlStmt, Query.informationQID);
     ResultSet rs = q.runAndReturnResultSet(conn, new Random());
     while (rs.next()) {
       columnNames.add(rs.getString(1));
@@ -30,7 +30,7 @@ public class SQLServerUtils {
         String.format(
             "SELECT column_name, data_type FROM information_schema.columns WHERE table_name ='%s'",
             tablename);
-    Query q = new Query(sqlStmt);
+    Query q = new Query(sqlStmt, Query.informationQID);
     ResultSet rs = q.runAndReturnResultSet(conn, new Random());
     while (rs.next()) {
       String[] columnNameAndType = {rs.getString(1), rs.getString(2)};

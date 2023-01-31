@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import microbench.Query;
 import org.apache.commons.configuration2.XMLConfiguration;
 
-public class BenchConfiguration {
+public class DatabaseConfiguration {
   private String url;
   private String user;
   private String password;
@@ -17,7 +17,7 @@ public class BenchConfiguration {
   private Connection conn;
   private boolean createDatabase;
 
-  public BenchConfiguration(
+  public DatabaseConfiguration(
           String url, String user, String password, String driverClass, String db) {
     this.url = url;
     this.user = user;
@@ -26,7 +26,7 @@ public class BenchConfiguration {
     this.database = db;
   }
 
-  public BenchConfiguration(XMLConfiguration conf) {
+  public DatabaseConfiguration(XMLConfiguration conf) {
     this.url = conf.getString("url");
     this.user = conf.getString("username");
     this.password = conf.getString("password");
@@ -52,7 +52,7 @@ public class BenchConfiguration {
 
   public void useDatabase() throws SQLException {
     if (createDatabase) {
-      // TODO: check if Db does not yet exist. --> if DB_ID('microbench1sf') is not NULL  print 'db exists'
+      //TODO: check if Db does not yet exist. --> if DB_ID('microbench1sf') is not NULL  print 'db exists'
       String sqlStmt = "Create database " + this.database;
       Query createDB = new Query(sqlStmt, -1);
       System.out.println("Created DataBase "+ this.database);

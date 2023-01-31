@@ -15,7 +15,7 @@ public class Worker {
   private Random rand;
   private int workerID = -1;
   private LatencyRecord latencies;
-  private HashMap<Integer, Integer> cardinalities;
+  private HashMap<String, Integer> cardinalities;
 
   public Worker(Connection conn, ArrayList<Driver.QueryBool> transactionQueue, Random rand, int id) {
     this.conn = conn;
@@ -30,7 +30,7 @@ public class Worker {
     return latencies;
   }
 
-  public HashMap<Integer, Integer> getCardinalities() {
+  public HashMap<String, Integer> getCardinalities() {
     return cardinalities;
   }
 
@@ -51,7 +51,9 @@ public class Worker {
       try {
         start = System.nanoTime();
         int countrows = query.run(conn, rand);
-        cardinalities.put(query.qid, countrows);
+        if (!cardinalities.containsKey(query.qName)){
+          cardinalities.put(query.qName, countrows);
+        }
         end = System.nanoTime();
         qpm.storeQP(query.qid, "customer", database);
         //Clears the data cache in MSSQL Server.

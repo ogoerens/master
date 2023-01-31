@@ -10,6 +10,7 @@ import java.util.random.*;
 public abstract class GenericQuery {
   public String query_stmt = null;
   public int qid;
+  public String qName;
 
   protected abstract PreparedStatement getStatement(Connection conn) throws SQLException;
 

@@ -1,26 +1,22 @@
 package framework.Anonymization;
 
-import experimental.Anonym;
-import framework.BenchConfiguration;
-import framework.Driver;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.deidentifier.arx.*;
-import org.deidentifier.arx.aggregates.HierarchyBuilder;
-import util.StringUtil;
+import util.Utils;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
 
 public class AnonymizationDriver {
-  String anonConfigFile =
-      "/home/olivier/Documents/MasterThesis/Master/src/main/resources/anonconfigCustomer.xml";
+  String anonConfigFile ;
   String hierarchiesFile =
       "/home/olivier/Documents/MasterThesis/Master/src/main/resources/hierarchies.xml";
   String tableName = "customer";
   String dbConfigFile = "src/main/resources/benchconfigAnon.xml";
+
+  public AnonymizationDriver(String xmlConfig){
+    this.anonConfigFile = xmlConfig;
+  }
 
   public void anonymize() throws SQLException, Exception {
     // Create the configuration for the anonymization process.
@@ -28,7 +24,7 @@ public class AnonymizationDriver {
     anonConfig.createARXConfig();
 
     // Build the hierarchies needed later on during tha anonymization algorithm.
-    XMLConfiguration hierarchyConf = Driver.buildXMLConfiguration(hierarchiesFile);
+    XMLConfiguration hierarchyConf = Utils.buildXMLConfiguration(hierarchiesFile);
     HierarchyManager hierarchyManager = new HierarchyManager(hierarchyConf);
     hierarchyManager.buildHierarchies();
     HierarchyStore hierarchies = hierarchyManager.getHierarchyStore();

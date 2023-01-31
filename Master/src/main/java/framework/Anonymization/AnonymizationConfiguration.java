@@ -33,7 +33,7 @@ public class AnonymizationConfiguration {
 
   public AnonymizationConfiguration(String configurationFile)
   {
-    this(Driver.buildXMLConfiguration(configurationFile));
+    this(Utils.buildXMLConfiguration(configurationFile));
   }
   public AnonymizationConfiguration(XMLConfiguration config) {
     gatherprivacyModels(config);

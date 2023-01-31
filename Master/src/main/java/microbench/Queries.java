@@ -1,5 +1,7 @@
 package microbench;
 
+import java.util.ArrayList;
+
 public class Queries {
 
   public static String[] tables = {
