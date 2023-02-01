@@ -25,6 +25,35 @@ import util.Utils;
 public class Anonym {
   public void work() throws IOException, java.lang.ClassNotFoundException, java.sql.SQLException {
 
+    /*
+    Query Anonimization: Parser
+     String qqq =
+        "SELECT Top(100)\n"
+            + "     s_acctbal,\n"
+            + "     s_name,\n"
+            + "     n_name,\n"
+            + "     p_partkey,\n"
+            + "     p_mfgr,\n"
+            + "     s_address,\n"
+            + "     s_phone,\n"
+            + "     s_comment\n"
+            + " FROM part, supplier, partsupp, nation, region\n"
+            + "WHERE\n"
+            + "     p_partkey = ps_partkey\n"
+            + "     AND s_suppkey = ps_suppkey\n"
+            + "     AND p_size = 15\n"
+            + "     AND p_type LIKE '%BRASS'\n"
+            + "     AND s_nationkey = n_nationkey\n"
+            + "     AND n_regionkey = r_regionkey\n"
+            + "     AND r_name = 'EUROPE'";
+    String qqq2 = Queries.q3a;
+    String qqq15 = Queries.q15;
+    experimental.Parser p = new experimental.Parser();
+    p.parse(qqq);
+    p.parse(qqq2);
+    p.parse(qqq15);
+     */
+
     HierarchyBuilderOrderBased<Long> builder =
         HierarchyBuilderOrderBased.create(DataType.INTEGER, false);
 
@@ -163,7 +192,7 @@ public class Anonym {
 
     */
     String hierarchiesFile =
-            "/home/olivier/Documents/MasterThesis/Master/src/main/resources/hierarchies.xml";
+        "/home/olivier/Documents/MasterThesis/Master/src/main/resources/hierarchies.xml";
     XMLConfiguration hierarchyConf = Utils.buildXMLConfiguration(hierarchiesFile);
     HierarchyManager hierarchyBuilder = new HierarchyManager(hierarchyConf);
 
