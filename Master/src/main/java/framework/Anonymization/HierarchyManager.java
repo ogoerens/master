@@ -187,6 +187,10 @@ public class HierarchyManager {
     return hierarchyStore;
   }
 
+  public HashMap<String, String[][]> getMaterializedHierarchies() {
+    return materializedHierarchies;
+  }
+
   /**
    * Stores a nested String array in an indicated file. Each inner array is printed to anew line.
    * Elements from inner arrays are seperated by a specified character.
@@ -200,8 +204,9 @@ public class HierarchyManager {
 
   public void storeMaterializedHierarchies(Data data, ARXResult arxResult) {
     for (String attribute : data.getDefinition().getQuasiIdentifyingAttributes()) {
+      String uppercaseAttribute = attribute.toUpperCase();
       this.materializedHierarchies.put(
-          attribute, arxResult.getDataDefinition().getHierarchy(attribute));
+          uppercaseAttribute, arxResult.getDataDefinition().getHierarchy(attribute));
     }
   }
 
