@@ -8,6 +8,8 @@ import util.SQLServerUtils;
 import util.Utils;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -18,10 +20,18 @@ public class DataHandler {
   private DatabaseConfiguration dbConfiguration;
   private Connection dbConnection;
 
-    public void connectToDB() throws SQLException{
-      dbConfiguration.init();
-      this.dbConnection = dbConfiguration.makeConnection();
-    }
+  public DataHandler() {}
+
+  public DataHandler(Data data) {
+    this.data = data;
+    data.getHandle().getAttributeName(0);
+    data.getHandle().getNumColumns();
+  }
+
+  public void connectToDB() throws SQLException {
+    dbConfiguration.init();
+    this.dbConnection = dbConfiguration.makeConnection();
+  }
   /**
    * Loads Data from a file into the ARX datatype Data.
    *
@@ -59,6 +69,10 @@ public class DataHandler {
     this.data = Data.create(source);
   }
 
+  public void loadFile(String filename, Charset charset, char delimiter) throws IOException {
+    this.data = Data.create(filename, charset, delimiter);
+  }
+
   /**
    * Adds the specified columns and their type to the datasource.
    *
@@ -67,7 +81,7 @@ public class DataHandler {
    */
   public void addColumnsToDataSource(DataSource source, ArrayList<String[]> columnNamesAndTypes) {
     for (String[] columnAndType : columnNamesAndTypes) {
-      source.addColumn(columnAndType[0], ARXUtils.convertSQLServerDataType(columnAndType[1]));
+      source.addColumn(columnAndType[0], columnAndType[0].toUpperCase(), ARXUtils.convertSQLServerDataType(columnAndType[1]));
     }
   }
 
@@ -84,17 +98,18 @@ public class DataHandler {
   public void addHierarchiesToData(HierarchyStore hierarchies) {
     for (String attribute : data.getDefinition().getQuasiIdentifyingAttributes()) {
       if (hierarchies.getIndexForColumnName(attribute) == 0) {
-        data.getDefinition().setAttributeType(attribute, hierarchies.hierarchies.get(attribute));
+        data.getDefinition()
+            .setAttributeType(attribute, hierarchies.getHierarchies().get(attribute));
       } else {
         data.getDefinition()
-            .setAttributeType(attribute, hierarchies.hierarchyBuilders.get(attribute));
+            .setAttributeType(attribute, hierarchies.getHierarchyBuilders().get(attribute));
       }
     }
   }
 
   /**
-   * Sets the attribute types for the attributes in the data. Attributes can be either
-   * insensitive, sensitive, identifying or quasi-identifying.
+   * Sets the attribute types for the attributes in the data. Attributes can be either insensitive,
+   * sensitive, identifying or quasi-identifying.
    *
    * @param config Contains the information what types the attributes have.
    */
@@ -129,7 +144,7 @@ public class DataHandler {
     this.dbConfiguration = dbConfiguration;
   }
 
-  public void setDbConfiguration(String dbConfigFile){
+  public void setDbConfiguration(String dbConfigFile) {
     XMLConfiguration dbConfiguration = Utils.buildXMLConfiguration(dbConfigFile);
     this.dbConfiguration = new DatabaseConfiguration(dbConfiguration);
   }

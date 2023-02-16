@@ -15,7 +15,7 @@ public class DataManager {
   private Connection conn;
   private final String defaultFieldTerminator = "-1";
 
-  DataManager(Connection conn) {
+  public DataManager(Connection conn) {
     this.conn = conn;
   }
 

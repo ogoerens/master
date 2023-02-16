@@ -14,10 +14,17 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.function.UnaryOperator;
 
 public class AnonymizationConfiguration {
   public static final Charset charset = StandardCharsets.UTF_8;
   public static final char hierarchyValueDelimiter = ';';
+  private String dataStorageMethod;
+  private String dataTableName;
+  private String dataFileName;
+  private String outputFileName;
+  private String outputTableName;
   private ArrayList<PrivacyModelArguments> privacyModels;
   private ArrayList<String> insensitiveAttributes;
   private ArrayList<String> sensitiveAttributes;
@@ -31,47 +38,96 @@ public class AnonymizationConfiguration {
 
   private ARXConfiguration config;
 
-  public AnonymizationConfiguration(String configurationFile)
-  {
+  public AnonymizationConfiguration(String configurationFile) {
     this(Utils.buildXMLConfiguration(configurationFile));
   }
-  public AnonymizationConfiguration(XMLConfiguration config) {
+
+  public AnonymizationConfiguration(XMLConfiguration config) throws RuntimeException {
+    this.dataStorageMethod = config.getString("Data/StorageMethod");
+    String storageName = config.getString("Data/StorageName");
+    if (this.dataStorageMethod.equalsIgnoreCase("file")) {
+      this.dataFileName = storageName;
+    } else {
+      this.dataTableName = storageName;
+    }
+    if (config.containsKey("Data/outputFileName")) {
+      this.outputFileName = config.getString("Data/outputFileName");
+    } else {
+      throw new RuntimeException(
+          "No output file name specified in anonymization configuration. Please specifiy output file name using the tag: outputFileName.");
+    }
+    if (config.containsKey("Data/outputTableName")) {
+      this.outputTableName = config.getString("Data/outputTableName");
+    } else {
+      throw new RuntimeException(
+          "No output table name specified in anonymization configuration. Please specifiy output table name using the tag: outputTableName.");
+    }
+
     gatherprivacyModels(config);
 
     insensitiveAttributes =
-        new ArrayList<>(Arrays.asList(Utils.checkAndGetArray("InsensitiveAttributes", config)));
-    sensitiveAttributes =
-        new ArrayList<>(Arrays.asList(Utils.checkAndGetArray("SensitiveAttributes", config)));
-    identifyingAttributes =
-        new ArrayList<>(Arrays.asList(Utils.checkAndGetArray("IdentifyingAttributes", config)));
-    quasiIdentifyingAttributes =
         new ArrayList<>(
-            Arrays.asList(Utils.checkAndGetArray("QuasiIdentifyingAttributes", config)));
+            transformStringArrayToList(
+                Utils.checkAndGetArray("InsensitiveAttributes", config), String::toUpperCase));
+    sensitiveAttributes =
+            new ArrayList<>(
+                    transformStringArrayToList(
+                            Utils.checkAndGetArray("SensitiveAttributes", config), String::toUpperCase));
+    identifyingAttributes =
+            new ArrayList<>(
+                    transformStringArrayToList(
+                            Utils.checkAndGetArray("IdentifyingAttributes", config), String::toUpperCase));
+    quasiIdentifyingAttributes =
+            new ArrayList<>(
+                    transformStringArrayToList(
+                            Utils.checkAndGetArray("QuasiIdentifyingAttributes", config), String::toUpperCase));
     if (config.containsKey("SuppressionLimit")) {
       suppressionLimit = config.getDouble("SuppressionLimit");
     }
     this.specifiedAnonymizationAlgorithm =
         Utils.checkAndGetString("anonymizationAlgorithm", config);
+
+    createARXConfig();
   }
 
   public ARXConfiguration getARXConfig() {
     return config;
   }
 
-  public ArrayList<String> getSensitiveAttributes() {
-    return sensitiveAttributes;
+  public String getDataFileName() {
+    return dataFileName;
+  }
+
+  public String getDataTableName() {
+    return dataTableName;
+  }
+
+  public String getDataStorageMethod() {
+    return dataStorageMethod;
+  }
+
+  public ArrayList<String> getIdentifyingAttributes() {
+    return identifyingAttributes;
   }
 
   public ArrayList<String> getInsensitiveAttributes() {
     return insensitiveAttributes;
   }
 
+  public ArrayList<String> getSensitiveAttributes() {
+    return sensitiveAttributes;
+  }
+
   public ArrayList<String> getQuasiIdentifyingAttributes() {
     return quasiIdentifyingAttributes;
   }
 
-  public ArrayList<String> getIdentifyingAttributes() {
-    return identifyingAttributes;
+  public String getOutputFileName() {
+    return outputFileName;
+  }
+
+  public String getOutputTableName() {
+    return outputTableName;
   }
 
   /**
@@ -83,6 +139,7 @@ public class AnonymizationConfiguration {
     this.config = ARXConfiguration.create();
     setARXAnonymizationAlgorithm(specifiedAnonymizationAlgorithm, this.config);
     this.config.setSuppressionLimit(this.suppressionLimit);
+    this.config.setHeuristicSearchThreshold(10000000);
     for (PrivacyModelArguments args : this.privacyModels) {
       switch (args.privacyModel) {
         case "KAnonymity":
@@ -134,8 +191,7 @@ public class AnonymizationConfiguration {
   }
 
   /**
-   * Gathers the privacy models from the configuration file and adds them to the
-   * PrivacyModel list.
+   * Gathers the privacy models from the configuration file and adds them to the PrivacyModel list.
    *
    * @param config XMLConfiguration that contains the anonymization configuration.
    */
@@ -190,8 +246,8 @@ public class AnonymizationConfiguration {
   }
 
   /**
-   * Adds a privacy model to the Privacy Model list. A single call can add multiple
-   * instance of a single privacy model.
+   * Adds a privacy model to the Privacy Model list. A single call can add multiple instance of a
+   * single privacy model.
    *
    * @param criteria The privacy Model that gets added.
    * @param factors Contains the factors for each instance of the privacy model.
@@ -210,8 +266,8 @@ public class AnonymizationConfiguration {
   }
 
   /**
-   * Adds a privacy model to the Privacy Model list. A single call can add mulitple
-   * instance of a single privacy model.
+   * Adds a privacy model to the Privacy Model list. A single call can add mulitple instance of a
+   * single privacy model.
    *
    * @param criteria The privacy Model that gets added.
    * @param factors Contains the factors for each instance of the privacy model.
@@ -243,6 +299,12 @@ public class AnonymizationConfiguration {
             "Missing the factors for the %s privacy model. Please check that the factors are specified in the anonymization configuration file using the tag <factors>.",
             criteria);
     throw new RuntimeException(errMsg);
+  }
+
+  private List transformStringArrayToList(String[] strArray, UnaryOperator<String> unaryOperator) {
+    List list = Arrays.asList(strArray);
+    list.replaceAll(unaryOperator);
+    return list;
   }
 
   /**

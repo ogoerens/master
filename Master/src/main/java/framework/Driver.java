@@ -10,7 +10,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
+import experimental.Anonym;
 import framework.Anonymization.AnonymizationDriver;
+import framework.Anonymization.QueryAnonymizer;
 import microbench.Queries;
 import microbench.Query;
 import org.apache.commons.cli.CommandLine;
@@ -30,6 +32,7 @@ public class Driver {
   private static final int numberWorkers = 1;
   private static final int numberOfQueryExecutions = 3;
 
+
   public static void main(String[] args) throws Exception {
 
     CommandLineParser parser = new DefaultParser();
@@ -38,13 +41,32 @@ public class Driver {
 
     Random rand = new Random();
 
+    // Check if the queries of the microbench all have a name assigned to them.
+    if (Queries.queryList.length != Queries.queryListNames.length) {
+      throw new Exception("Amount of queries and querynames do not overlap");
+    }
+
+    // Add queries to the Query Manager.
+    QueryManager queryManager = new QueryManager();
+    for (int i=0; i<Queries.queryList.length;i++){
+      //TODO: currently quick fix. Replace.
+      for(String s: Queries.originalQueries){
+        if (s.equals(Queries.queryList[i])){
+          queryManager.addOriginalQuery(Queries.queryListNames[i],Queries.queryList[i]);
+        }
+      }
+    }
+    ArrayList<Query> queriesForExecution = queryManager.getOriginalQueryStore();
+
     // Check if data should be anonymized, i.e. option "a" is set and configuration file is passed
     // as argument.
     if (argsLine.hasOption("a")) {
+      //Anonym a = new Anonym();
+      //a.work();
       AnonymizationDriver ad = new AnonymizationDriver(argsLine.getOptionValue("a"));
-      ad.anonymize();
-      // Anonym a = new Anonym();
-      // a.work();
+      //TODO: Detail what arguments anonymization driver takes.
+      ad.anonymize(queryManager);
+      queriesForExecution = queryManager.getAnonymizedQueryStore();
     }
 
     // Check if Generator is used. If so, create generator configuration and execute generator. File
@@ -104,50 +126,39 @@ public class Driver {
         dm.manage(manConfiguration);
       }
 
-      // Create queries from QueryString and add to transaction queue.
       // TODO check at what qid query generation starts! And clean up this mess.
 
-      ArrayList<String> qIDtoqNameS = new ArrayList<>();
-      ArrayList<QueryBool> transactionQueue = new ArrayList<>();
-
-      // Check if the queries of the microbench all have a name assigned to them.
-      if (Queries.queryList.length != Queries.queryListNames.length) {
-        throw new Exception("Amount of queries and querynames do not overlap");
-      }
 
       // Add queries to transactionqueue. Queries are only timed, if they are equal to the previous
       // query.
-      int j = 0;
+      ArrayList<QueryBool> transactionQueue = new ArrayList<>();
       String prevQuery = "";
-      for (String query : Queries.queryList) {
+
+      for (Query query : queriesForExecution) {
         for (int i = 0; i < numberOfQueryExecutions; i++) {
-          qIDtoqNameS.add(Queries.queryListNames[j]);
-          if (prevQuery.equals(query)) {
+          if (prevQuery.equals(query.query_stmt)) {
             transactionQueue.add(
-                new QueryBool(new Query(query, Queries.queryListNames[j], true), true));
+                new QueryBool(query, true));
           } else {
             transactionQueue.add(
-                new QueryBool(new Query(query, Queries.queryListNames[j], true), false));
-            prevQuery = query;
+                new QueryBool(query, false));
+            prevQuery = query.query_stmt;
           }
         }
-        j++;
       }
 
-      // Could also define each Query as its own class.
-      // Q0 q0 = new Q0();
 
       // Execute the Queries.
-      Worker w = new Worker(conn, transactionQueue, rand, numberWorkers);
-      w.work(config.getDatabase());
+      Worker worker = new Worker(conn, transactionQueue, rand, numberWorkers);
+      worker.work(config.getDatabase());
 
       // Close database connection.
 
       // Store cardinalities in a file.
       Files.createDirectories(Paths.get(CardinalityDirectory));
-      Path p = Paths.get(CardinalityDirectory + "/" + "queryCardinalitiesOverview.txt");
-      Files.deleteIfExists(p);
-      HashMap<String, Integer> qNameToCardinality = w.getCardinalities();
+      Path path = Paths.get(CardinalityDirectory + "/" + "queryCardinalitiesOverview.txt");
+      Files.deleteIfExists(path);
+      HashMap<String, Integer> qNameToCardinality = worker.getCardinalities();
       Utils.writeMapToFile(
           qNameToCardinality,
           CardinalityDirectory + "/" + "queryCardinalitiesOverview.txt",
@@ -157,7 +168,7 @@ public class Driver {
       // For each query, group the execution per query Name. Compute for each of these groups the
       // statistics.
       LinkedHashMap<String, LatencyRecord> latencyRecordPerQueryName =
-          w.getLatencyRecord().groupQueriesPerName(qIDtoqNameS);
+          worker.getLatencyRecord().groupQueriesPerName();
       LinkedHashMap<String, Statistics> statsPerQueryName = new LinkedHashMap<>();
       for (Map.Entry<String, LatencyRecord> entry : latencyRecordPerQueryName.entrySet()) {
         statsPerQueryName.put(
@@ -165,7 +176,7 @@ public class Driver {
       }
 
       // Stats for all queries together.
-      Statistics stats = Statistics.computeStatistics(w.getLatencyRecord().getLatenciesAsArray());
+      Statistics stats = Statistics.computeStatistics(worker.getLatencyRecord().getLatenciesAsArray());
       statsPerQueryName.put("Overall", stats);
 
       ArrayList<String> statAttributes = new ArrayList<>();

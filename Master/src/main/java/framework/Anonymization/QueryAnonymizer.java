@@ -1,35 +1,49 @@
 package framework.Anonymization;
 
+import com.google.protobuf.MapEntry;
+import microbench.Query;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
+import org.deidentifier.arx.aggregates.HierarchyBuilder;
+import org.deidentifier.arx.aggregates.HierarchyBuilderIntervalBased;
+import org.deidentifier.arx.aggregates.HierarchyBuilderRedactionBased;
 import util.StringUtil;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class QueryAnonymizer {
   Map<String, Integer> generalizationLevels;
-  Map<String, String[][]> materilaizedHierarchies;
+  Map<String, String[][]> materializedHierarchies;
+  HierarchyManager hierarchyManager;
 
   public QueryAnonymizer(
-      Map<String, Integer> generalizationLevels, Map<String, String[][]> hierarchies) {
+      Map<String, Integer> generalizationLevels, HierarchyManager hierarchyManager) {
     this.generalizationLevels = generalizationLevels;
-    this.materilaizedHierarchies = hierarchies;
+    this.materializedHierarchies = hierarchyManager.getMaterializedHierarchies();
+    this.hierarchyManager = hierarchyManager;
   }
 
   public String anonymize(String query) throws SqlParseException, Exception {
     return parseAndAnonymize(query);
   }
 
-  public void anonymize(ArrayList<String> queries) throws SqlParseException, Exception {
-    for (String query : queries) {
-      anonymize(query);
+  public ArrayList<Query> anonymize(HashMap<String, String> namedQueries)
+      throws SqlParseException, Exception {
+    HashMap<String, String> aanonymizedQueries = new HashMap<>();
+    ArrayList<Query> anonymizedQueries = new ArrayList<>();
+    for (Map.Entry<String, String> namedQuery : namedQueries.entrySet()) {
+      String s = anonymize(namedQuery.getValue());
+      String newS = s.replace("`CUSTOMER`", "\"ANON\"");
+      anonymizedQueries.add(new Query(newS.replace("`", "\""), namedQuery.getKey(), false));
     }
+    return anonymizedQueries;
   }
 
   /**
@@ -39,7 +53,7 @@ public class QueryAnonymizer {
    * @return
    */
   private boolean hasAnonymizedValue(String column) {
-    return this.materilaizedHierarchies.containsKey(column);
+    return this.materializedHierarchies.containsKey(column);
   }
 
   /**
@@ -58,18 +72,33 @@ public class QueryAnonymizer {
           "Trying to get an anonymized Value for a column which has not been anonymized");
     }
     String anonyimizedValue = "";
-    String[][] hierarchy = this.materilaizedHierarchies.get(column);
+    boolean cleanseInterval =
+        hierarchyManager.getHierarchyType().get(column).equals("interval")
+            && generalizationLevels.get(column) != 0;
+    String[][] hierarchy = this.materializedHierarchies.get(column);
     // TODO optimize search. Currently linear search...
     for (String[] hierarchyForValue : hierarchy) {
-      for (String value : hierarchyForValue) {
-        String originalWithoutApostrophe = StringUtil.stripString(originalValue, "'");
-        if (value.equals(originalWithoutApostrophe)) {
-          // TODO check if generalization level starts at 0 or at 1!
-          anonyimizedValue = hierarchyForValue[this.generalizationLevels.get(column)];
+      String value = hierarchyForValue[0];
+      String originalWithoutApostrophe = StringUtil.stripString(originalValue, "'");
+      if (value.equals(originalWithoutApostrophe)) {
+        // TODO check if generalization level starts at 0 or at 1!
+        anonyimizedValue = hierarchyForValue[this.generalizationLevels.get(column)];
+        if (cleanseInterval) {
+          anonyimizedValue = ARXUtils.removeInterval(anonyimizedValue);
         }
+        return anonyimizedValue;
       }
     }
-    return anonyimizedValue;
+    // Original Value was not found in materialized Hierarchy.
+    // If we have a hierarchybuilder, we can create the anonymized value.
+    if (hierarchyManager.getHierarchyStore().getIndexForColumnName(column) == 1) {
+      return createAnonymizedValue(column, originalValue);
+    }
+    // TODO: what to do with values not in materialized hierarchies??
+
+    return originalValue;
+    // throw new Exception(          "No anonymization value found in the materialized hierarchy.
+    // Hierarchy must be changed");
   }
 
   /**
@@ -93,6 +122,10 @@ public class QueryAnonymizer {
     return sqlNode.toString();
   }
 
+  /**
+   * @param sqlCall
+   * @throws Exception
+   */
   public void anonymizeLiterals(SqlCall sqlCall) throws Exception {
     SqlKind kind = sqlCall.getOperator().getKind();
     if (SqlKind.BINARY_COMPARISON.contains(kind)
@@ -126,38 +159,14 @@ public class QueryAnonymizer {
     }
     SqlNode leftNode = operands.get(0);
     SqlNode rightNode = operands.get(1);
-    //Todo: check an literal creation in two functions. first check then creation.
-    if (!checkForLiteralIdentifierCombination(sqlCall, 0, 1)){
+    // Todo: check an literal creation in two functions. first check then creation.
+    if (!checkForLiteralIdentifierCombination(sqlCall, 0, 1)) {
       checkForLiteralIdentifierCombination(sqlCall, 1, 0);
     }
-    /*
-    String colName = "";
-    if (leftNode.getKind() == SqlKind.LITERAL) {
-      colName = findIdentifier(rightNode);
-      if (!colName.equals("") && hasAnonymizedValue(colName)) {
-        String anonVal = getAnonymizedValue(colName, ((SqlLiteral) leftNode).toValue());
-        SqlLiteral literal =
-            createLiteral(
-                anonVal, rightNode.getParserPosition(), ((SqlLiteral) rightNode).getTypeName());
-        sqlCall.setOperand(0, literal);
-      }
-    }
-    if (rightNode.getKind() == SqlKind.LITERAL) {
-      colName = findIdentifier(leftNode);
-      if (!colName.equals("") && hasAnonymizedValue(colName)) {
-        String anonVal = getAnonymizedValue(colName, ((SqlLiteral) rightNode).toValue());
-        SqlLiteral literal =
-            createLiteral(
-                anonVal, rightNode.getParserPosition(), ((SqlLiteral) rightNode).getTypeName());
-        sqlCall.setOperand(1, literal);
-      }
-    }
-
-     */
   }
 
-  public boolean checkForLiteralIdentifierCombination(SqlCall sqlCall, int operandIndex1, int operandIndex2)
-      throws Exception {
+  public boolean checkForLiteralIdentifierCombination(
+      SqlCall sqlCall, int operandIndex1, int operandIndex2) throws Exception {
     List<SqlNode> operands = sqlCall.getOperandList();
     SqlNode node1 = operands.get(operandIndex1);
     SqlNode node2 = operands.get(operandIndex2);
@@ -175,6 +184,74 @@ public class QueryAnonymizer {
     return false;
   }
 
+  private String createAnonymizedValue(String column, String originalValue) {
+    Map<String, HierarchyBuilder> builders =
+        hierarchyManager.getHierarchyStore().getHierarchyBuilders();
+    if (builders.get(column.toLowerCase()) instanceof HierarchyBuilderIntervalBased) {
+      // TODO change to uppercase.
+      HierarchyBuilderIntervalBased intervalBased =
+          (HierarchyBuilderIntervalBased) builders.get(column.toLowerCase());
+      String[] vals = {
+        originalValue,
+        intervalBased.getLowerRange().getBottomTopCodingFrom().toString(),
+        intervalBased.getUpperRange().getBottomTopCodingFrom().toString()
+      };
+      intervalBased.prepare(vals);
+      return ARXUtils.removeInterval(
+          intervalBased.build().getHierarchy()[0][this.generalizationLevels.get(column)]);
+    }
+    if (builders.get(column.toLowerCase()) instanceof HierarchyBuilderRedactionBased<?>) {
+      HierarchyBuilderRedactionBased redactionBased =
+          (HierarchyBuilderRedactionBased) builders.get(column.toLowerCase());
+      HierarchyBuilderRedactionBased.Order order = redactionBased.getRedactionOrder();
+      int size = materializedHierarchies.get(column)[0][1].length();
+      int remainingLength = size - generalizationLevels.get(column);
+      if (order == HierarchyBuilderRedactionBased.Order.RIGHT_TO_LEFT) {
+        int k = 0;
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < originalValue.length(); i++) {
+          char currentChar = originalValue.charAt(i);
+          if (k == remainingLength) {
+            if (currentChar == '%') {
+              stringBuilder.append('%');
+            }
+            break;
+          }
+          stringBuilder.append(currentChar);
+          if (currentChar != '%') {
+            k++;
+          }
+        }
+        String add = "*".repeat(generalizationLevels.get(column));
+        stringBuilder.append(add);
+        return stringBuilder.toString();
+      } else {
+        int k = 0;
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 1; i <= originalValue.length(); i++) {
+          char currentChar = originalValue.charAt(originalValue.length() - i);
+          if (k < remainingLength) {
+            stringBuilder.append(currentChar);
+            if (currentChar != '%') {
+              k++;
+            }
+          } else {
+            if (currentChar == '%') {
+              stringBuilder.append("%");
+            }
+            break;
+          }
+        }
+        String add = "*".repeat(generalizationLevels.get(column));
+        stringBuilder.append(add);
+        stringBuilder.reverse();
+        return stringBuilder.toString();
+      }
+      // TODO. Only when like operator is used. probably needs to be put in other function.
+    }
+    return originalValue;
+  }
+
   public String findIdentifier(SqlNode sqlNode) {
     if (!(sqlNode instanceof SqlCall)) {
       if (sqlNode.getKind() == SqlKind.IDENTIFIER) {
@@ -184,7 +261,7 @@ public class QueryAnonymizer {
     List<SqlNode> operands = ((SqlCall) sqlNode).getOperandList();
     for (SqlNode node : operands) {
       if (node instanceof SqlCall) {
-        findIdentifier((SqlCall) node);
+        findIdentifier(node);
       }
       if (node.getKind() == SqlKind.IDENTIFIER) {
         return node.toString();
@@ -199,7 +276,15 @@ public class QueryAnonymizer {
       return SqlLiteral.createCharString(value, pos);
     }
     if (SqlTypeName.NUMERIC_TYPES.contains(type)) {
-      return SqlLiteral.createExactNumeric(value, pos);
+      if (value.matches("[0-9]+")) {
+        // actual numeric value
+        return SqlLiteral.createExactNumeric(value, pos);
+      } else {
+        // Previous numeric value has been generalized to a range. Can no longer be represented as
+        // numeric value.
+        return SqlLiteral.createCharString(value, pos);
+      }
+
     } else {
       throw new Exception("Query anonimization for this SQLType has not yet been implemented");
     }

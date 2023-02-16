@@ -11,8 +11,8 @@ public class LatencyRecord {
   private long startNanosecond;
   private long endNanosecond;
 
-  public void addLatency(long start, long end, int workerID, int qID) {
-    values.add(new Sample(start, end, workerID, qID));
+  public void addLatency(long start, long end, int workerID, String qName) {
+    values.add(new Sample(start, end, workerID, qName));
   }
 
   public void addLatency(Sample sample) {
@@ -27,12 +27,12 @@ public class LatencyRecord {
     return values.get(i);
   }
 
-  public LinkedHashMap<String, LatencyRecord> groupQueriesPerName(ArrayList<String> qidToQName) {
+  public LinkedHashMap<String, LatencyRecord> groupQueriesPerName() {
     LinkedHashMap<String, LatencyRecord> timesPerQuery = new LinkedHashMap<>();
     for (int i = 0; i < this.values.size(); i++) {
-      String qid = qidToQName.get(values.get(i).getQueryID());
-      timesPerQuery.putIfAbsent(qid, new LatencyRecord());
-      timesPerQuery.get(qid).addLatency(values.get(i));
+      String qName = values.get(i).getQueryName();
+      timesPerQuery.putIfAbsent(qName, new LatencyRecord());
+      timesPerQuery.get(qName).addLatency(values.get(i));
     }
     return timesPerQuery;
   }
@@ -49,21 +49,21 @@ public class LatencyRecord {
     private long startNanosecond;
     private int latency;
     private int workerId;
-    private int queryID;
+    private String queryName;
 
-    Sample(long start, long end, int workerID, int queryID) {
+    Sample(long start, long end, int workerID, String queryName) {
       this.startNanosecond = start;
       this.latency = (int) ((end - start + 500) / 1000);
       this.workerId = workerID;
-      this.queryID = queryID;
+      this.queryName = queryName;
     }
 
     public int getLatencyMicroSecond() {
       return latency;
     }
 
-    public int getQueryID() {
-      return queryID;
+    public String getQueryName() {
+      return queryName;
     }
   }
 }

@@ -65,7 +65,7 @@ public class Worker {
         System.out.println(query.query_stmt + " produced the following SQLException:" + e);
       }
       if (queryBool.time){
-        latencies.addLatency(start, end, this.workerID, query.qid);
+        latencies.addLatency(start, end, this.workerID, query.qName);
       }
 
     }

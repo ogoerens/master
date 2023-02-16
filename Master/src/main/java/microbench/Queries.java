@@ -102,7 +102,7 @@ public class Queries {
       "SELECT * FROM customer_phone1to1 WHERE c_nationkey=24 and corr1 like '34-%'";
 
   public static String q3 =
-      "SELECT count(*) as count, cast(round(c_acctbal,0)/ 1000 as int) as acctbalDimension , sum(c_acctbal) "
+      "SELECT count(*) as ccount, cast(round(c_acctbal,0)/ 1000 as int) as acctbalDimension , sum(c_acctbal) "
           + "FROM customer "
           + "GROUP BY cast(round(c_acctbal,0)/ 1000 as int)";
 
@@ -182,7 +182,7 @@ public class Queries {
   public static String q8 = "SELECT DISTINCT (c_custkey) From customer ";
   public static String q8a = "SELECT DISTINCT (c_custkey) FROM customerUnique ";
   public static String q8b = "SELECT DISTINCT (c_custkey) FROM customerNonDistinct ";
-  public static String q9 = "SELECT c_custkey, c_name FROM customer WHERE c_name LIKE '%5%'";
+  public static String q9 = "SELECT c_custkey, c_name FROM customer WHERE c_name LIKE '%Cust%omer#000000000000%'";
 
   public static String q9a =
       "SELECT c_custkey, c_nameShortened FROM   customer_nameShortened WHERE c_nameShortened LIKE '%5%'";
@@ -285,5 +285,10 @@ public class Queries {
     "q15b", "q16", "q16a", "q16b", "q17", "q17a", "q17b", "q17c", "q17d", "q17e", "q17f", "q18",
     "q18a", "q19", "q19a", "q20", "q20a", "q21", "q21a", "q21b", "q21c", "q22", "q22a", "q22b",
     "q23", "q23a", "q23b"
+  };
+
+  //not included: q5, q6,q15,
+  public static String[] originalQueries ={
+          q0, q0f,q0g, q1, q1g,q1h,q2,q3,q4,q7,q8,q9,q10,q10a,q11,q16, q17, q17d, q17e
   };
 }

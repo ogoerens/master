@@ -10,7 +10,7 @@ public class AnonymizationStatistics {
   private HashMap<String, Integer> generalizationLevels;
 
   public AnonymizationStatistics(ARXResult result, ArrayList<String> columns) {
-    generalizationLevels = ARXUtils.extractGeneralizationLevels(result, columns);
+    this.generalizationLevels = ARXUtils.extractGeneralizationLevels(result, columns);
   }
 
   public HashMap<String, Integer> getGeneralizationLevels() {

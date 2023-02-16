@@ -1,9 +1,10 @@
 <?xml version="1.0"?>
 
 <parameters>
-    <amountFile>4</amountFile>
-    <amountLogic>6</amountLogic>
-    <!-- Connection details -->
+    /// Only the first "amountFile"/"amountLogic" hierarchies will be considered during the execution of the program.
+    <amountFile>5</amountFile>
+    <amountLogic>7</amountLogic>
+    <!-- Hierarchy descriptions -->
     <hierarchyFile>
         <columnName>gender2</columnName>
         <file>/home/olivier/Documents/MasterThesis/Master/hierarchies/hier.csv</file>
@@ -15,6 +16,10 @@
     <hierarchyFile>
         <columnName>c_nationkey</columnName>
         <file>/home/olivier/Documents/MasterThesis/Master/hierarchies/nationkey.csv</file>
+    </hierarchyFile>
+    <hierarchyFile>
+        <columnName>c_mktsegment</columnName>
+        <file>/home/olivier/Documents/MasterThesis/Master/hierarchies/c_mktsegment.csv</file>
     </hierarchyFile>
     <hierarchyFile>
         <columnName>age4</columnName>
@@ -52,6 +57,12 @@
     </hierarchyLogic>
     <hierarchyLogic>
         <columnName>c_name</columnName>
+        <logic>mask</logic>
+        <alignmentOrder>leftToRight</alignmentOrder>
+        <redactionOrder>rightToLeft</redactionOrder>
+    </hierarchyLogic>
+    <hierarchyLogic>
+        <columnName>c_phone</columnName>
         <logic>mask</logic>
         <alignmentOrder>leftToRight</alignmentOrder>
         <redactionOrder>rightToLeft</redactionOrder>

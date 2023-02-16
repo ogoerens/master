@@ -10,6 +10,7 @@ import org.deidentifier.arx.aggregates.HierarchyBuilderIntervalBased;
 import org.deidentifier.arx.aggregates.HierarchyBuilderRedactionBased;
 import org.deidentifier.arx.aggregates.HierarchyBuilder;
 import util.StringUtil;
+import util.UppercaseHashMap;
 import util.Utils;
 
 import java.io.IOException;
@@ -28,17 +29,20 @@ public class HierarchyManager {
   private static final String hierarchyDirectory = "Hierarchies2";
   private HierarchyStore hierarchyStore;
   private XMLConfiguration hierarchyConfiguration;
-  private HashMap<String, String[][]> materializedHierarchies;
+  private UppercaseHashMap<String[][]> materializedHierarchies;
+  private UppercaseHashMap<String> hierarchyType;
+
 
   public HierarchyManager(XMLConfiguration hierarchyConfiguration) {
     this.hierarchyConfiguration = hierarchyConfiguration;
-    materializedHierarchies = new HashMap<>();
+    materializedHierarchies = new UppercaseHashMap<>();
+    hierarchyType = new UppercaseHashMap<>();
   }
 
   public void buildHierarchies() throws Exception {
     XMLConfiguration config = this.hierarchyConfiguration;
-    HashMap<String, Hierarchy> hierarchies = new HashMap<>();
-    HashMap<String, HierarchyBuilder> hierarchyBuilders = new HashMap<>();
+    UppercaseHashMap<Hierarchy> hierarchies = new UppercaseHashMap<>();
+    UppercaseHashMap< HierarchyBuilder> hierarchyBuilders = new UppercaseHashMap<>();
     int amountFile = 0;
     int amountLogic = 0;
     if (config.containsKey("amountFile")) {
@@ -57,6 +61,7 @@ public class HierarchyManager {
       HierarchicalConfiguration subConfig = config.configurationAt("hierarchyFile[" + i + "]");
       String file = subConfig.getString("file");
       String columnName = subConfig.getString("columnName");
+      this.hierarchyType.put(columnName,"file");
       hierarchies.put(
           columnName,
           buildHierarchyFromFile(
@@ -69,6 +74,7 @@ public class HierarchyManager {
       HierarchicalConfiguration subConfig = config.configurationAt("hierarchyLogic[" + i + "]");
       String logic = subConfig.getString("logic");
       String columnName = subConfig.getString("columnName");
+      hierarchyType.put(columnName,logic);
       hierarchyBuilders.put(columnName, buildHierarchyFromLogic(logic, subConfig));
     }
     this.hierarchyStore = new HierarchyStore(hierarchies, hierarchyBuilders);
@@ -160,7 +166,7 @@ public class HierarchyManager {
             new HierarchyBuilderIntervalBased.Range<Double>(upperboundD, upperboundD, upperboundD));
     intervalBasedBuilder.addInterval(lowerboundD, lowerboundD + intervalLength);
     intervalBasedBuilder.setAggregateFunction(
-        DataType.DECIMAL.createAggregate().createIntervalFunction(true, true));
+        DataType.DECIMAL.createAggregate().createIntervalFunction(true, false));
 
     return intervalBasedBuilder;
   }
@@ -170,11 +176,11 @@ public class HierarchyManager {
     HierarchyBuilderIntervalBased<Long> intervalBasedBuilder =
         HierarchyBuilderIntervalBased.create(
             DataType.INTEGER,
-            new HierarchyBuilderIntervalBased.Range<Long>(lowerbound, lowerbound, lowerbound),
-            new HierarchyBuilderIntervalBased.Range<Long>(upperbound, upperbound, upperbound));
+            new HierarchyBuilderIntervalBased.Range<Long>(lowerbound, lowerbound, Long.MIN_VALUE),
+            new HierarchyBuilderIntervalBased.Range<Long>(upperbound, upperbound, Long.MAX_VALUE));
     intervalBasedBuilder.addInterval(lowerbound, lowerbound + intervalLength);
     intervalBasedBuilder.setAggregateFunction(
-        DataType.INTEGER.createAggregate().createIntervalFunction(true, true));
+        DataType.INTEGER.createAggregate().createIntervalFunction(true, false));
 
     return intervalBasedBuilder;
   }
@@ -185,6 +191,10 @@ public class HierarchyManager {
 
   public HierarchyStore getHierarchyStore() {
     return hierarchyStore;
+  }
+
+  public HashMap<String, String> getHierarchyType() {
+    return hierarchyType;
   }
 
   public HashMap<String, String[][]> getMaterializedHierarchies() {
@@ -204,9 +214,8 @@ public class HierarchyManager {
 
   public void storeMaterializedHierarchies(Data data, ARXResult arxResult) {
     for (String attribute : data.getDefinition().getQuasiIdentifyingAttributes()) {
-      String uppercaseAttribute = attribute.toUpperCase();
       this.materializedHierarchies.put(
-          uppercaseAttribute, arxResult.getDataDefinition().getHierarchy(attribute));
+          attribute, arxResult.getDataDefinition().getHierarchy(attribute));
     }
   }
 
@@ -219,5 +228,10 @@ public class HierarchyManager {
         HierarchyManager.storeHierarchyToFile(entry.getValue(), fileName);
       }
     }
+  }
+
+  enum logicTypes{
+    interval,
+    mask
   }
 }
