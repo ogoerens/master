@@ -20,9 +20,10 @@ public class AnonymizationDriver {
   DataHandler dataHandler;
   HierarchyManager hierarchyManager;
   AnonymizationConfiguration anonConfig;
-  String hierarchiesFile =
+  private static final String hierarchiesFile =
       "/home/olivier/Documents/MasterThesis/Master/src/main/resources/hierarchies.xml";
-  String dbConfigFile = "src/main/resources/benchconfigAnon.xml";
+  private static final String anonyimzedQueriesFile = "/home/olivier/Documents/MasterThesis/Master/AnonymizedQueries.txt";
+  private static final String dbConfigFile = "src/main/resources/benchconfigAnon.xml";
 
   public AnonymizationDriver(String xmlConfig) {
     this.anonConfigFile = xmlConfig;
@@ -83,7 +84,7 @@ public class AnonymizationDriver {
     // TODO if not result possible with ldiversity. Check if can get ouput or output null.
 
     // Transform the arxResult data representation to a String no longer containing intervals.
-    String outputString = cleanseResultAndToString(arxResult,"|","\n");
+    String outputString = cleanseResultAndToString(arxResult, "|", System.lineSeparator());
     Utils.StrToFile(outputString, anonConfig.getOutputFileName());
     System.out.println("Wrote anonymized Data to " + anonConfig.getOutputFileName());
 
@@ -93,28 +94,36 @@ public class AnonymizationDriver {
     String[] cT = new String[colTypes.size()];
     dataManger.newTable(
         anonConfig.getOutputTableName(),
-        "'" + System.getProperty("user.dir") + anonConfig.getOutputFileName(),
+        System.getProperty("user.dir") + "/" + anonConfig.getOutputFileName(),
         colTypes.toArray(cT),
         colNamesUppercase.toArray(cN),
-        "|");
+        "|",
+        System.lineSeparator());
     dataHandler.getDbConnection().close();
 
+    // QueryAnonimization if set.
+    if (!anonConfig.getQueryAnonimization()) {
+      return;
+    }
 
-    // QueryAnonimization.
+    // Set the queryset in the queryMananger.
+    queryManager.setOriginalQueryStore(
+        new ArrayList<>(Arrays.asList(Queries.returnQueryList(anonConfig.getQuerysetName()))));
+
     QueryAnonymizer queryAnonymizer =
-        new QueryAnonymizer(anonStats.getGeneralizationLevels(), hierarchyManager);
+        new QueryAnonymizer(anonStats.getGeneralizationLevels(), hierarchyManager, anonConfig);
     ArrayList<microbench.Query> anonQueries =
-        queryAnonymizer.anonymize(queryManager.getOriginalQueries());
+        queryAnonymizer.anonymize(queryManager.getOriginalQueryStore());
     queryManager.setAnonymizedQueryStore(anonQueries);
 
+    // Print anonymized queries to File.
+    StringBuilder anonQueriesStringBuilder = new StringBuilder();
     for (microbench.Query anonymizedQuery : anonQueries) {
-      System.out.println(
-          "QueryName: "
-              + anonymizedQuery.qName
-              + "\n Query: "
-              + anonymizedQuery.query_stmt
-              + "\n");
+      anonQueriesStringBuilder.append("-".repeat(20));
+      anonQueriesStringBuilder.append("QueryName: " + anonymizedQuery.qName + "\n");
+      anonQueriesStringBuilder.append("Query: " + anonymizedQuery.query_stmt + "\n");
     }
+    Utils.StrToFile(anonQueriesStringBuilder.toString(),AnonymizationDriver.anonyimzedQueriesFile);
   }
 
   private void loadDataFromDBMS() throws SQLException, IOException {
@@ -135,7 +144,8 @@ public class AnonymizationDriver {
     // this.dataHandler.loadFile(anonConfig.getDataFileName(),AnonymizationConfiguration.charset,'|');
   }
 
-  private String cleanseResultAndToString(ARXResult arxResult, String elementDelimiter, String rowDelimiter) {
+  private String cleanseResultAndToString(
+      ARXResult arxResult, String elementDelimiter, String rowDelimiter) {
     // Get Information for cleansing. Notably Transforming String intervals to integer intervals
     // ([x,y[ --> x).
     // Retrieve the column Names which contain intervals.
@@ -158,12 +168,13 @@ public class AnonymizationDriver {
     while (outputIterator.hasNext()) {
       String[] row = outputIterator.next();
       StringBuilder stringBuilderRow = new StringBuilder();
-      //Skip header containing the column names.
+      // Skip header containing the column names.
       if (header) {
         header = false;
         continue;
       }
-      // Transform interval per element per row. Append elements in each row delimited by a specific character.
+      // Transform interval per element per row. Append elements in each row delimited by a specific
+      // character.
       for (int i = 0; i < row.length; i++) {
         if (intervalColumnsIndexes.contains(i)) {
           row[i] = (ARXUtils.removeInterval(row[i]));
@@ -178,6 +189,4 @@ public class AnonymizationDriver {
     }
     return stringBuilderTable.toString();
   }
-
-
 }

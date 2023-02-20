@@ -26,9 +26,9 @@ public class Q0 extends GenericQuery {
 
   public void createSQL() {
     if (adapted) {
-      query_stmt = Queries.q0a;
+      query_stmt = Queries.q0a.query_stmt;
     } else {
-      query_stmt = Queries.q0;
+      query_stmt = Queries.q0.query_stmt;
     }
   }
 

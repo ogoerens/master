@@ -1,9 +1,10 @@
 <?xml version="1.0"?>
 
 <parameters>
-    /// Only the first "amountFile"/"amountLogic" hierarchies will be considered during the execution of the program.
+    /// Only the first #"amountFile"/#"amountLogic" hierarchies will be considered during the execution of the program.
+    /// In the amountLogic, lowerbounds are inclusive, while upperbounds are exclusive.
     <amountFile>5</amountFile>
-    <amountLogic>7</amountLogic>
+    <amountLogic>9</amountLogic>
     <!-- Hierarchy descriptions -->
     <hierarchyFile>
         <columnName>gender2</columnName>
@@ -50,10 +51,28 @@
         <columnName>c_custkey</columnName>
         <logic>interval</logic>
         <datatype>integer</datatype>
-        <intervalLength>10</intervalLength>
-        <groupingAmount>10</groupingAmount>
+        <intervalLength>100</intervalLength>
+        <groupingAmount>2</groupingAmount>
         <lowerbound>0</lowerbound>
         <upperbound>150001</upperbound>
+    </hierarchyLogic>
+    <hierarchyLogic>
+        <columnName>corr1</columnName>
+        <logic>interval</logic>
+        <datatype>integer</datatype>
+        <intervalLength>25</intervalLength>
+        <groupingAmount>2</groupingAmount>
+        <lowerbound>0</lowerbound>
+        <upperbound>1001</upperbound>
+    </hierarchyLogic>
+    <hierarchyLogic>
+        <columnName>corr2</columnName>
+        <logic>interval</logic>
+        <datatype>integer</datatype>
+        <intervalLength>25</intervalLength>
+        <groupingAmount>2</groupingAmount>
+        <lowerbound>-100</lowerbound>
+        <upperbound>1100</upperbound>
     </hierarchyLogic>
     <hierarchyLogic>
         <columnName>c_name</columnName>
@@ -71,7 +90,7 @@
         <columnName>c_acctbal</columnName>
         <logic>interval</logic>
         <datatype>decimal</datatype>
-        <intervalLength>1000</intervalLength>
+        <intervalLength>500</intervalLength>
         <groupingAmount>2</groupingAmount>
         <lowerbound>-10000</lowerbound>
         <upperbound>10000</upperbound>

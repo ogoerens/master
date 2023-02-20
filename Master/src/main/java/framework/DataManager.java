@@ -9,6 +9,7 @@ import org.apache.commons.beanutils.converters.SqlDateConverter;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import util.BulkInsert;
+import util.GenericQuery;
 import util.Utils;
 
 public class DataManager {
@@ -34,18 +35,18 @@ public class DataManager {
     int amountFile = conf.getInt("amountFile");
     int amountIndex = conf.getInt("amountIndex");
     // Index for configurationAt method starts at 1!
-    manageFile(amountFile,conf);
-    manageSQL(amountSQL,conf);
-    manageIndex(amountIndex,conf);
+    manageFile(amountFile, conf);
+    manageSQL(amountSQL, conf);
+    manageIndex(amountIndex, conf);
     System.out.println("Data Managing has been done!");
   }
 
-  public void manageFile(int amount, XMLConfiguration conf){
+  public void manageFile(int amount, XMLConfiguration conf) {
     for (int i = 1; i <= amount; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manFile[" + i + "]");
       String directory = System.getProperty("user.dir") + "/generated";
       String op = subConfig.getString("operation");
-      String file = "'" + directory + "/" + subConfig.getString("fileName") + "'";
+      String file = directory + "/" + subConfig.getString("fileName");
       String tbl = "";
       String newTbl = subConfig.getString("newTable");
       String pk = "";
@@ -55,19 +56,28 @@ public class DataManager {
         tbl = subConfig.getString("table");
         pk = subConfig.getString("primaryKey");
       }
-      System.out.println("Working on : " +file);
+      System.out.println("Working on : " + file);
       switch (op) {
         case "newTable":
           String fieldTerminator;
+          String rowTerminator;
           if (subConfig.containsKey("fieldTerminator")) {
             fieldTerminator = subConfig.getString("fieldTerminator");
           } else {
             fieldTerminator = defaultFieldTerminator;
           }
-          newTable(newTbl, file, colTypes, colNames, fieldTerminator);
+          if (subConfig.containsKey("rowTerminator")) {
+            rowTerminator = subConfig.getString("rowTerminator");
+          } else {
+            rowTerminator = "0x0A";
+          }
+          newTable(newTbl, file, colTypes, colNames, fieldTerminator, rowTerminator);
           break;
         case "updateTable":
-          updateTable(tbl, newTbl, pk, colTypes, colNames, file);
+          updateTable(tbl, newTbl, true, pk, colTypes, colNames, file);
+          break;
+        case "addToTable":
+          updateTable(tbl, newTbl, false, pk, colTypes, colNames, file);
           break;
         case "updateColumn":
           String column = subConfig.getString("column");
@@ -80,7 +90,8 @@ public class DataManager {
       }
     }
   }
-  public void manageSQL(int amount, XMLConfiguration conf){
+
+  public void manageSQL(int amount, XMLConfiguration conf) {
     for (int i = 1; i <= amount; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manSQL[" + i + "]");
       String sqlStmt = subConfig.getString("SQLStmt");
@@ -88,7 +99,7 @@ public class DataManager {
     }
   }
 
-  public void manageIndex(int amount, XMLConfiguration conf){
+  public void manageIndex(int amount, XMLConfiguration conf) {
     for (int i = 1; i <= amount; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manIndex[" + i + "]");
       String tableName = subConfig.getString("table");
@@ -115,22 +126,40 @@ public class DataManager {
       String file,
       String[] columnTypes,
       String[] columnNames,
-      String fieldTerminator) {
+      String fieldTerminator,
+      String rowTerminator) {
     try {
       // Creat Table without contents.
       createTable(newTableName, columnTypes, columnNames);
+      // Create an SQL string for the filename
+      String fileSQL = "'" + file + "'";
       // Add data with a Bulk Insert statement.
       BulkInsert qNew;
       if (fieldTerminator.equals(defaultFieldTerminator)) {
-        qNew = new BulkInsert(file, newTableName);
+        qNew = new BulkInsert(fileSQL, newTableName);
       } else {
-        qNew = new BulkInsert(file, newTableName, fieldTerminator);
+        qNew = new BulkInsert(fileSQL, newTableName, fieldTerminator, rowTerminator);
       }
       qNew.update(conn);
       System.out.println("populated table with data");
     } catch (SQLException e) {
       e.printStackTrace();
     }
+  }
+
+  public void newTable(
+      String newTableName,
+      String file,
+      String[] columnTypes,
+      String[] columnNames,
+      String fieldTerminator) {
+    newTable(
+        newTableName,
+        file,
+        columnTypes,
+        columnNames,
+        fieldTerminator,
+        "0x0A");
   }
 
   /**
@@ -151,7 +180,7 @@ public class DataManager {
     Statement stmt = conn.createStatement();
     String sqlStmt = String.format("CREATE table %s %s", newTableName, tableSpecifications);
     stmt.executeUpdate(sqlStmt);
-    System.out.println("Created table: "+ newTableName);
+    System.out.println("Created table: " + newTableName);
   }
 
   /**
@@ -174,10 +203,31 @@ public class DataManager {
   public void updateTable(
       String tbl,
       String newTbl,
+      Boolean drop,
       String primaryKey,
       String[] columnTypes,
       String[] columnNames,
       String dataFile) {
+    // Drop columns in original table.
+    if (drop) {
+      StringBuilder colnamesForDrop = new StringBuilder();
+      for (int i = 1; i < columnNames.length; i++) {
+        colnamesForDrop.append("column ");
+        colnamesForDrop.append(columnNames[i]);
+        if (i != columnNames.length - 1) {
+          colnamesForDrop.append(",");
+        }
+      }
+      try {
+        Statement stmt = conn.createStatement();
+        String sqlStmt =
+            String.format("ALTER TABLE %s DROP %s", newTbl, colnamesForDrop.toString());
+        stmt.executeUpdate(sqlStmt);
+      } catch (java.sql.SQLException e) {
+        e.printStackTrace();
+      }
+    }
+    // Create temporary table with file content.
     newTable("temporary1", dataFile, columnTypes, columnNames, defaultFieldTerminator);
     StringBuilder stringBuilder = new StringBuilder();
     int numberOfColumns = columnTypes.length;
@@ -240,7 +290,7 @@ public class DataManager {
       String dataFile) {
     try {
       String[] typeArray = {keytype, type};
-      updateTable(tbl, newTbl, pk, typeArray, columNames, dataFile);
+      updateTable(tbl, newTbl, false, pk, typeArray, columNames, dataFile);
       Statement stmt = conn.createStatement();
       String sqlStmt = String.format("ALTER TABLE %s DROP COLUMN %s", newTbl, column);
       stmt.executeUpdate(sqlStmt);
@@ -248,7 +298,6 @@ public class DataManager {
       e.printStackTrace();
     }
   }
-
   /**
    * Executes an SQL statement.
    *

@@ -7,13 +7,14 @@
     <Data>
         <StorageMethod>dbms</StorageMethod>
         <StorageName>customer</StorageName>
-        <outputFileName>anonymizedData.txt</outputFileName>
-        <outputTableName>anoymizedCustomer</outputTableName>
+        <outputFileName>anonymizedData.tbl</outputFileName>
+        <outputTableName>anonymizedCustomer</outputTableName>
+        <querysetName>originalQueries</querysetName>
     </Data>
     /// Indicate the anonymization model. Possibilities: KAnonyimity, DistinctLDiverstiy, OrderedDistanceTClosenss
     <anonymizationCriterias>KAnonymity</anonymizationCriterias>
     <KAnonymity>
-        <factors>2</factors>
+        <factors>25</factors>
     </KAnonymity>
     <DistinctLDiversity>
     </DistinctLDiversity>
@@ -23,7 +24,7 @@
     <InsensitiveAttributes>c_comment,c_address</InsensitiveAttributes>
     <SensitiveAttributes></SensitiveAttributes>
     <IdentifyingAttributes></IdentifyingAttributes>
-    <QuasiIdentifyingAttributes>c_custkey,c_name,c_nationkey,c_acctbal, c_phone, c_mktsegment</QuasiIdentifyingAttributes>
+    <QuasiIdentifyingAttributes>c_custkey,c_name,c_nationkey,c_acctbal, c_phone, c_mktsegment,corr1, corr2</QuasiIdentifyingAttributes>
     <SuppressionLimit>0</SuppressionLimit>
 
 </parameters>

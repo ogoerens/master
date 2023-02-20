@@ -32,6 +32,10 @@ public class Query extends GenericQuery {
     this.qName = name;
     this.qid = qid;
   }
+  public Query(String stmt, String name) {
+    this(stmt,name,false);
+  }
+
 
   public Query(String stmt, String name, boolean qid) {
     this.query_stmt = stmt;

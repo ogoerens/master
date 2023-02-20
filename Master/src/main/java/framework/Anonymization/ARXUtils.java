@@ -54,8 +54,17 @@ public class ARXUtils {
     return generalizations;
   }
 
-  public static String removeInterval(String inputInterval){
-    //Interval is of the form "[x,y[". We only keep x.
-    return inputInterval.substring(1, inputInterval.indexOf(','));
+  public static String removeInterval(String inputInterval) throws RuntimeException{
+    // Interval is of the form "[x,y[". We only keep x.
+    int commaIndex = inputInterval.indexOf(',');
+    // If the String does not actually contain an interval.
+    if (commaIndex == -1) {
+      if (inputInterval.contains("*")){
+        String exceptionMsg = String.format("%s is not an interval Value. Check you interval hierarchies that they include all values.", inputInterval);
+        throw new RuntimeException(exceptionMsg);
+      }
+
+    }
+    return inputInterval.substring(1, commaIndex);
   }
 }

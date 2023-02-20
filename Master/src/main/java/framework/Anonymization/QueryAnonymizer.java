@@ -22,26 +22,28 @@ public class QueryAnonymizer {
   Map<String, Integer> generalizationLevels;
   Map<String, String[][]> materializedHierarchies;
   HierarchyManager hierarchyManager;
+  AnonymizationConfiguration anonConfig;
 
   public QueryAnonymizer(
-      Map<String, Integer> generalizationLevels, HierarchyManager hierarchyManager) {
+      Map<String, Integer> generalizationLevels, HierarchyManager hierarchyManager, AnonymizationConfiguration anonConfig) {
     this.generalizationLevels = generalizationLevels;
     this.materializedHierarchies = hierarchyManager.getMaterializedHierarchies();
     this.hierarchyManager = hierarchyManager;
+    this.anonConfig = anonConfig;
   }
 
   public String anonymize(String query) throws SqlParseException, Exception {
     return parseAndAnonymize(query);
   }
 
-  public ArrayList<Query> anonymize(HashMap<String, String> namedQueries)
+  public ArrayList<Query> anonymize(ArrayList<microbench.Query> namedQueries)
       throws SqlParseException, Exception {
-    HashMap<String, String> aanonymizedQueries = new HashMap<>();
     ArrayList<Query> anonymizedQueries = new ArrayList<>();
-    for (Map.Entry<String, String> namedQuery : namedQueries.entrySet()) {
-      String s = anonymize(namedQuery.getValue());
-      String newS = s.replace("`CUSTOMER`", "\"ANON\"");
-      anonymizedQueries.add(new Query(newS.replace("`", "\""), namedQuery.getKey(), false));
+    for (microbench.Query namedQuery : namedQueries) {
+      String queryWithAnonimizedLiterals = anonymize(namedQuery.query_stmt);
+      String queryOnAnonyimizedTable = queryWithAnonimizedLiterals.replace("`CUSTOMER`", "\""+anonConfig.getOutputTableName() + "\"");
+      String querySyntacticCorrect = queryOnAnonyimizedTable.replace("`", "\"");
+      anonymizedQueries.add(new Query(querySyntacticCorrect, namedQuery.qName+"Anonymized", false));
     }
     return anonymizedQueries;
   }
@@ -76,11 +78,11 @@ public class QueryAnonymizer {
         hierarchyManager.getHierarchyType().get(column).equals("interval")
             && generalizationLevels.get(column) != 0;
     String[][] hierarchy = this.materializedHierarchies.get(column);
-    // TODO optimize search. Currently linear search...
+    //Linear search as hierarchies are not necessarily ordered.
     for (String[] hierarchyForValue : hierarchy) {
       String value = hierarchyForValue[0];
       String originalWithoutApostrophe = StringUtil.stripString(originalValue, "'");
-      if (value.equals(originalWithoutApostrophe)) {
+      if (value.equalsIgnoreCase(originalWithoutApostrophe)) {
         // TODO check if generalization level starts at 0 or at 1!
         anonyimizedValue = hierarchyForValue[this.generalizationLevels.get(column)];
         if (cleanseInterval) {
@@ -187,10 +189,10 @@ public class QueryAnonymizer {
   private String createAnonymizedValue(String column, String originalValue) {
     Map<String, HierarchyBuilder> builders =
         hierarchyManager.getHierarchyStore().getHierarchyBuilders();
-    if (builders.get(column.toLowerCase()) instanceof HierarchyBuilderIntervalBased) {
+    if (builders.get(column) instanceof HierarchyBuilderIntervalBased) {
       // TODO change to uppercase.
       HierarchyBuilderIntervalBased intervalBased =
-          (HierarchyBuilderIntervalBased) builders.get(column.toLowerCase());
+          (HierarchyBuilderIntervalBased) builders.get(column);
       String[] vals = {
         originalValue,
         intervalBased.getLowerRange().getBottomTopCodingFrom().toString(),
@@ -200,9 +202,9 @@ public class QueryAnonymizer {
       return ARXUtils.removeInterval(
           intervalBased.build().getHierarchy()[0][this.generalizationLevels.get(column)]);
     }
-    if (builders.get(column.toLowerCase()) instanceof HierarchyBuilderRedactionBased<?>) {
+    if (builders.get(column) instanceof HierarchyBuilderRedactionBased<?>) {
       HierarchyBuilderRedactionBased redactionBased =
-          (HierarchyBuilderRedactionBased) builders.get(column.toLowerCase());
+          (HierarchyBuilderRedactionBased) builders.get(column);
       HierarchyBuilderRedactionBased.Order order = redactionBased.getRedactionOrder();
       int size = materializedHierarchies.get(column)[0][1].length();
       int remainingLength = size - generalizationLevels.get(column);

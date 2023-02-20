@@ -25,6 +25,8 @@ public class AnonymizationConfiguration {
   private String dataFileName;
   private String outputFileName;
   private String outputTableName;
+  private String querysetName;
+  private boolean queryAnonimization=false;
   private ArrayList<PrivacyModelArguments> privacyModels;
   private ArrayList<String> insensitiveAttributes;
   private ArrayList<String> sensitiveAttributes;
@@ -43,25 +45,32 @@ public class AnonymizationConfiguration {
   }
 
   public AnonymizationConfiguration(XMLConfiguration config) throws RuntimeException {
-    this.dataStorageMethod = config.getString("Data/StorageMethod");
-    String storageName = config.getString("Data/StorageName");
+    HierarchicalConfiguration dataSubconfig = config.configurationAt("Data");
+    this.dataStorageMethod = dataSubconfig.getString("StorageMethod");
+    String storageName = dataSubconfig.getString("StorageName");
     if (this.dataStorageMethod.equalsIgnoreCase("file")) {
       this.dataFileName = storageName;
     } else {
       this.dataTableName = storageName;
     }
-    if (config.containsKey("Data/outputFileName")) {
-      this.outputFileName = config.getString("Data/outputFileName");
+
+    if (dataSubconfig.containsKey("outputFileName")) {
+      this.outputFileName = dataSubconfig.getString("outputFileName");
     } else {
       throw new RuntimeException(
           "No output file name specified in anonymization configuration. Please specifiy output file name using the tag: outputFileName.");
     }
-    if (config.containsKey("Data/outputTableName")) {
-      this.outputTableName = config.getString("Data/outputTableName");
+    if (dataSubconfig.containsKey("outputTableName")) {
+      this.outputTableName = dataSubconfig.getString("outputTableName");
     } else {
       throw new RuntimeException(
           "No output table name specified in anonymization configuration. Please specifiy output table name using the tag: outputTableName.");
     }
+    if (dataSubconfig.containsKey("querysetName")){
+      this.queryAnonimization=true;
+      this.querysetName = dataSubconfig.getString("querysetName");
+    }
+
 
     gatherprivacyModels(config);
 
@@ -70,17 +79,17 @@ public class AnonymizationConfiguration {
             transformStringArrayToList(
                 Utils.checkAndGetArray("InsensitiveAttributes", config), String::toUpperCase));
     sensitiveAttributes =
-            new ArrayList<>(
-                    transformStringArrayToList(
-                            Utils.checkAndGetArray("SensitiveAttributes", config), String::toUpperCase));
+        new ArrayList<>(
+            transformStringArrayToList(
+                Utils.checkAndGetArray("SensitiveAttributes", config), String::toUpperCase));
     identifyingAttributes =
-            new ArrayList<>(
-                    transformStringArrayToList(
-                            Utils.checkAndGetArray("IdentifyingAttributes", config), String::toUpperCase));
+        new ArrayList<>(
+            transformStringArrayToList(
+                Utils.checkAndGetArray("IdentifyingAttributes", config), String::toUpperCase));
     quasiIdentifyingAttributes =
-            new ArrayList<>(
-                    transformStringArrayToList(
-                            Utils.checkAndGetArray("QuasiIdentifyingAttributes", config), String::toUpperCase));
+        new ArrayList<>(
+            transformStringArrayToList(
+                Utils.checkAndGetArray("QuasiIdentifyingAttributes", config), String::toUpperCase));
     if (config.containsKey("SuppressionLimit")) {
       suppressionLimit = config.getDouble("SuppressionLimit");
     }
@@ -122,6 +131,14 @@ public class AnonymizationConfiguration {
     return quasiIdentifyingAttributes;
   }
 
+  public Boolean getQueryAnonimization(){
+    return this.queryAnonimization;
+  }
+
+  public String getQuerysetName() {
+    return querysetName;
+  }
+
   public String getOutputFileName() {
     return outputFileName;
   }
@@ -139,7 +156,7 @@ public class AnonymizationConfiguration {
     this.config = ARXConfiguration.create();
     setARXAnonymizationAlgorithm(specifiedAnonymizationAlgorithm, this.config);
     this.config.setSuppressionLimit(this.suppressionLimit);
-    this.config.setHeuristicSearchThreshold(10000000);
+    this.config.setHeuristicSearchThreshold(100000000);
     for (PrivacyModelArguments args : this.privacyModels) {
       switch (args.privacyModel) {
         case "KAnonymity":

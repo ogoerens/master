@@ -15,10 +15,7 @@ import framework.Anonymization.AnonymizationDriver;
 import framework.Anonymization.QueryAnonymizer;
 import microbench.Queries;
 import microbench.Query;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
+import org.apache.commons.cli.*;
 import org.apache.commons.configuration2.XMLConfiguration;
 
 import util.ResultWriter;
@@ -32,7 +29,6 @@ public class Driver {
   private static final int numberWorkers = 1;
   private static final int numberOfQueryExecutions = 3;
 
-
   public static void main(String[] args) throws Exception {
 
     CommandLineParser parser = new DefaultParser();
@@ -41,32 +37,23 @@ public class Driver {
 
     Random rand = new Random();
 
-    // Check if the queries of the microbench all have a name assigned to them.
-    if (Queries.queryList.length != Queries.queryListNames.length) {
-      throw new Exception("Amount of queries and querynames do not overlap");
-    }
-
-    // Add queries to the Query Manager.
     QueryManager queryManager = new QueryManager();
-    for (int i=0; i<Queries.queryList.length;i++){
-      //TODO: currently quick fix. Replace.
-      for(String s: Queries.originalQueries){
-        if (s.equals(Queries.queryList[i])){
-          queryManager.addOriginalQuery(Queries.queryListNames[i],Queries.queryList[i]);
-        }
-      }
-    }
-    ArrayList<Query> queriesForExecution = queryManager.getOriginalQueryStore();
-
+    ArrayList<Query> queriesForExecution;
     // Check if data should be anonymized, i.e. option "a" is set and configuration file is passed
     // as argument.
     if (argsLine.hasOption("a")) {
-      //Anonym a = new Anonym();
-      //a.work();
       AnonymizationDriver ad = new AnonymizationDriver(argsLine.getOptionValue("a"));
-      //TODO: Detail what arguments anonymization driver takes.
+      // TODO: Detail what arguments anonymization driver takes.
       ad.anonymize(queryManager);
-      queriesForExecution = queryManager.getAnonymizedQueryStore();
+    }
+
+    // Add queries to the Query Manager.
+
+    if (argsLine.hasOption("e")) {
+      String[] querySetNames = argsLine.getOptionValues("e");
+      for (String querySetName : querySetNames) {
+        queryManager.addQueriesForExecution(querySetName);
+      }
     }
 
     // Check if Generator is used. If so, create generator configuration and execute generator. File
@@ -128,25 +115,21 @@ public class Driver {
 
       // TODO check at what qid query generation starts! And clean up this mess.
 
-
       // Add queries to transactionqueue. Queries are only timed, if they are equal to the previous
       // query.
       ArrayList<QueryBool> transactionQueue = new ArrayList<>();
       String prevQuery = "";
 
-      for (Query query : queriesForExecution) {
+      for (Query query : queryManager.getQueriesForExecution()) {
         for (int i = 0; i < numberOfQueryExecutions; i++) {
           if (prevQuery.equals(query.query_stmt)) {
-            transactionQueue.add(
-                new QueryBool(query, true));
+            transactionQueue.add(new QueryBool(query, true));
           } else {
-            transactionQueue.add(
-                new QueryBool(query, false));
+            transactionQueue.add(new QueryBool(query, false));
             prevQuery = query.query_stmt;
           }
         }
       }
-
 
       // Execute the Queries.
       Worker worker = new Worker(conn, transactionQueue, rand, numberWorkers);
@@ -176,7 +159,8 @@ public class Driver {
       }
 
       // Stats for all queries together.
-      Statistics stats = Statistics.computeStatistics(worker.getLatencyRecord().getLatenciesAsArray());
+      Statistics stats =
+          Statistics.computeStatistics(worker.getLatencyRecord().getLatenciesAsArray());
       statsPerQueryName.put("Overall", stats);
 
       ArrayList<String> statAttributes = new ArrayList<>();
@@ -196,7 +180,8 @@ public class Driver {
                 + ","
                 + qNameToCardinality.get(entry.getKey())
                 + ","
-                + entry.getValue().print(statAttributes));
+                + entry.getValue().print(statAttributes)
+                + System.lineSeparator());
       }
       Utils.StrToFile(stringBuilderStats.toString(), resultOverviewFile);
 
@@ -205,7 +190,7 @@ public class Driver {
       Files.createDirectories(Paths.get(outputDirectory));
       String resultsFileName = "results.csv";
       for (Map.Entry<String, Statistics> entry : statsPerQueryName.entrySet()) {
-        try (PrintStream ps = new PrintStream(outputDirectory + entry.getKey() + resultsFileName)) {
+        try (PrintStream ps = new PrintStream(outputDirectory + "/" + entry.getKey() + resultsFileName)) {
           rw.writeResults(entry.getValue(), ps);
         } catch (FileNotFoundException e) {
           e.printStackTrace();
@@ -223,6 +208,10 @@ public class Driver {
     options.addOption("g", true, "Generator is executed when set");
     // currently ex is not needed to execute
     options.addOption("c", true, "Connection is established when set");
+    Option optionE = new Option("e", true, "Executes queries of specified benchmarks when set");
+    optionE.setArgs(Option.UNLIMITED_VALUES);
+    optionE.setValueSeparator(',');
+    options.addOption(optionE);
     options.addOption("d", false, "Drop tables. Only works if c is set.");
     options.addOption("a", true, "Launches anonymization process");
     return options;
