@@ -55,7 +55,7 @@ public class Worker {
           cardinalities.put(query.qName, countrows);
         }
         end = System.nanoTime();
-        qpm.storeQP(query.qid, "customer", database);
+        qpm.storeQP(query.qName, "customer", database);
         //Clears the data cache in MSSQL Server.
         //Query q = new Query("CHECKPOINT; DBCC DROPCLEANBUFFERS; DBCC FREEPROCCACHE",-1);
         //Removes all cached execution plans.

@@ -162,8 +162,8 @@ public class HierarchyManager {
     HierarchyBuilderIntervalBased<Double> intervalBasedBuilder =
         HierarchyBuilderIntervalBased.create(
             DataType.DECIMAL,
-            new HierarchyBuilderIntervalBased.Range<Double>(lowerboundD, lowerboundD, lowerboundD),
-            new HierarchyBuilderIntervalBased.Range<Double>(upperboundD, upperboundD, upperboundD));
+            new HierarchyBuilderIntervalBased.Range<Double>(lowerboundD, lowerboundD, Double.MAX_VALUE*(-1)),
+            new HierarchyBuilderIntervalBased.Range<Double>(upperboundD, upperboundD, Double.MAX_VALUE/4));
     intervalBasedBuilder.addInterval(lowerboundD, lowerboundD + intervalLength);
     intervalBasedBuilder.setAggregateFunction(
         DataType.DECIMAL.createAggregate().createIntervalFunction(true, false));

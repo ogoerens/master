@@ -55,6 +55,9 @@ public class QueryManager {
     public void addAnonymizedQuery(String queryName, String queryStatement){
         this.anonymizedQueryStore.add(new Query(queryStatement, queryName,false));
     }
+    public void addOriginalQueries(Query[] queries){
+        this.originalQueryStore.addAll(Arrays.asList(queries));
+    }
     public void addOriginalQuery(String queryName, String queryStatement){
         this.originalQueryStore.add(new Query(queryStatement,queryName, false));
     }

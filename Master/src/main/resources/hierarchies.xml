@@ -93,7 +93,7 @@
         <intervalLength>500</intervalLength>
         <groupingAmount>2</groupingAmount>
         <lowerbound>-10000</lowerbound>
-        <upperbound>10000</upperbound>
+        <upperbound>10001</upperbound>
     </hierarchyLogic>
 
 

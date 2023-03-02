@@ -11,8 +11,8 @@ import util.Utils;
 
 public class QueryPlanManager {
   private Connection conn;
-  private HashMap<Integer, Integer> cardinalities;
-  private HashMap<Integer, Boolean> queryPlanStored;
+  private HashMap<String, Integer> cardinalities;
+  private HashMap<String, Boolean> queryPlanStored;
   private final String queryPlanFolder = Driver.getSourcePath() + "/QueryPlans";
   private final String queryStmtFolder = Driver.getSourcePath() + "/QueryStmts";
 
@@ -22,7 +22,7 @@ public class QueryPlanManager {
     this.cardinalities = new HashMap<>();
   }
 
-  public HashMap<Integer, Integer> getCardinalities() {
+  public HashMap<String, Integer> getCardinalities() {
     return cardinalities;
   }
   /**
@@ -35,7 +35,7 @@ public class QueryPlanManager {
    * @param database The database for which we want to return the query plan of the last executed
    *     query.
    */
-  public void storeQP (int qid, String queryIdentifier, String database) {
+  public void storeQP (String qid, String queryIdentifier, String database) {
     //Create Folders which will store the QueryPLan and QueryStatement files.
     try {
       Files.createDirectories(Paths.get(queryPlanFolder));
@@ -70,8 +70,8 @@ public class QueryPlanManager {
 
         String filenameQP = "qid" + qid + "QueryPlan";
         String filenameSQL = "qid" + qid + "SQLText";
-        Utils.StrToFile(qp, queryPlanFolder + "/" + filenameQP + ".sqlplan");
-        Utils.StrToFile(sqlText, queryStmtFolder + "/" + filenameSQL + ".sql");
+        Utils.strToFile(qp, queryPlanFolder + "/" + filenameQP + ".sqlplan");
+        Utils.strToFile(sqlText, queryStmtFolder + "/" + filenameSQL + ".sql");
         // Utils.StrToFile(Integer.toString(total_rows),directoryCardinality + "/"
         // +total_rows+".txt");
         cardinalities.put(qid, total_rows);

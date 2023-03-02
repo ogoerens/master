@@ -14,16 +14,17 @@ public class DatabaseConfiguration {
 
   private String driverClass;
   private String database;
-  private Connection conn;
+  private int scalefactor =1;
   private boolean createDatabase;
 
   public DatabaseConfiguration(
-          String url, String user, String password, String driverClass, String db) {
+          String url, String user, String password, String driverClass, String db, int scalefactor) {
     this.url = url;
     this.user = user;
     this.password = password;
     this.driverClass = driverClass;
     this.database = db;
+    this.scalefactor =scalefactor;
   }
 
   public DatabaseConfiguration(XMLConfiguration conf) {
@@ -33,24 +34,39 @@ public class DatabaseConfiguration {
     this.driverClass = conf.getString("driver");
     this.createDatabase = conf.getBoolean("createDatabase");
     this.database = conf.getString("database");
+    this.scalefactor = conf.getInt("scalefactor");
   }
 
   public String getDatabase() {
     return this.database;
   }
 
+  public String getUser() {
+    return user;
+  }
+
+  public String getPassword() {
+    return password;
+  }
+
+  public int getScalefactor() {
+    return scalefactor;
+  }
+
   public Connection makeConnection() throws SQLException {
+    this.init();
+    Connection conn;
     if (user.isEmpty()) {
       conn = DriverManager.getConnection(url);
-      useDatabase();
+      useDatabase(conn);
     } else {
       conn = DriverManager.getConnection(url, user, password);
-      useDatabase();
+      useDatabase(conn);
     }
     return conn;
   }
 
-  public void useDatabase() throws SQLException {
+  public void useDatabase(Connection conn) throws SQLException {
     if (createDatabase) {
       //TODO: check if Db does not yet exist. --> if DB_ID('microbench1sf') is not NULL  print 'db exists'
       String sqlStmt = "Create database " + this.database;

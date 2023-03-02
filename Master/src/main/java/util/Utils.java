@@ -1,5 +1,6 @@
 package util;
 
+import microbench.MicrobenchUtils;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
@@ -37,6 +38,56 @@ public class Utils {
       stringBuilder.append(s);
     }
     return stringBuilder.toString();
+  }
+
+  public static ArrayList<String> arrayToArrayList(String[] array) {
+    return new ArrayList<>(Arrays.asList(array));
+  }
+
+  public static String join(String[] array, String delimiter) {
+    StringBuilder stringBuilder = new StringBuilder();
+    String delim = "";
+    for (String str : array) {
+      stringBuilder.append(delim);
+      stringBuilder.append(str);
+      delim = delimiter;
+    }
+    return stringBuilder.toString();
+  }
+
+  public static String joinArrays(
+      ArrayList<String[]> arrayList, String arrayDelimiter, String listDelimiter) {
+    StringBuilder stringBuilder = new StringBuilder();
+    String delim = "";
+    for (String[] array : arrayList) {
+      stringBuilder.append(delim);
+      stringBuilder.append(join(array, arrayDelimiter));
+      delim = listDelimiter;
+    }
+    return stringBuilder.toString();
+  }
+
+  public static String[][] combineArrays(String[]... arrays) {
+    int combinations = 1;
+    for (int i = 0; i < arrays.length; i++) {
+      combinations *= arrays[i].length;
+    }
+    String[][] res = new String[combinations][arrays.length];
+    int atAStretch =combinations;
+    for (int i = 0; i < arrays.length; i++) {
+       atAStretch = atAStretch / arrays[i].length;
+      int pos = 0;
+      int repeat = combinations/(atAStretch*arrays[i].length);
+      for (int r =0; r<repeat;r++){
+        for (int j = 0; j < arrays[i].length; j++) {
+          for (int k = 0; k < atAStretch; k++) {
+            res[pos][i] = arrays[i][j];
+            pos++;
+          }
+        }
+      }
+    }
+    return res;
   }
 
   public static XMLConfiguration buildXMLConfiguration(String filename) {
@@ -98,7 +149,13 @@ public class Utils {
     return resultStrings;
   }
 
-  public static void convertIntArrayToStrArray() {}
+  public static String[] convertIntArrayToStrArray(int[] intArray) {
+    String[] strArray = new String[intArray.length];
+    for (int i = 0; i < intArray.length; i++) {
+      strArray[i] = String.valueOf(intArray[i]);
+    }
+    return strArray;
+  }
 
   public static void intArrayToFile(int[] values, String fileName, boolean withIndex) {
     try (PrintStream out = new PrintStream(fileName)) {
@@ -132,7 +189,7 @@ public class Utils {
    * @param str The String to be printed.
    * @param fileName THe file where the String is printed.
    */
-  public static void StrToFile(String str, String fileName) {
+  public static void strToFile(String str, String fileName) {
     try (PrintStream out = new PrintStream(fileName)) {
       int i = 0;
       out.println(str);
@@ -181,7 +238,19 @@ public class Utils {
         stringBuffer.append(separatorInnerArrays);
       }
     }
-    Utils.StrToFile(stringBuffer.toString(), fileName);
+    Utils.strToFile(stringBuffer.toString(), fileName);
+  }
+
+  public static String[] surroundAllWith(String[] strArray, String surroundText) {
+    String[] resultArray = new String[strArray.length];
+    for (int i = 0; i < strArray.length; i++) {
+      resultArray[i] = surroundWith(strArray[i], surroundText);
+    }
+    return resultArray;
+  }
+
+  public static String surroundWith(String str, String surroundText) {
+    return surroundText + str + surroundText;
   }
 
   public static String surroundWithParentheses(String str) {
@@ -430,7 +499,7 @@ public class Utils {
       throws IOException {
     FileWriter fileWriter = new FileWriter(fileName, true);
     for (Map.Entry<String, Integer> entry : map.entrySet()) {
-      fileWriter.write(entry.getKey()+connectorString+entry.getValue()+delimiter);
+      fileWriter.write(entry.getKey() + connectorString + entry.getValue() + delimiter);
     }
     fileWriter.flush();
     fileWriter.close();
@@ -450,6 +519,7 @@ public class Utils {
       return res;
     }
   }
+
 
   public static double eval(final String str, int val) {
     return new Object() {

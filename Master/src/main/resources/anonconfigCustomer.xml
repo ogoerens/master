@@ -4,17 +4,23 @@
 
     <!-- Connection details -->
     ///Indicate where data is stored. Possibilities: file, DBMS
+    <AnonymizationStrategy>Hash</AnonymizationStrategy>
+    <Hash>
+        <HashingFunction>SHA256</HashingFunction>
+        <Columns>c_custkey,c_nationkey,c_name,c_acctbal,c_mktsegment</Columns>
+    </Hash>
+
     <Data>
         <StorageMethod>dbms</StorageMethod>
         <StorageName>customer</StorageName>
         <outputFileName>anonymizedData.tbl</outputFileName>
         <outputTableName>anonymizedCustomer</outputTableName>
-        <querysetName>originalQueries</querysetName>
+        <querysetName>anonymization, originalQueries</querysetName>
     </Data>
     /// Indicate the anonymization model. Possibilities: KAnonyimity, DistinctLDiverstiy, OrderedDistanceTClosenss
     <anonymizationCriterias>KAnonymity</anonymizationCriterias>
     <KAnonymity>
-        <factors>25</factors>
+        <factors>11</factors>
     </KAnonymity>
     <DistinctLDiversity>
     </DistinctLDiversity>
@@ -26,5 +32,12 @@
     <IdentifyingAttributes></IdentifyingAttributes>
     <QuasiIdentifyingAttributes>c_custkey,c_name,c_nationkey,c_acctbal, c_phone, c_mktsegment,corr1, corr2</QuasiIdentifyingAttributes>
     <SuppressionLimit>0</SuppressionLimit>
+    <GeneralizationLevels>
+        <Count>1</Count>
+        <Instance>
+            <Column>c_mktsegment</Column>
+            <Level>1</Level>
+        </Instance>
+    </GeneralizationLevels>
 
 </parameters>

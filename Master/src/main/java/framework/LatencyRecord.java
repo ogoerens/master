@@ -45,6 +45,7 @@ public class LatencyRecord {
     return times;
   }
 
+
   public class Sample {
     private long startNanosecond;
     private int latency;

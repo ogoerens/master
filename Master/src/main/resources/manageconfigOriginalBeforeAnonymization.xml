@@ -40,13 +40,13 @@
     </manSQL>
     <manSQL>
         <SQLStmt>
-            SELECT c_custkey\, c_name\,c_address\, c_nationkey\, c_phone\, c_acctbal\, BINARY_CHECKSUM(c_mktsegment) AS
+            SELECT c_custkey\, c_name\,c_address\, c_nationkey\, c_phone\, c_acctbal\, BINARY_CHECKSUM(c_mktsegBloated) AS
             c_mktsegment\, c_comment INTO customer_bloatednumericmktseg FROM customer_bloatedMktseg;
         </SQLStmt>
     </manSQL>
     <manSQL>
         <SQLStmt>
-            SELECT c_custkey\, c_name\,c_address\, c_nationkey\, c_phone\, c_acctbal\, BINARY_CHECKSUM(c_mktsegment) AS
+            SELECT c_custkey\, c_name\,c_address\, c_nationkey\, c_phone\, c_acctbal\, BINARY_CHECKSUM(c_mktsegBloated) AS
             c_mktsegment\, c_comment INTO customer_bloated2numericmktseg FROM customer_bloated2Mktseg
         </SQLStmt>
     </manSQL>
@@ -126,25 +126,16 @@
             char(117)) as c_comment into customerExtendedCommentFixedSize2 from customerExtendedComment2
         </SQLStmt>
     </manSQL>
+
     <manFile>
         <operation>newTable</operation>
-        <newTable>originalCustomer</newTable>
+        <newTable>manageconfig.xmlCustomer</newTable>
         <columnTypes>BIGINT not null,VARCHAR(25) not null,VARCHAR(40) not null,INTEGER not null,CHAR(15) not null,DOUBLE
             PRECISION not null,CHAR(10) not null,VARCHAR(117) not null
         </columnTypes>
         <columnNames>c_custkey,c_name,c_address,c_nationkey,c_phone,c_acctbal,c_mktsegment,c_comment</columnNames>
         <fileName>customer.tbl</fileName>
         <fieldTerminator>|</fieldTerminator>
-        <rowTerminator>|\n</rowTerminator>
-    </manFile>
-    <manFile>
-        <operation>addToTable</operation>
-        <table>originalCustomer</table>
-        <newTable>Customer</newTable>
-        <primaryKey>c_custkey</primaryKey>
-        <columnTypes>int,int,int</columnTypes>
-        <columnNames>identifier, corr1, corr2</columnNames>
-        <fileName>uniform_correlated.txt</fileName>
     </manFile>
     <manFile>
         <operation>newTable</operation>
@@ -156,8 +147,8 @@
         <fieldTerminator>|</fieldTerminator>
     </manFile>
     <manFile>
-        <operation>addToTable</operation>
-        <table>originalCustomer</table>
+        <operation>updateTable</operation>
+        <table>customer</table>
         <newTable>newCustomer</newTable>
         <primaryKey>c_custkey</primaryKey>
         <columnTypes>int,int</columnTypes>
@@ -285,7 +276,7 @@
         <fileName>customer_bloated2Mktseg.txt</fileName>
     </manFile>
     <manFile>
-        <operation>addToTable</operation>
+        <operation>updateTable</operation>
         <table>newCustomer</table>
         <newTable>Customer_uncorrelated</newTable>
         <primaryKey>c_custkey</primaryKey>
@@ -294,8 +285,17 @@
         <fileName>uniform2.txt</fileName>
     </manFile>
     <manFile>
-        <operation>addToTable</operation>
-        <table>originalCustomer</table>
+        <operation>updateTable</operation>
+        <table>Customer</table>
+        <newTable>Customer_correlated</newTable>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int,int,int</columnTypes>
+        <columnNames>identifier, corr1, corr2</columnNames>
+        <fileName>uniform_correlated.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateTable</operation>
+        <table>Customer</table>
         <newTable>Customer_fd</newTable>
         <primaryKey>c_custkey</primaryKey>
         <columnTypes>int,int,int</columnTypes>
@@ -363,8 +363,8 @@
         <fileName>c_nationBinomial3.txt</fileName>
     </manFile>
     <manFile>
-        <operation>addToTable</operation>
-        <table>originalCustomer</table>
+        <operation>updateTable</operation>
+        <table>customer</table>
         <newTable>customer_charFD</newTable>
         <primaryKey>c_custkey</primaryKey>
         <columnTypes>int, nchar(2), nchar(2)</columnTypes>
@@ -372,8 +372,8 @@
         <fileName>charCorrelated.txt</fileName>
     </manFile>
     <manFile>
-        <operation>addToTable</operation>
-        <table>originalCustomer</table>
+        <operation>updateTable</operation>
+        <table>customer</table>
         <newTable>customer_hexadecimalFD</newTable>
         <primaryKey>c_custkey</primaryKey>
         <columnTypes>int, nchar(4), nchar(4)</columnTypes>
@@ -381,8 +381,8 @@
         <fileName>hexadecimalFD.txt</fileName>
     </manFile>
     <manFile>
-        <operation>addToTable</operation>
-        <table>originalCustomer</table>
+        <operation>updateTable</operation>
+        <table>customer</table>
         <newTable>temp_customer_hexadecimal</newTable>
         <primaryKey>c_custkey</primaryKey>
         <columnTypes>int, nchar(4)</columnTypes>
@@ -390,7 +390,7 @@
         <fileName>hexadecimal.txt</fileName>
     </manFile>
     <manFile>
-        <operation>addToTable</operation>
+        <operation>updateTable</operation>
         <table>temp_customer_hexadecimal</table>
         <newTable>customer_hexadecimal</newTable>
         <primaryKey>c_custkey</primaryKey>
@@ -399,8 +399,8 @@
         <fileName>hexadecimal2.txt</fileName>
     </manFile>
     <manFile>
-        <operation>addToTable</operation>
-        <table>originalCustomer</table>
+        <operation>updateTable</operation>
+        <table>customer</table>
         <newTable>temp_customer_char</newTable>
         <primaryKey>c_custkey</primaryKey>
         <columnTypes>int, nchar(2)</columnTypes>
@@ -408,7 +408,7 @@
         <fileName>charUniform.txt</fileName>
     </manFile>
     <manFile>
-        <operation>addToTable</operation>
+        <operation>updateTable</operation>
         <table>temp_customer_char</table>
         <newTable>customer_char</newTable>
         <primaryKey>c_custkey</primaryKey>
@@ -435,7 +435,7 @@
         <newTable>CustomerClusteredIndex_custkeyNonDistinct</newTable>
         <clustered>true</clustered>
         <indexName>index_custkey</indexName>
-        <columns>c_custkey</columns>
+        <columns>c_custkeyNonDistinct</columns>
     </manIndex>
 
 </parameters>

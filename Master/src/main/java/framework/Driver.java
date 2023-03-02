@@ -11,6 +11,7 @@ import java.sql.SQLException;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 import experimental.Anonym;
+import experimental.stuff;
 import framework.Anonymization.AnonymizationDriver;
 import framework.Anonymization.QueryAnonymizer;
 import microbench.Queries;
@@ -23,11 +24,12 @@ import util.GenericQuery;
 import util.Utils;
 
 public class Driver {
-  private static final String sourcePath = System.getProperty("user.dir");
+  public static final String sourcePath = System.getProperty("user.dir");
   private static final String outputDirectory = sourcePath + "/Results";
   private static final String CardinalityDirectory = sourcePath + "/QueryCardinality";
+  private static final String latenciesFile = sourcePath + "/latencies.csv";
   private static final int numberWorkers = 1;
-  private static final int numberOfQueryExecutions = 3;
+  private static final int numberOfQueryExecutions = 11;
 
   public static void main(String[] args) throws Exception {
 
@@ -78,7 +80,6 @@ public class Driver {
     String dbConfigFile = argsLine.getOptionValue("c");
     XMLConfiguration dbConfiguration = Utils.buildXMLConfiguration(dbConfigFile);
     DatabaseConfiguration config = new DatabaseConfiguration(dbConfiguration);
-    config.init();
 
     // Connect to the database.
     try {
@@ -87,8 +88,21 @@ public class Driver {
         System.out.println("Connected.");
       }
 
+      //TEST DELETE
+      /*
+      System.out.println("START TRANSFORMATION");
+      Transformer t = new Transformer(conn);
+      t.transform("customer", "transformedCustomer");
+*/
+
       if (argsLine.hasOption("d")) {
-        ArrayList<Query> qList = Query.QueryGenerator.generateDropQueries(Queries.tables, "table");
+        ArrayList<Query> qList = new ArrayList<>();
+        if (argsLine.getOptionValue("d").equals("anon")){
+          String[] droptable ={"anonymizedCustomer"};
+          qList.addAll(Query.QueryGenerator.generateDropQueries(droptable, "table"));
+        }else{
+          qList.addAll(Query.QueryGenerator.generateDropQueries(Queries.tables, "table"));
+        }
         for (Query q : qList) {
           try {
             q.update(conn);
@@ -122,11 +136,11 @@ public class Driver {
 
       for (Query query : queryManager.getQueriesForExecution()) {
         for (int i = 0; i < numberOfQueryExecutions; i++) {
-          if (prevQuery.equals(query.query_stmt)) {
+          if (prevQuery.equals(query.qName + query.query_stmt)) {
             transactionQueue.add(new QueryBool(query, true));
           } else {
             transactionQueue.add(new QueryBool(query, false));
-            prevQuery = query.query_stmt;
+            prevQuery = query.qName+query.query_stmt;
           }
         }
       }
@@ -150,13 +164,22 @@ public class Driver {
 
       // For each query, group the execution per query Name. Compute for each of these groups the
       // statistics.
+      Files.deleteIfExists(Paths.get(latenciesFile));
+      StringBuilder stringBuilderLatencies = new StringBuilder();
+
       LinkedHashMap<String, LatencyRecord> latencyRecordPerQueryName =
           worker.getLatencyRecord().groupQueriesPerName();
       LinkedHashMap<String, Statistics> statsPerQueryName = new LinkedHashMap<>();
       for (Map.Entry<String, LatencyRecord> entry : latencyRecordPerQueryName.entrySet()) {
         statsPerQueryName.put(
             entry.getKey(), Statistics.computeStatistics(entry.getValue().getLatenciesAsArray()));
+            String latencies = Utils.join(Utils.convertIntArrayToStrArray(entry.getValue().getLatenciesAsArray()),",");
+            stringBuilderLatencies.append(entry.getKey());
+        stringBuilderLatencies.append(",");
+            stringBuilderLatencies.append(latencies);
+            stringBuilderLatencies.append("\n");
       }
+      Utils.strToFile(stringBuilderLatencies.toString(),latenciesFile);
 
       // Stats for all queries together.
       Statistics stats =
@@ -166,13 +189,16 @@ public class Driver {
       ArrayList<String> statAttributes = new ArrayList<>();
       statAttributes.add("Average");
       statAttributes.add("Minimum");
+      statAttributes.add("25thPercentile");
+      statAttributes.add("Median");
       statAttributes.add("75thPercentile");
       statAttributes.add("90thPercentile");
+      statAttributes.add("Maximum");
       // Store the statistics for each query group in the overview file.
       String resultOverviewFile = "overview.csv";
       StringBuilder stringBuilderStats = new StringBuilder();
       stringBuilderStats.append(
-          "Queries, Returned rows, Average time(us), Minimum time, 75thPercentile(us), 90thPercentile(us) \n");
+          "Queries, Returned rows, Average time(us), Minimum time, 25thPercentile, Median, 75thPercentile(us), 90thPercentile(us), Maximum \n");
       for (Map.Entry<String, Statistics> entry : statsPerQueryName.entrySet()) {
         System.out.println(entry.getKey() + " : " + entry.getValue().getAverage());
         stringBuilderStats.append(
@@ -183,7 +209,7 @@ public class Driver {
                 + entry.getValue().print(statAttributes)
                 + System.lineSeparator());
       }
-      Utils.StrToFile(stringBuilderStats.toString(), resultOverviewFile);
+      Utils.strToFile(stringBuilderStats.toString(), resultOverviewFile);
 
       // Write a result file per Query Name.
       ResultWriter rw = new ResultWriter();
@@ -212,7 +238,7 @@ public class Driver {
     optionE.setArgs(Option.UNLIMITED_VALUES);
     optionE.setValueSeparator(',');
     options.addOption(optionE);
-    options.addOption("d", false, "Drop tables. Only works if c is set.");
+    options.addOption("d", true, "Drop tables. Only works if c is set.");
     options.addOption("a", true, "Launches anonymization process");
     return options;
   }
@@ -231,3 +257,4 @@ public class Driver {
     }
   }
 }
+

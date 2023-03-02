@@ -42,7 +42,7 @@ public abstract class GenericQuery {
         result.append("\n");
       }
     }
-    Utils.StrToFile(result.toString(),fileName);
+    Utils.strToFile(result.toString(),fileName);
   }
 
   public ArrayList<String> runAndStoreFirstArgument(Connection connection) throws SQLException {
@@ -56,7 +56,7 @@ public abstract class GenericQuery {
     return result;
     }
     
-  public ResultSet runAndReturnResultSet(Connection conn, RandomGenerator rand) throws SQLException {
+  public ResultSet runAndReturnResultSet(Connection conn) throws SQLException {
     int countRows = 0;
     PreparedStatement stmt = getStatement(conn);
     ResultSet rs = stmt.executeQuery();

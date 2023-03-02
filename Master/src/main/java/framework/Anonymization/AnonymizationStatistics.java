@@ -8,19 +8,31 @@ import java.util.Map;
 
 public class AnonymizationStatistics {
   private HashMap<String, Integer> generalizationLevels;
+  private HashMap<String, String> caseSensitivityInformation;
 
   public AnonymizationStatistics(ARXResult result, ArrayList<String> columns) {
     this.generalizationLevels = ARXUtils.extractGeneralizationLevels(result, columns);
   }
+  public AnonymizationStatistics(HashMap<String,String> caseSensitivityInformation) {
+    this.caseSensitivityInformation = caseSensitivityInformation;
+  }
 
+  public HashMap<String, String> getCaseSensitivityInformation() {
+    return caseSensitivityInformation;
+  }
   public HashMap<String, Integer> getGeneralizationLevels() {
     return generalizationLevels;
   }
 
-  public void printStats() {
+  public String printStats() {
+    StringBuilder stringBuilder = new StringBuilder();
     for (Map.Entry<String, Integer> mapEntry : generalizationLevels.entrySet()) {
-      System.out.println(mapEntry.getKey() + " : " + mapEntry.getValue());
+      stringBuilder.append(mapEntry.getKey());
+      stringBuilder.append(" : ");
+      stringBuilder.append(mapEntry.getValue());
+      stringBuilder.append("\n");
     }
+    return stringBuilder.toString();
   }
 
   /*

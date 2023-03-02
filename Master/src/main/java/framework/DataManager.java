@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 
 import org.apache.commons.beanutils.converters.SqlDateConverter;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
@@ -183,6 +184,20 @@ public class DataManager {
     System.out.println("Created table: " + newTableName);
   }
 
+  public void createTable(String newTableName, ArrayList<String[]> columnNamesAndTypes)
+          throws SQLException {
+    // Format the column arrays into a String that specifies the layout of the table.
+
+    String tableSpecifications = Utils.joinArrays(columnNamesAndTypes, " ", ",");
+    tableSpecifications = Utils.surroundWithParentheses(tableSpecifications);
+    // Create the SQL statement and execute it.
+    Statement stmt = conn.createStatement();
+    String sqlStmt = String.format("CREATE table %s %s", newTableName, tableSpecifications);
+    stmt.executeUpdate(sqlStmt);
+    System.out.println("Created table: " + newTableName);
+  }
+
+
   /**
    * Creates a new table containing the columns of an initial table and the columns of a datafile.
    * Initially, an intermediary table is created with a DDL statement. This table is then filled
@@ -293,6 +308,8 @@ public class DataManager {
       updateTable(tbl, newTbl, false, pk, typeArray, columNames, dataFile);
       Statement stmt = conn.createStatement();
       String sqlStmt = String.format("ALTER TABLE %s DROP COLUMN %s", newTbl, column);
+      stmt.executeUpdate(sqlStmt);
+      sqlStmt = String.format("EXEC sp_RENAME '%s.%s' , '%s', 'COLUMN'", newTbl, columNames[1], column);
       stmt.executeUpdate(sqlStmt);
     } catch (java.sql.SQLException e) {
       e.printStackTrace();

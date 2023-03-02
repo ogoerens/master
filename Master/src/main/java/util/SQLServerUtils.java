@@ -16,7 +16,7 @@ public class SQLServerUtils {
         String.format(
             "SELECT column_name FROM information_schema.columns WHERE table_name ='%s'", tablename);
     Query q = new Query(sqlStmt, Query.informationQID);
-    ResultSet rs = q.runAndReturnResultSet(conn, new Random());
+    ResultSet rs = q.runAndReturnResultSet(conn);
     while (rs.next()) {
       columnNames.add(rs.getString(1));
     }
@@ -38,11 +38,15 @@ public class SQLServerUtils {
             "SELECT column_name, data_type, CHARACTER_MAXIMUM_LENGTH FROM information_schema.columns WHERE table_name ='%s'",
             tablename);
     Query q = new Query(sqlStmt, Query.informationQID);
-    ResultSet rs = q.runAndReturnResultSet(conn, new Random());
+    ResultSet rs = q.runAndReturnResultSet(conn);
     while (rs.next()) {
-      String[] columnNameAndType = {rs.getString(1), rs.getString(2), rs.getString(3)};
+      String[] columnNameAndType = {rs.getString(1).toUpperCase(), rs.getString(2), rs.getString(3)};
       columnNamesAndTypes.add(columnNameAndType);
     }
     return columnNamesAndTypes;
+  }
+
+  public static Boolean isCaseSensitive(String collation){
+    return collation.contains("_CS_");
   }
 }
