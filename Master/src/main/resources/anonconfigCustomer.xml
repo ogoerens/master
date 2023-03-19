@@ -4,7 +4,8 @@
 
     <!-- Connection details -->
     ///Indicate where data is stored. Possibilities: file, DBMS
-    <AnonymizationStrategy>Hash</AnonymizationStrategy>
+    ///Strategy either Hash, Synth or Arx
+    <AnonymizationStrategy>Synth</AnonymizationStrategy>
     <Hash>
         <HashingFunction>SHA256</HashingFunction>
         <Columns>c_custkey,c_nationkey,c_name,c_acctbal,c_mktsegment</Columns>

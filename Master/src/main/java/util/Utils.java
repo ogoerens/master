@@ -7,6 +7,7 @@ import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.tree.xpath.XPathExpressionEngine;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.*;
 import java.util.*;
@@ -44,6 +45,30 @@ public class Utils {
     return new ArrayList<>(Arrays.asList(array));
   }
 
+  /**
+   * Creates a Mapping from String values to Integers.
+   *
+   * @param values A String array that contains the Strings that are going to be mapped to an
+   *     Integer. The Strings are mapped to the Integer that indexes their position in the array. If
+   *     values contains a duplicate, the mapping is to the last occurrence in the array.
+   * @return
+   */
+  public static HashMap<String, Integer> createCategoricalMapping(String[] values) {
+    HashMap<String, Integer> mapping = new HashMap<>();
+    for (int i = 0; i < values.length; i++) {
+      mapping.put(values[i], i);
+    }
+    return mapping;
+  }
+
+  public static HashMap<Integer, String> createReverseCategoricalMapping(String[] values) {
+    HashMap<Integer, String> mapping = new HashMap<>();
+    for (int i = 0; i < values.length; i++) {
+      mapping.put(i,values[i]);
+    }
+    return mapping;
+  }
+
   public static String join(String[] array, String delimiter) {
     StringBuilder stringBuilder = new StringBuilder();
     String delim = "";
@@ -73,12 +98,12 @@ public class Utils {
       combinations *= arrays[i].length;
     }
     String[][] res = new String[combinations][arrays.length];
-    int atAStretch =combinations;
+    int atAStretch = combinations;
     for (int i = 0; i < arrays.length; i++) {
-       atAStretch = atAStretch / arrays[i].length;
+      atAStretch = atAStretch / arrays[i].length;
       int pos = 0;
-      int repeat = combinations/(atAStretch*arrays[i].length);
-      for (int r =0; r<repeat;r++){
+      int repeat = combinations / (atAStretch * arrays[i].length);
+      for (int r = 0; r < repeat; r++) {
         for (int j = 0; j < arrays[i].length; j++) {
           for (int k = 0; k < atAStretch; k++) {
             res[pos][i] = arrays[i][j];
@@ -123,12 +148,12 @@ public class Utils {
     return gaussian_ints;
   }
 
-  public static String arrayListToSQLString(ArrayList<String> strs) {
+  public static String arrayListToString(ArrayList<String> strs, String connector) {
     String res = "";
     boolean comma = false;
     for (String str : strs) {
       if (comma) {
-        res += ", " + str;
+        res += connector + str;
       } else {
         comma = true;
         res += str;
@@ -519,7 +544,6 @@ public class Utils {
       return res;
     }
   }
-
 
   public static double eval(final String str, int val) {
     return new Object() {

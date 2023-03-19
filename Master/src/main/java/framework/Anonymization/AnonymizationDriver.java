@@ -20,9 +20,8 @@ public class AnonymizationDriver {
   ARXDataHandler arxDataHandler;
   HierarchyManager hierarchyManager;
   AnonymizationConfiguration anonConfig;
-  private static String statsFile = Driver.getSourcePath() +"/stats.txt";
-  private static final String hierarchiesFile =
-      "src/main/resources/hierarchies.xml";
+  private static String statsFile = Driver.getSourcePath() + "/stats.txt";
+  private static final String hierarchiesFile = "src/main/resources/hierarchies.xml";
   private static final String anonyimzedQueriesFile = "AnonymizedQueries.txt";
   private static final String dbConfigFile = "src/main/resources/benchconfigAnon.xml";
   private AnonymizationStatistics anonymizationStatistics;
@@ -38,15 +37,34 @@ public class AnonymizationDriver {
     DatabaseConfiguration dbConfiguration = new DatabaseConfiguration(xmlDbConfiguration);
     Connection conn = dbConfiguration.makeConnection();
 
-
-    //Decide based on the anonymization strategy how the anonyimization takes place.
-    if (anonConfig.getAnonymizationStrategy().equalsIgnoreCase("hash")){
-      //anonymizeUsingHash
+    // Decide based on the anonymization strategy how the anonyimization takes place.
+    if (anonConfig.getAnonymizationStrategy().equalsIgnoreCase("hash")) {
+      // anonymizeUsingHash
       Transformer transformer = new Transformer(conn);
-      this.anonymizationStatistics = transformer.transform(anonConfig.getHashingFunction(),anonConfig.getDataTableName(), anonConfig.getOutputTableName(), anonConfig.getHashingColumns());
-    }else{
-      //anonyimizeUSingArx
-      this.anonymizationStatistics = arxAnonymization(conn, dbConfiguration);
+      String[] selectionCols = {"*"};
+      this.anonymizationStatistics =
+          transformer.transform(
+              anonConfig.getHashingFunction(),
+              anonConfig.getDataTableName(),
+              anonConfig.getOutputTableName(),
+              anonConfig.getHashingColumns(),
+              selectionCols);
+    } else {
+      if (anonConfig.getAnonymizationStrategy().equalsIgnoreCase("Synth")) {
+        //anonymizeUsingSyntheticData
+        Synthesizer s = new Synthesizer(conn);
+        String [] selectionCols ={"C_CUSTKEY","C_NATIONKEY","C_ACCTBAL", "CORR1", "CORR2","C_MKTSEGMENT", "C_PHONE"};
+        s.synthesize("customer", "src/main/resources/domain.json", selectionCols,"src/main/resources/private-pgm/mechanisms/mst.py");
+
+        String [] cols = {"*"};
+        Transformer t = new Transformer(conn, new Random());
+        t.transform("SYNTHBACK","RESULT", anonConfig.getOutputTableName(), cols,cols, util.SQLServerUtils.getColumnNamesAndTypes(conn, "customer"));
+
+      } else {
+
+        // anonyimizeUSingArx
+        this.anonymizationStatistics = arxAnonymization(conn, dbConfiguration);
+      }
     }
 
     // QueryAnonimization if set.
@@ -54,16 +72,28 @@ public class AnonymizationDriver {
       return;
     }
 
+    //For synthetic data queries do not change. Except for tablename,
+    if (anonConfig.getAnonymizationStrategy().equalsIgnoreCase("Synth")) {
+      for (String querySetName : anonConfig.getQuerysetNames()) {
+        queryManager.addOriginalQueries(Queries.returnQueryList(querySetName));
+        for (microbench.Query query: Queries.returnQueryList(querySetName)){
+          queryManager.addAnonymizedQuery(query.qName+"Anonymized", query.query_stmt.toUpperCase().replace(anonConfig.getDataTableName(),anonConfig.getOutputTableName()));
+        }
+      }
+      return;
+    }
+
     // Add the queries specified in the configuration to the original Queryset in the queryMananger.
-    for (String querySetName:anonConfig.getQuerysetNames()){
+    for (String querySetName : anonConfig.getQuerysetNames()) {
       queryManager.addOriginalQueries(Queries.returnQueryList(querySetName));
     }
-    ArrayList<String[]> columnNamesAndTypes = util.SQLServerUtils.getColumnNamesAndTypes(
-            conn, anonConfig.getDataTableName());
+    ArrayList<String[]> columnNamesAndTypes =
+        util.SQLServerUtils.getColumnNamesAndTypes(conn, anonConfig.getDataTableName());
 
     // Retrieve the generalization Levels for the anonymization and anonymize the queries.
     QueryAnonymizer queryAnonymizer =
-        new QueryAnonymizer(this.anonymizationStatistics, hierarchyManager, anonConfig, columnNamesAndTypes);
+        new QueryAnonymizer(
+            this.anonymizationStatistics, hierarchyManager, anonConfig, columnNamesAndTypes);
     ArrayList<microbench.Query> anonQueries =
         queryAnonymizer.anonymize(queryManager.getOriginalQueryStore());
     queryManager.setAnonymizedQueryStore(anonQueries);
@@ -75,22 +105,21 @@ public class AnonymizationDriver {
       anonQueriesStringBuilder.append("QueryName: " + anonymizedQuery.qName + "\n");
       anonQueriesStringBuilder.append("Query: " + anonymizedQuery.query_stmt + "\n");
     }
-    Utils.strToFile(anonQueriesStringBuilder.toString(),AnonymizationDriver.anonyimzedQueriesFile);
+    Utils.strToFile(anonQueriesStringBuilder.toString(), AnonymizationDriver.anonyimzedQueriesFile);
 
     conn.close();
   }
 
   /**
    * Loads a table from a DBMS into the data variable of the datahandler.
+   *
    * @throws SQLException
    * @throws IOException
    */
   private void loadDataFromDBMS(DatabaseConfiguration dbConfig) throws SQLException, IOException {
     // The load function has its own connection to the DB server.
     arxDataHandler.loadJDBC(
-        "jdbc:sqlserver://localhost:1433;encrypt=false;database="
-            + dbConfig.getDatabase()
-            + ";",
+        "jdbc:sqlserver://localhost:1433;encrypt=false;database=" + dbConfig.getDatabase() + ";",
         dbConfig.getUser(),
         dbConfig.getPassword(),
         anonConfig.getDataTableName());
@@ -149,7 +178,8 @@ public class AnonymizationDriver {
     return stringBuilderTable.toString();
   }
 
-  private AnonymizationStatistics arxAnonymization(Connection conn, DatabaseConfiguration dbConfig) throws SQLException, Exception{
+  private AnonymizationStatistics arxAnonymization(Connection conn, DatabaseConfiguration dbConfig)
+      throws SQLException, Exception {
     // Build the hierarchies needed later on during the anonymization algorithm.
     XMLConfiguration hierarchyConf = Utils.buildXMLConfiguration(hierarchiesFile);
     this.hierarchyManager = new HierarchyManager(hierarchyConf);
@@ -157,8 +187,7 @@ public class AnonymizationDriver {
     HierarchyStore hierarchies = hierarchyManager.getHierarchyStore();
     this.arxDataHandler = new ARXDataHandler();
     ArrayList<String[]> columnNamesAndTypes =
-            util.SQLServerUtils.getColumnNamesAndTypes(
-                    conn, anonConfig.getDataTableName());
+        util.SQLServerUtils.getColumnNamesAndTypes(conn, anonConfig.getDataTableName());
     ArrayList<String> colNamesUppercase = new ArrayList<>();
     ArrayList<String> colTypes = new ArrayList<>();
     for (String[] colNameAndType : columnNamesAndTypes) {
@@ -184,7 +213,8 @@ public class AnonymizationDriver {
 
     // Run the dataset anonymization.
     ARXAnonymizer anonymizer = new ARXAnonymizer();
-    ARXResult arxResult = anonymizer.anonymize(arxDataHandler.getArxdata(), anonConfig.getARXConfig());
+    ARXResult arxResult =
+        anonymizer.anonymize(arxDataHandler.getArxdata(), anonConfig.getARXConfig());
 
     // Store the hierarchies for all hierarchies that are built using a HierarchyBuilder, i.e. by a
     // logic rather than an existing hierarchy file. Hierarchies are only built during the
@@ -192,7 +222,7 @@ public class AnonymizationDriver {
     hierarchyManager.storeMaterializedHierarchies(arxDataHandler.getArxdata(), arxResult);
     hierarchyManager.storeMaterializedHierarchiesToFile();
     AnonymizationStatistics statistics = new AnonymizationStatistics(arxResult, colNamesUppercase);
-    Utils.strToFile(statistics.printStats(),statsFile);
+    Utils.strToFile(statistics.printStats(), statsFile);
 
     // Anonym.printResult(arxResult, data);
     // TODO if not result possible with ldiversity. Check if can get ouput or output null.
@@ -207,12 +237,12 @@ public class AnonymizationDriver {
     String[] cN = new String[colNamesUppercase.size()];
     String[] cT = new String[colTypes.size()];
     dataManger.newTable(
-            anonConfig.getOutputTableName(),
-            Driver.getSourcePath() + "/" + anonConfig.getOutputFileName(),
-            colTypes.toArray(cT),
-            colNamesUppercase.toArray(cN),
-            "|",
-            System.lineSeparator());
+        anonConfig.getOutputTableName(),
+        Driver.getSourcePath() + "/" + anonConfig.getOutputFileName(),
+        colTypes.toArray(cT),
+        colNamesUppercase.toArray(cN),
+        "|",
+        System.lineSeparator());
 
     return statistics;
   }

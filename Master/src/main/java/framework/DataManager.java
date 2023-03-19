@@ -75,10 +75,10 @@ public class DataManager {
           newTable(newTbl, file, colTypes, colNames, fieldTerminator, rowTerminator);
           break;
         case "updateTable":
-          updateTable(tbl, newTbl, true, pk, colTypes, colNames, file);
+          updateTable(tbl, newTbl, true, pk, colTypes, colNames, file,defaultFieldTerminator);
           break;
         case "addToTable":
-          updateTable(tbl, newTbl, false, pk, colTypes, colNames, file);
+          updateTable(tbl, newTbl, false, pk, colTypes, colNames, file, defaultFieldTerminator);
           break;
         case "updateColumn":
           String column = subConfig.getString("column");
@@ -222,7 +222,9 @@ public class DataManager {
       String primaryKey,
       String[] columnTypes,
       String[] columnNames,
-      String dataFile) {
+      String dataFile,
+      String fieldTerminator
+  ) {
     // Drop columns in original table.
     if (drop) {
       StringBuilder colnamesForDrop = new StringBuilder();
@@ -243,7 +245,7 @@ public class DataManager {
       }
     }
     // Create temporary table with file content.
-    newTable("temporary1", dataFile, columnTypes, columnNames, defaultFieldTerminator);
+    newTable("temporary1", dataFile, columnTypes, columnNames, fieldTerminator);
     StringBuilder stringBuilder = new StringBuilder();
     int numberOfColumns = columnTypes.length;
     for (int i = 1; i < numberOfColumns; i++) {
@@ -305,7 +307,7 @@ public class DataManager {
       String dataFile) {
     try {
       String[] typeArray = {keytype, type};
-      updateTable(tbl, newTbl, false, pk, typeArray, columNames, dataFile);
+      updateTable(tbl, newTbl, false, pk, typeArray, columNames, dataFile, defaultFieldTerminator);
       Statement stmt = conn.createStatement();
       String sqlStmt = String.format("ALTER TABLE %s DROP COLUMN %s", newTbl, column);
       stmt.executeUpdate(sqlStmt);
