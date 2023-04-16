@@ -36,7 +36,7 @@ public class Synthesizer {
     t.transformAndStore(
         "SYNTH", tablename, storeDataFilename, columnsForSynth, columnsForSynth, ",", true);
 
-  /*  PythonLauncher pythonLauncher = new PythonLauncher();
+    PythonLauncher pythonLauncher = new PythonLauncher();
 
     pythonLauncher.launch(
         programLocation,
@@ -47,7 +47,7 @@ public class Synthesizer {
         "--save",
         storeSynthDataFilename);
 
-   */
+
 
     // need to create this table
     // need to remap values

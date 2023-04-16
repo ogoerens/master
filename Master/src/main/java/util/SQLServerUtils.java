@@ -30,7 +30,7 @@ public class SQLServerUtils {
    * @return
    * @throws SQLException
    */
-  public static ArrayList<String[]> getColumnNamesAndTypes(Connection conn, String tablename)
+  public static ArrayList<String[]> getColumnNamesAndTypes(Connection conn, String tablename, Boolean uppercase)
       throws SQLException {
     ArrayList<String[]> columnNamesAndTypes = new ArrayList<>();
     String sqlStmt =
@@ -40,11 +40,23 @@ public class SQLServerUtils {
     Query q = new Query(sqlStmt, Query.informationQID);
     ResultSet rs = q.runAndReturnResultSet(conn);
     while (rs.next()) {
-      String[] columnNameAndType = {rs.getString(1).toUpperCase(), rs.getString(2), rs.getString(3)};
+      String[] columnNameAndType = new String[3];
+      if (uppercase){
+        columnNameAndType[0]=rs.getString(1).toUpperCase();
+      }else{
+        columnNameAndType[0] = rs.getString(1);
+      }
+      columnNameAndType[1] = rs.getString(2);
+      columnNameAndType[2] = rs.getString(3);
       columnNamesAndTypes.add(columnNameAndType);
     }
     return columnNamesAndTypes;
   }
+
+  public static ArrayList<String[]> getColumnNamesAndTypes(Connection conn, String tablename) throws  SQLException{
+    return getColumnNamesAndTypes(conn,tablename, true);
+  }
+
 
   public static Boolean isCaseSensitive(String collation){
     return collation.contains("_CS_");

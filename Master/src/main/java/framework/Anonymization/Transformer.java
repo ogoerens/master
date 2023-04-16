@@ -283,11 +283,11 @@ public class Transformer {
         int numericValue = Integer.valueOf(value) + minimum;
         value = Integer.toString(numericValue);
       }
-      if (column.equals("CORR2")) {
+      /*if (column.equals("CORR2")) {
         int minimum = 100;
         int numericValue = Integer.valueOf(value) + minimum;
         value = Integer.toString(numericValue);
-      }
+      }*/
       if (column.equals("C_MKTSEGMENT")) {
         value = Integer.toString(mapping_mkt.get(value));
       }
@@ -321,11 +321,11 @@ public class Transformer {
         int numericValue = Integer.valueOf(value) - minimum;
         value = numericValue + "." + decimals[0];
       }
-      if (column.equals("CORR2")) {
+      /*if (column.equals("CORR2")) {
         int minimum = 100;
         int numericValue = Integer.valueOf(value) - minimum;
         value = Integer.toString(numericValue);
-      }
+      }*/
       if (column.equals("C_MKTSEGMENT")) {
         value = mapping_mkt.get(Integer.valueOf(value));
       }

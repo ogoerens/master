@@ -5,12 +5,17 @@ import microbench.Query;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
 public class stuff {
   public static void test(Connection conn) {
+
+    byte[] bytes = "hallo".getBytes(StandardCharsets.UTF_8);
+    System.out.println(bytes);
+
 
     /*
     Scanner scan = new Scanner(System.in);
@@ -79,7 +84,7 @@ public class stuff {
 
        */
 
-
+  /*
     String queryString = "Select c_comment from customer";
     Query query = new Query(queryString, false);
     ArrayList<String> comments = new ArrayList<>();
@@ -111,6 +116,8 @@ public class stuff {
     String[] coco = new String[comments.size()];
     comments.toArray(coco);
 
+
+   */
 
 
     return;

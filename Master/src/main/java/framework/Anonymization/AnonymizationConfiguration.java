@@ -22,6 +22,7 @@ public class AnonymizationConfiguration {
   private String dataStorageMethod;
   private String dataTableName;
   private String dataFileName;
+  private String domainFileLocation;
   private String outputFileName;
   private String outputTableName;
   private String[] querysetNames;
@@ -70,7 +71,7 @@ public class AnonymizationConfiguration {
       this.querysetNames = dataSubconfig.getStringArray("querysetName");
     }
 
-    // All configuration arguments for the hashing operation have been retrieved.
+    // All configuration arguments for the hashing operation are retrieved.
     if (this.anonymizationStrategy.equalsIgnoreCase("hash")){
       HierarchicalConfiguration hashSubconfig = config.configurationAt("Hash");
       this.hashingFunction = hashSubconfig.getString("HashingFunction");
@@ -80,6 +81,11 @@ public class AnonymizationConfiguration {
         this.hashingColumns[i]= hashingColumnsRandom[i].toUpperCase();
       }
       return;
+    }
+    // All configuration arguments for the hashing operation are retrieved.
+    if (this.anonymizationStrategy.equalsIgnoreCase("Synth")){
+      HierarchicalConfiguration synthSubconfig = config.configurationAt("Synth");
+      this.domainFileLocation = synthSubconfig.getString("domainLocation");
     }
 
     //Retrieve the remaining arguments for the other anonymization techniques.
@@ -138,6 +144,10 @@ public class AnonymizationConfiguration {
 
   public String getDataStorageMethod() {
     return dataStorageMethod;
+  }
+
+  public String getDomainFileLocation() {
+    return domainFileLocation;
   }
 
   public String getHashingFunction() {

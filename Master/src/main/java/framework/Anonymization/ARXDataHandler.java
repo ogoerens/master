@@ -55,7 +55,7 @@ public class ARXDataHandler {
     DataSource source = DataSource.createJDBCSource(url, user, password, table);
     Connection connection = DriverManager.getConnection(url, user, password);
     ArrayList<String[]> columnNamesAndTypes =
-        SQLServerUtils.getColumnNamesAndTypes(connection, table);
+        SQLServerUtils.getColumnNamesAndTypes(connection, table, false);
     connection.close();
     addColumnsToDataSource(source, columnNamesAndTypes);
     this.arxdata = Data.create(source);

@@ -1,25 +1,18 @@
 package experimental;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.*;
 
 import framework.Anonymization.HierarchyManager;
 import framework.Anonymization.HierarchyStore;
-import framework.Driver;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.deidentifier.arx.*;
 import org.deidentifier.arx.AttributeType.Hierarchy;
 import org.deidentifier.arx.AttributeType.Hierarchy.DefaultHierarchy;
-import org.deidentifier.arx.Data.DefaultData;
 import org.deidentifier.arx.aggregates.*;
-import org.deidentifier.arx.criteria.DistinctLDiversity;
 import org.deidentifier.arx.criteria.KAnonymity;
-import org.deidentifier.arx.criteria.RecursiveCLDiversity;
-import org.deidentifier.arx.metric.Metric;
-import org.deidentifier.arx.risk.RiskModelAttributes;
 import util.Utils;
 
 public class Anonym {
@@ -59,7 +52,7 @@ public class Anonym {
 
     // Define grouping fanouts
     builder.getLevel(0).addGroup(5, DataType.INTEGER.createAggregate().createIntervalFunction());
-    builder.getLevel(1).addGroup(5, DataType.INTEGER.createAggregate().createIntervalFunction());
+    builder.getLevel(1).addGroup(1, DataType.INTEGER.createAggregate().createIntervalFunction());
     builder.getLevel(2).addGroup(2, DataType.INTEGER.createAggregate().createIntervalFunction());
 
     System.out.println("---------------------");
@@ -147,7 +140,7 @@ public class Anonym {
     System.out.println("RESULT");
 
     // Print resulting hierarchy
-    storeHierarchy(builder2.build().getHierarchy(), "hierarchies/interval.csv");
+    printArray(builder2.build().getHierarchy());
     System.out.println("");
 
     Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
@@ -206,9 +199,9 @@ public class Anonym {
 
     for (String s : hierarchies.getColumnNames()) {
       if (hierarchies.getIndexForColumnName(s) == 0) {
-        data.getDefinition().setAttributeType(s, hierarchies.hierarchies.get(s));
+        data.getDefinition().setAttributeType(s, hierarchies.getHierarchies().get(s));
       } else {
-        data.getDefinition().setAttributeType(s, hierarchies.hierarchyBuilders.get(s));
+        data.getDefinition().setAttributeType(s, hierarchies.getHierarchyBuilders().get(s));
       }
     }
 
@@ -233,7 +226,7 @@ public class Anonym {
     // Create an instance of the anonymizer
     ARXAnonymizer anonymizer = new ARXAnonymizer();
     ARXConfiguration config = ARXConfiguration.create();
-    config.addPrivacyModel(new KAnonymity(2));
+    config.addPrivacyModel(new KAnonymity(1));
     // config.addPrivacyModel(new DistinctLDiversity("illness", 2));
 
     // NDS-specific settings
@@ -247,11 +240,100 @@ public class Anonym {
 
      */
 
+    hierarchies.getHierarchyBuilders().get("c_custkey");
+    if (hierarchies.getHierarchyBuilders().get("c_custkey")
+        instanceof HierarchyBuilderIntervalBased<?>) {
+      System.out.println("ohje");
+    }
+    HierarchyBuilderIntervalBased intervalBased =
+        (HierarchyBuilderIntervalBased) hierarchies.getHierarchyBuilders().get("c_custkey");
+
+    long topval = (long) intervalBased.getUpperRange().getBottomTopCodingFrom() - 1;
+
+    // data1.getDefinition().setMinimumGeneralization();
+
+    String[] vals = {
+      "0",
+      "11",
+      intervalBased.getLowerRange().getBottomTopCodingFrom().toString(),
+      intervalBased.getUpperRange().getBottomTopCodingFrom().toString()
+    };
+    intervalBased.prepare(vals);
+    printArray(intervalBased.build().getHierarchy());
+
+    String[] valss = {"%a%b%cdef", "%xsafasfx", "%xsafafx%", "asfasfasf%"};
+    if (hierarchies.getHierarchyBuilders().get("c_name")
+        instanceof HierarchyBuilderRedactionBased<?>) {
+      System.out.println("ohneee");
+      HierarchyBuilderRedactionBased redactionBased =
+          (HierarchyBuilderRedactionBased) hierarchies.getHierarchyBuilders().get("c_name");
+      int size = 4; // found by hiera[0][1].length.
+
+      for (String originalVal : valss) {
+        int generalizationLevel = 3;
+        int remainingLength = size - generalizationLevel;
+        String modifiedValue = originalVal.replace("%", "");
+        int valSize = modifiedValue.length();
+
+        String newVal = modifiedValue;
+        if (valSize > size) {
+          modifiedValue.substring(0, size);
+        }
+
+        String anonVal = "";
+        ArrayList<Integer> indexes = new ArrayList<>();
+        int index = originalVal.indexOf("%");
+        while (index >= 0) {
+          indexes.add(index);
+          index = originalVal.indexOf("%", index + 1);
+        }
+
+        // Mask right to left
+        int k = 0;
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i=0; i<originalVal.length(); i++){
+          if (k==size){
+            if (originalVal.charAt(i)=='%'){
+              stringBuilder.append('%');
+            }
+            break;
+          }
+          stringBuilder.append(originalVal.charAt(i));
+          if (originalVal.charAt(i)!='%'){
+            k++;
+          }
+
+        }
+        System.out.println(stringBuilder.toString());
+
+        k = 0;
+        StringBuilder otherWay = new StringBuilder();
+        for (int i = 1; i <= originalVal.length(); i++) {
+          if (k < size) {
+            otherWay.append(originalVal.charAt(originalVal.length() - i));
+            if (originalVal.charAt(originalVal.length() - i) != '%') {
+              k++;
+            }
+          } else {
+            if (originalVal.charAt(originalVal.length() - i) == '%') {
+              otherWay.append("%");
+            }
+            break;
+          }
+        }
+        otherWay.reverse();
+        System.out.println(otherWay.toString());
+      }
+
+      HierarchyBuilderRedactionBased.Order order = redactionBased.getRedactionOrder();
+    }
+
+    /*
     try {
-      ARXResult result = anonymizer.anonymize(data, config);
+      ARXResult result = anonymizer.anonymize(data1, config);
 
       // Print info
-      printResult(result, data);
+      printResult(result, data1);
       // Process results
       System.out.println(" - Transformed data:");
       Iterator<String[]> transformed = result.getOutput(false).iterator();
@@ -262,13 +344,15 @@ public class Anonym {
     } catch (java.io.IOException e) {
       e.printStackTrace();
     }
+
+     */
   }
 
   private static String[] getExampleData() {
 
     String[] result = new String[101];
     for (int i = 0; i < result.length; i++) {
-      result[i] = String.valueOf(i);
+      result[i] = String.valueOf(i * 2);
     }
     return result;
   }
@@ -371,6 +455,6 @@ public class Anonym {
         stringBuffer.append(",\n");
       }
     }
-    Utils.StrToFile(stringBuffer.toString(), fileName);
+    Utils.strToFile(stringBuffer.toString(), fileName);
   }
 }

@@ -11,8 +11,6 @@ import java.sql.SQLException;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 import framework.Anonymization.AnonymizationDriver;
-import framework.Anonymization.Synthesizer;
-import framework.Anonymization.Transformer;
 import microbench.Queries;
 import microbench.Query;
 import org.apache.commons.cli.*;
@@ -27,8 +25,9 @@ public class Driver {
   private static final String outputDirectory = sourcePath + "/Results";
   private static final String CardinalityDirectory = sourcePath + "/QueryCardinality";
   private static final String latenciesFile = sourcePath + "/latencies.csv";
+  private static final String latenciesFileAVG = sourcePath + "/latenciesAverage.csv";
   private static final int numberWorkers = 1;
-  private static final int numberOfQueryExecutions = 11;
+  private static int numberOfQueryExecutions = 11;
 
   public static void main(String[] args) throws Exception {
 
@@ -43,7 +42,8 @@ public class Driver {
     // Check if data should be anonymized, i.e. option "a" is set and configuration file is passed
     // as argument.
     if (argsLine.hasOption("a")) {
-      AnonymizationDriver ad = new AnonymizationDriver(argsLine.getOptionValue("a"));
+      AnonymizationDriver ad =
+          new AnonymizationDriver(argsLine.getOptionValue("a"), argsLine.getOptionValue("c"));
       // TODO: Detail what arguments anonymization driver takes.
       ad.anonymize(queryManager);
     }
@@ -51,6 +51,9 @@ public class Driver {
     // Add queries to the Query Manager.
 
     if (argsLine.hasOption("e")) {
+      if (argsLine.hasOption("numExecutions")) {
+        numberOfQueryExecutions = Integer.parseInt(argsLine.getOptionValue("numExecution"));
+      }
       String[] querySetNames = argsLine.getOptionValues("e");
       for (String querySetName : querySetNames) {
         queryManager.addQueriesForExecution(querySetName);
@@ -90,7 +93,14 @@ public class Driver {
       if (argsLine.hasOption("d")) {
         ArrayList<Query> qList = new ArrayList<>();
         if (argsLine.getOptionValue("d").equals("anon")) {
-          String[] droptable = {"anonymizedCustomer", "transformedData","RemainingData", "SynthesizedData","Result","CorrectSynthesizedData"};
+          String[] droptable = {
+            "anonymizedCustomer",
+            "transformedData",
+            "RemainingData",
+            "SynthesizedData",
+            "Result",
+            "CorrectSynthesizedData"
+          };
           qList.addAll(Query.QueryGenerator.generateDropQueries(droptable, "table"));
         } else {
           qList.addAll(Query.QueryGenerator.generateDropQueries(Queries.tables, "table"));
@@ -107,7 +117,6 @@ public class Driver {
         System.out.println("Drop was performed. Exiting");
         System.exit(0);
       }
-
 
       // Check if DataManager is used. If so, create DM configuration and execute DM. File should
       // be: manageconfig.xml.
@@ -162,6 +171,10 @@ public class Driver {
 
       LinkedHashMap<String, LatencyRecord> latencyRecordPerQueryName =
           worker.getLatencyRecord().groupQueriesPerName();
+
+      LinkedHashMap<String, LatencyRecord> latencyRecordPerDistribution =
+          worker.getLatencyRecord().groupQueriesPerDistribution();
+
       LinkedHashMap<String, Statistics> statsPerQueryName = new LinkedHashMap<>();
       for (Map.Entry<String, LatencyRecord> entry : latencyRecordPerQueryName.entrySet()) {
         statsPerQueryName.put(
@@ -176,10 +189,43 @@ public class Driver {
       }
       Utils.strToFile(stringBuilderLatencies.toString(), latenciesFile);
 
+      // "Clear" stringBuilder.
+      stringBuilderLatencies.setLength(0);
+
+      LinkedHashMap<String, Statistics> statsPerDistribution = new LinkedHashMap<>();
+      for (Map.Entry<String, LatencyRecord> entry : latencyRecordPerDistribution.entrySet()) {
+        statsPerDistribution.put(
+            entry.getKey(), Statistics.computeStatistics(entry.getValue().getLatenciesAsArray()));
+        String latencies =
+            Utils.join(
+                Utils.convertIntArrayToStrArray(entry.getValue().getLatenciesAsArray()), ",");
+        stringBuilderLatencies.append(entry.getKey());
+        stringBuilderLatencies.append(",");
+        stringBuilderLatencies.append(latencies);
+        stringBuilderLatencies.append("\n");
+      }
+      Utils.strToFile(stringBuilderLatencies.toString(), latenciesFileAVG);
+
       // Stats for all queries together.
       Statistics stats =
           Statistics.computeStatistics(worker.getLatencyRecord().getLatenciesAsArray());
-      statsPerQueryName.put("Overall", stats);
+      //statsPerQueryName.put("Overall", stats);
+
+      // group by query number
+
+
+
+
+      LinkedHashMap<String, ArrayList<Statistics>> statsPerQueryNumber = new LinkedHashMap<>();
+      for (Map.Entry<String, Statistics> entry : statsPerQueryName.entrySet()) {
+        String distribution = LatencyRecord.extractDistribution(entry.getKey());
+        String querynumber = entry.getKey().substring(0, entry.getKey().indexOf("_"))+ distribution;
+        if (!statsPerQueryNumber.containsKey(querynumber)) {
+          statsPerQueryNumber.put(querynumber, new ArrayList<>());
+        }
+        statsPerQueryNumber.get(querynumber).add(entry.getValue());
+      }
+      printAverageToFile(statsPerQueryNumber);
 
       ArrayList<String> statAttributes = new ArrayList<>();
       statAttributes.add("Average");
@@ -228,12 +274,12 @@ public class Driver {
     Options options = new Options();
     options.addOption("dm", true, "DataManger is executed when set");
     options.addOption("g", true, "Generator is executed when set");
-    // currently ex is not needed to execute
     options.addOption("c", true, "Connection is established when set");
     Option optionE = new Option("e", true, "Executes queries of specified benchmarks when set");
     optionE.setArgs(Option.UNLIMITED_VALUES);
     optionE.setValueSeparator(',');
     options.addOption(optionE);
+    options.addOption("numExecutions", true, "Set number(int) of query executions. Default: 11");
     options.addOption("d", true, "Drop tables. Only works if c is set.");
     options.addOption("a", true, "Launches anonymization process");
     return options;
@@ -242,6 +288,25 @@ public class Driver {
   public static String getSourcePath() {
     return sourcePath;
   }
+
+  public static void printAverageToFile(LinkedHashMap<String, ArrayList<Statistics>> stats) {
+    // Store the statistics for each query group in the overview file.
+    String resultOverviewFile = "averagesPerQueryNumber.csv";
+    StringBuilder stringBuilderStats = new StringBuilder();
+    stringBuilderStats.append("Queries,  Average time(us) \n");
+    for (Map.Entry<String, ArrayList<Statistics>> entry : stats.entrySet()) {
+      stringBuilderStats.append(entry.getKey() );
+      for (Statistics statistics : entry.getValue()) {
+        stringBuilderStats.append("," + statistics.getAverage());
+      }
+      stringBuilderStats.append(System.lineSeparator());
+    }
+    Utils.strToFile(stringBuilderStats.toString(), resultOverviewFile);
+  }
+
+
+
+
 
   public static class QueryBool {
     public GenericQuery query;

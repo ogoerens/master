@@ -23,11 +23,12 @@ public class AnonymizationDriver {
   private static String statsFile = Driver.getSourcePath() + "/stats.txt";
   private static final String hierarchiesFile = "src/main/resources/hierarchies.xml";
   private static final String anonyimzedQueriesFile = "AnonymizedQueries.txt";
-  private static final String dbConfigFile = "src/main/resources/benchconfigAnon.xml";
+  private String dbConfigFile;
   private AnonymizationStatistics anonymizationStatistics;
 
-  public AnonymizationDriver(String xmlConfig) {
+  public AnonymizationDriver(String xmlConfig, String dbConfigFile) {
     this.anonConfigFile = xmlConfig;
+    this.dbConfigFile =dbConfigFile;
     // Create the configuration for the anonymization process.
     this.anonConfig = new AnonymizationConfiguration(this.anonConfigFile);
   }
@@ -54,7 +55,7 @@ public class AnonymizationDriver {
         //anonymizeUsingSyntheticData
         Synthesizer s = new Synthesizer(conn);
         String [] selectionCols ={"C_CUSTKEY","C_NATIONKEY","C_ACCTBAL", "CORR1", "CORR2","C_MKTSEGMENT", "C_PHONE"};
-        s.synthesize("customer", "src/main/resources/domain.json", selectionCols,"src/main/resources/private-pgm/mechanisms/mst.py");
+        s.synthesize(anonConfig.getDataTableName(), anonConfig.getDomainFileLocation(), selectionCols,"src/main/resources/private-pgm/mechanisms/mst.py");
 
         String [] cols = {"*"};
         Transformer t = new Transformer(conn, new Random());

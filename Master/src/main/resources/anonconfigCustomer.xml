@@ -5,18 +5,20 @@
     <!-- Connection details -->
     ///Indicate where data is stored. Possibilities: file, DBMS
     ///Strategy either Hash, Synth or Arx
-    <AnonymizationStrategy>Synth</AnonymizationStrategy>
+    <AnonymizationStrategy>arx</AnonymizationStrategy>
     <Hash>
         <HashingFunction>SHA256</HashingFunction>
         <Columns>c_custkey,c_nationkey,c_name,c_acctbal,c_mktsegment</Columns>
     </Hash>
-
+    <Synth>
+        <domainLocation>src/main/resources/domainSMALL.json</domainLocation>
+    </Synth>
     <Data>
         <StorageMethod>dbms</StorageMethod>
-        <StorageName>customer</StorageName>
+        <StorageName>customer</StorageName> <!-- Name of table that should be anonymized -->
         <outputFileName>anonymizedData.tbl</outputFileName>
         <outputTableName>anonymizedCustomer</outputTableName>
-        <querysetName>anonymization, originalQueries</querysetName>
+        <querysetName>anonymization, original</querysetName>
     </Data>
     /// Indicate the anonymization model. Possibilities: KAnonyimity, DistinctLDiverstiy, OrderedDistanceTClosenss
     <anonymizationCriterias>KAnonymity</anonymizationCriterias>

@@ -12,6 +12,7 @@ public abstract class GenericQuery {
   public int qid;
   public String qName;
 
+
   protected abstract PreparedStatement getStatement(Connection conn) throws SQLException;
 
   public int run(Connection conn, RandomGenerator rand) throws SQLException {

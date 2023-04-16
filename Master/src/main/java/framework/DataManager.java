@@ -36,8 +36,11 @@ public class DataManager {
     int amountFile = conf.getInt("amountFile");
     int amountIndex = conf.getInt("amountIndex");
     // Index for configurationAt method starts at 1!
+    System.out.println("Working on files");
     manageFile(amountFile, conf);
+    System.out.println("Working on SQL commands");
     manageSQL(amountSQL, conf);
+    System.out.println("Working on SQL commands - Indexes");
     manageIndex(amountIndex, conf);
     System.out.println("Data Managing has been done!");
   }
@@ -82,7 +85,7 @@ public class DataManager {
           break;
         case "updateColumn":
           String column = subConfig.getString("column");
-          updateColumn(tbl, newTbl, pk, column, colTypes[0], colTypes[1], colNames, file);
+          updateColumn(tbl, newTbl, pk, column, colTypes[0], colTypes[1], file);
           break;
         case "createIndexOnCopy":
 
@@ -273,10 +276,9 @@ public class DataManager {
       String column,
       String keytype,
       String type,
-      String[] colNames,
       String dataFile) {
     String newTbl = tbl + "_" + column + "updated";
-    updateColumn(tbl, newTbl, pk, column, keytype, type, colNames, dataFile);
+    updateColumn(tbl, newTbl, pk, column, keytype, type, dataFile);
   }
 
   /**
@@ -291,7 +293,6 @@ public class DataManager {
    * @param column The name of the column which is updated.
    * @param keytype The datatype of the primary key.
    * @param type The datatype of the column that is updated.
-   * @param columNames Contains the names for the updated column.
    * @param dataFile The file containing the values to update the column. The file contains two
    *     columns. The first one is an FK column for tbl, the second contains the values for the
    *     updated column.
@@ -303,15 +304,15 @@ public class DataManager {
       String column,
       String keytype,
       String type,
-      String[] columNames,
       String dataFile) {
     try {
       String[] typeArray = {keytype, type};
-      updateTable(tbl, newTbl, false, pk, typeArray, columNames, dataFile, defaultFieldTerminator);
+      String[] columnNames ={"Identifier","updatedColumn"};
+      updateTable(tbl, newTbl, false, pk, typeArray, columnNames, dataFile, defaultFieldTerminator);
       Statement stmt = conn.createStatement();
       String sqlStmt = String.format("ALTER TABLE %s DROP COLUMN %s", newTbl, column);
       stmt.executeUpdate(sqlStmt);
-      sqlStmt = String.format("EXEC sp_RENAME '%s.%s' , '%s', 'COLUMN'", newTbl, columNames[1], column);
+      sqlStmt = String.format("EXEC sp_RENAME '%s.%s' , '%s', 'COLUMN'", newTbl, columnNames[1], column);
       stmt.executeUpdate(sqlStmt);
     } catch (java.sql.SQLException e) {
       e.printStackTrace();

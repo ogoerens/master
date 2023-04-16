@@ -5,8 +5,8 @@
 
 <parameters>
     <amountSQL>18</amountSQL>
-    <amountFile>30</amountFile>
-    <amountIndex>3</amountIndex>
+    <amountFile>37</amountFile>
+    <amountIndex>7</amountIndex>
 
     <!-- DataManage details -->
     <manSQL>
@@ -28,8 +28,9 @@
     </manSQL>
     <manSQL>
         <SQLStmt>
-            SELECT c_custkey\, c_name\,c_address\, c_nationkey\, substring(c_phone\,1\,2)+'-000-000-0000' AS corr1\, c_acctbal\, c_mktsegment AS
-            c_mktsegment\, c_comment  INTO customer_phone1to1 FROM customer;
+            SELECT c_custkey\, c_name\,c_address\, c_nationkey\, substring(c_phone\,1\,2)+'-000-000-0000' AS c_phone\,
+            c_acctbal\, c_mktsegment AS
+            c_mktsegment\, c_comment \,corr1 \,corr2 INTO customer_phone1to1 FROM customer;
         </SQLStmt>
     </manSQL>
     <manSQL>
@@ -52,19 +53,19 @@
     </manSQL>
     <manSQL>
         <SQLStmt>
-            SELECT c_custkey\, substring(c_name\, 10\,9) as c_nameShortened\, c_address\, c_nationkey\, c_phone\,
+            SELECT c_custkey\, substring(c_name\, 10\,9) as c_name\, c_address\, c_nationkey\, c_phone\,
             c_acctbal\, c_mktsegment\, c_comment INTO customer_nameShortened FROM customer
         </SQLStmt>
     </manSQL>
     <manSQL>
         <SQLStmt>
             SELECT c_custkey\, c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\, c_mktsegment\,
-            substring(c_comment\, 10\,40) as c_commentShortened INTO customer_commentShortened FROM customer
+            substring(c_comment\, 10\,40) as c_comment INTO customer_commentShortened FROM customer
         </SQLStmt>
     </manSQL>
     <manSQL>
         <SQLStmt>
-            Select c_custkey\, c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\, c_mktsegment\, cast(c_commentShortened as
+            Select c_custkey\, c_name\, c_address\, c_nationkey\, c_phone\, c_acctbal\, c_mktsegment\, cast(c_comment as
             char(117)) as c_comment into customer_ShortenedcommentFixedSize from customer_commentShortened
         </SQLStmt>
     </manSQL>
@@ -94,20 +95,20 @@
     </manSQL>
     <manSQL>
         <SQLStmt>
-        SELECT c_custkey\, c_name\, c_address\, c_nationkey\, c_phone \, c_acctbal\,c_mktsegment \,
-        CASE  WHEN  DATALENGTH(c_comment) &lt;100 THEN CONCAT(c_comment\,'123456789 abcde')
-        WHEN  DATALENGTH(c_comment) &lt;80 THEN CONCAT(c_comment\,'123456789 abcde 123456789 dcba')
-        ELSE c_comment
-        end as c_comment
-        INTO CustomerExtendedComment
-        FROM CUSTOMER
+            SELECT c_custkey\, c_name\, c_address\, c_nationkey\, c_phone \, c_acctbal\,c_mktsegment \,
+            CASE WHEN DATALENGTH(c_comment) &lt;100 THEN CONCAT(c_comment\,'123456789 abcde')
+            WHEN DATALENGTH(c_comment) &lt;80 THEN CONCAT(c_comment\,'123456789 abcde 123456789 dcba')
+            ELSE c_comment
+            end as c_comment
+            INTO CustomerExtendedComment
+            FROM CUSTOMER
         </SQLStmt>
     </manSQL>
     <manSQL>
         <SQLStmt>
             SELECT c_custkey\, c_name\, c_address\, c_nationkey\, c_phone \, c_acctbal\,c_mktsegment \,
-            CASE  WHEN  DATALENGTH(c_comment) &lt;100 THEN CONCAT(c_comment\,'123456789 abcde')
-            WHEN  DATALENGTH(c_comment) &lt;80 THEN CONCAT(c_comment\,'123456789 abcde 123456789 dcba')
+            CASE WHEN DATALENGTH(c_comment) &lt;100 THEN CONCAT(c_comment\,'123456789 abcde')
+            WHEN DATALENGTH(c_comment) &lt;80 THEN CONCAT(c_comment\,'123456789 abcde 123456789 dcba')
             ELSE c_comment
             end as c_comment
             INTO CustomerExtendedComment2
@@ -138,8 +139,18 @@
         <rowTerminator>|\n</rowTerminator>
     </manFile>
     <manFile>
-        <operation>addToTable</operation>
+        <operation>updateColumn</operation>
         <table>originalCustomer</table>
+        <newTable>modifiedCustomer</newTable>
+        <column>c_address</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, varchar(30)</columnTypes>
+        <columnNames>identifier,disease</columnNames>
+        <fileName>disease.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>addToTable</operation>
+        <table>modifiedCustomer</table>
         <newTable>Customer</newTable>
         <primaryKey>c_custkey</primaryKey>
         <columnTypes>int,int,int</columnTypes>
@@ -149,7 +160,7 @@
     <manFile>
         <operation>newTable</operation>
         <newTable>Nation</newTable>
-        <columnTypes>  INTEGER not null, CHAR(25) not null, INTEGER not null, VARCHAR(152)
+        <columnTypes>INTEGER not null, CHAR(25) not null, INTEGER not null, VARCHAR(152)
         </columnTypes>
         <columnNames>n_nationkey,n_name,n_regionkey,n_comment</columnNames>
         <fileName>nation.tbl</fileName>
@@ -161,8 +172,46 @@
         <newTable>newCustomer</newTable>
         <primaryKey>c_custkey</primaryKey>
         <columnTypes>int,int</columnTypes>
-        <columnNames>identifier,uniform1</columnNames>
+        <columnNames>identifier,corr1</columnNames>
         <fileName>uniform1.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>addToTable</operation>
+        <table>originalCustomer</table>
+        <newTable>newCustomerBiggerDomain</newTable>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int,int</columnTypes>
+        <columnNames>identifier,corr1</columnNames>
+        <fileName>uniform_domainbigger.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>addToTable</operation>
+        <table>originalCustomer</table>
+        <newTable>newCustomerRightDomain</newTable>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int,int</columnTypes>
+        <columnNames>identifier,corr1</columnNames>
+        <fileName>uniform_domainright.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_custkeyZipf</newTable>
+        <column>c_custkey</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, int</columnTypes>
+        <columnNames>identifier,new_c_custkey</columnNames>
+        <fileName>custkey_zipf.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_custkeyBinomial</newTable>
+        <column>c_custkey</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, int</columnTypes>
+        <columnNames>identifier,new_c_custkey</columnNames>
+        <fileName>custkey_binomial.txt</fileName>
     </manFile>
     <manFile>
         <operation>updateColumn</operation>
@@ -211,7 +260,7 @@
         <column>c_phone</column>
         <primaryKey>c_custkey</primaryKey>
         <columnTypes>int, char(15)</columnTypes>
-        <columnNames>identifier,c_phoneUniform</columnNames>
+        <columnNames>identifier,c_phone</columnNames>
         <fileName>phoneNumber.txt</fileName>
     </manFile>
     <manFile>
@@ -221,7 +270,7 @@
         <column>c_acctbal</column>
         <primaryKey>c_custkey</primaryKey>
         <columnTypes>int, float</columnTypes>
-        <columnNames>identifier,c_acctbalUniform</columnNames>
+        <columnNames>identifier,c_acctbal</columnNames>
         <fileName>c_acctbalUniform.txt</fileName>
     </manFile>
     <manFile>
@@ -252,7 +301,27 @@
         <primaryKey>c_custkey</primaryKey>
         <columnTypes>int, int</columnTypes>
         <columnNames>identifier,c_nationkeyZipf</columnNames>
-        <fileName>zipf_1500_25_2.txt</fileName>
+        <fileName>zipf25_1Mapped.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_nationkeyZipfWorstCase</newTable>
+        <column>c_nationkey</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, int</columnTypes>
+        <columnNames>identifier,c_nationkeyZipf</columnNames>
+        <fileName>zipf25_1.txt</fileName>
+    </manFile>
+    <manFile>
+        <operation>updateColumn</operation>
+        <table>customer</table>
+        <newTable>customer_nationkeyZipf2</newTable>
+        <column>c_nationkey</column>
+        <primaryKey>c_custkey</primaryKey>
+        <columnTypes>int, int</columnTypes>
+        <columnNames>identifier,c_nationkeyZipf</columnNames>
+        <fileName>zipf25_1_2Mapped.txt</fileName>
     </manFile>
     <manFile>
         <operation>updateColumn</operation>
@@ -290,7 +359,7 @@
         <newTable>Customer_uncorrelated</newTable>
         <primaryKey>c_custkey</primaryKey>
         <columnTypes>int,int</columnTypes>
-        <columnNames>identifier,uniform2</columnNames>
+        <columnNames>identifier,corr2</columnNames>
         <fileName>uniform2.txt</fileName>
     </manFile>
     <manFile>
@@ -310,7 +379,7 @@
         <primaryKey>c_custkey</primaryKey>
         <columnTypes>int, int</columnTypes>
         <columnNames>identifier,c_nationkeyBigger</columnNames>
-        <fileName>uniform_5000.txt</fileName>
+        <fileName>uniform_25000.txt</fileName>
     </manFile>
     <manFile>
         <operation>updateColumn</operation>
@@ -320,7 +389,7 @@
         <primaryKey>c_custkey</primaryKey>
         <columnTypes>int, int</columnTypes>
         <columnNames>identifier,c_nationkeySmaller</columnNames>
-        <fileName>uniform_5.txt</fileName>
+        <fileName>uniform_2500.txt</fileName>
     </manFile>
     <manFile>
         <operation>updateColumn</operation>
@@ -422,6 +491,34 @@
         <clustered>true</clustered>
         <indexName>index_custkey</indexName>
         <columns>c_custkey</columns>
+    </manIndex>
+    <manIndex>
+        <table>Customer</table>
+        <newTable>Customer_mktsegClustered</newTable>
+        <clustered>true</clustered>
+        <indexName>index_mktseg</indexName>
+        <columns>c_mktsegment</columns>
+    </manIndex>
+    <manIndex>
+        <table>Customer</table>
+        <newTable>Customer_mktsegNonClustered</newTable>
+        <clustered>false</clustered>
+        <indexName>index_mktsegNonClustered</indexName>
+        <columns>c_mktsegment</columns>
+    </manIndex>
+    <manIndex>
+        <table>customer_bloated2Mktseg</table>
+        <newTable>Customer_bloated2MktsegClustered</newTable>
+        <clustered>true</clustered>
+        <indexName>index_mktsegbloated</indexName>
+        <columns>c_mktsegment</columns>
+    </manIndex>
+    <manIndex>
+        <table>customer_bloated2Mktseg</table>
+        <newTable>Customer_Bloated2MktsegNonClustered</newTable>
+        <clustered>false</clustered>
+        <indexName>index_mktsegbloatedNonClustered</indexName>
+        <columns>c_mktsegment</columns>
     </manIndex>
     <manIndex>
         <table>Customer</table>

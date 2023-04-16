@@ -64,7 +64,7 @@ public class Utils {
   public static HashMap<Integer, String> createReverseCategoricalMapping(String[] values) {
     HashMap<Integer, String> mapping = new HashMap<>();
     for (int i = 0; i < values.length; i++) {
-      mapping.put(i,values[i]);
+      mapping.put(i, values[i]);
     }
     return mapping;
   }
@@ -92,6 +92,13 @@ public class Utils {
     return stringBuilder.toString();
   }
 
+  /**
+   * Creates all possible combinations with the values in the arrays. If an array contains a value
+   * multiple times, the combinations with this value will be contained multiple times in the output.
+   *
+   * @param arrays
+   * @return
+   */
   public static String[][] combineArrays(String[]... arrays) {
     int combinations = 1;
     for (int i = 0; i < arrays.length; i++) {
@@ -113,6 +120,27 @@ public class Utils {
       }
     }
     return res;
+  }
+
+  /**
+   * Adds each String of the first array at the beginning of each  inner String array in the second array.
+   * @param arr1
+   * @param arr2
+   * @return
+   */
+  public static String[][] combineArrayWithArrayOfArray(String[] arr1, String[][] arr2){
+    String[][] result = new String[arr1.length*arr2.length][];
+    for (int i=0; i< arr1.length; i++){
+      for(int j=0; j<arr2.length;j++){
+        result[(i*arr2.length)+j] = new String[arr2[j].length+1];
+        result[(i*arr2.length)+j][0] = arr1[i];
+        for (int k = 0; k<arr2[j].length;k++){
+          result[(i*arr2.length)+j][k+1] = arr2[j][k];
+        }
+      }
+
+    }
+    return result;
   }
 
   public static XMLConfiguration buildXMLConfiguration(String filename) {
@@ -167,7 +195,7 @@ public class Utils {
     for (int i = 0; i < multiplicationFactor; i++) {
       for (int j = 0; j < inputStrings.length; j++) {
         String newStr =
-            Integer.toString(i) + inputStrings[j].substring(Integer.toString(i).length());
+            i + inputStrings[j].substring(Integer.toString(i).length());
         resultStrings[i * inputStrings.length + j] = newStr;
       }
     }
@@ -474,7 +502,7 @@ public class Utils {
   }
 
   /**
-   * Places a specified number at the start of the resulting if it is contained in the input array.
+   * Places a specified number at the start of the resulting array if it is contained in the input array.
    * Randomizes the order of the other array elements. The reordering is done in-place.
    *
    * @param inputArray
