@@ -149,6 +149,7 @@ public class Generator {
                   MicrobenchUtils.mktsegmentValues, subConfig.getInt("multiplicationFactor"));
           generatedStringValues = generateFromStringArray(size, mktsegValues);
       }
+
       if (returnType.equals("char")) {
         if (subConfig.containsKey("correlation")) {
           ArrayList<char[]> arrays = generateCorrelationChar(generatedValues, subConfig);
@@ -325,7 +326,7 @@ public class Generator {
     int quantity = v.length;
     int[] corr = new int[quantity];
     for (int i = 0; i < quantity; i++) {
-      int x = 2 * correlationDomain;
+      int x = 2 * correlationDomain+1;
       int z = rand.nextInt(x);
       corr[i] = v[i] + (z - (x / 2));
     }

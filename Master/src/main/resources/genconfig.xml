@@ -178,13 +178,13 @@
         </gen>
         <gen>
             <distribution>bloatMktseg</distribution>
-            <multiplicationFactor>1000</multiplicationFactor>
+            <multiplicationFactor>100</multiplicationFactor>
             <fileName>customer_bloatedMktseg.txt</fileName>
             <withIndex>true</withIndex>
         </gen>
         <gen>
         <distribution>bloatMktseg</distribution>
-        <multiplicationFactor>10000</multiplicationFactor>
+        <multiplicationFactor>1000</multiplicationFactor>
         <fileName>customer_bloated2Mktseg.txt</fileName>
         <withIndex>true</withIndex>
     </gen>
@@ -235,7 +235,7 @@
             <upperbound>2000</upperbound>
             <correlation>none</correlation>
             <withIndex>true</withIndex>
-            <fileName>uniform_domainnomi.txt</fileName>
+            <fileName>uniform_domainright.txt</fileName>
         </gen>
         <gen>
             <distribution> binomial</distribution>

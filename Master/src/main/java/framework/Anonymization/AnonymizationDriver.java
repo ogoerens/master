@@ -1,13 +1,11 @@
 package framework.Anonymization;
 
-import framework.DataManager;
 import framework.DatabaseConfiguration;
 import framework.Driver;
 import framework.QueryManager;
 import microbench.Queries;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.deidentifier.arx.*;
-import util.DBUtils;
 import util.Utils;
 
 import java.io.IOException;
@@ -17,11 +15,9 @@ import java.util.*;
 
 public class AnonymizationDriver {
   String anonConfigFile;
-  ARXDataHandler arxDataHandler;
   HierarchyManager hierarchyManager;
   AnonymizationConfiguration anonConfig;
-  private static String statsFile = Driver.getSourcePath() + "/stats.txt";
-  private static final String hierarchiesFile = "src/main/resources/hierarchies.xml";
+  public static String statsFile = Driver.getSourcePath() + "/stats.txt";
   private static final String anonyimzedQueriesFile = "AnonymizedQueries.txt";
   private String dbConfigFile;
   private AnonymizationStatistics anonymizationStatistics;
@@ -38,8 +34,9 @@ public class AnonymizationDriver {
     DatabaseConfiguration dbConfiguration = new DatabaseConfiguration(xmlDbConfiguration);
     Connection conn = dbConfiguration.makeConnection();
 
-    // Decide based on the anonymization strategy how the anonyimization takes place.
+    // Decide based on the anonymization strategy how the anonymization takes place.
     if (anonConfig.getAnonymizationStrategy().equalsIgnoreCase("hash")) {
+      printTechnique("Hash");
       // anonymizeUsingHash
       Transformer transformer = new Transformer(conn);
       String[] selectionCols = {"*"};
@@ -52,19 +49,24 @@ public class AnonymizationDriver {
               selectionCols);
     } else {
       if (anonConfig.getAnonymizationStrategy().equalsIgnoreCase("Synth")) {
+        printTechnique("Synth");
         //anonymizeUsingSyntheticData
         Synthesizer s = new Synthesizer(conn);
-        String [] selectionCols ={"C_CUSTKEY","C_NATIONKEY","C_ACCTBAL", "CORR1", "CORR2","C_MKTSEGMENT", "C_PHONE"};
-        s.synthesize(anonConfig.getDataTableName(), anonConfig.getDomainFileLocation(), selectionCols,"src/main/resources/private-pgm/mechanisms/mst.py");
+
+        s.synthesize(anonConfig,"src/main/resources/private-pgm/mechanisms/mst.py");
 
         String [] cols = {"*"};
         Transformer t = new Transformer(conn, new Random());
         t.transform("SYNTHBACK","RESULT", anonConfig.getOutputTableName(), cols,cols, util.SQLServerUtils.getColumnNamesAndTypes(conn, "customer"));
 
       } else {
-
         // anonyimizeUSingArx
-        this.anonymizationStatistics = arxAnonymization(conn, dbConfiguration);
+        printTechnique("ARX");
+        XMLConfiguration hierarchyConf =
+                Utils.buildXMLConfiguration(anonConfig.getHierarchyFile());
+        this.hierarchyManager = new HierarchyManager(hierarchyConf);
+        ARXAnonymizationHandler arxAnonymizationHandler = new ARXAnonymizationHandler(hierarchyManager, anonConfig);
+        this.anonymizationStatistics = arxAnonymizationHandler.arxAnonymization(conn, dbConfiguration);
       }
     }
 
@@ -73,11 +75,11 @@ public class AnonymizationDriver {
       return;
     }
 
-    //For synthetic data queries do not change. Except for tablename,
+    //For synthetic data, queries do not change. Except for tablename.
     if (anonConfig.getAnonymizationStrategy().equalsIgnoreCase("Synth")) {
       for (String querySetName : anonConfig.getQuerysetNames()) {
-        queryManager.addOriginalQueries(Queries.returnQueryList(querySetName));
-        for (microbench.Query query: Queries.returnQueryList(querySetName)){
+        queryManager.addOriginalQueries(queryManager.returnQueryList(querySetName));
+        for (microbench.Query query: queryManager.returnQueryList(querySetName)){
           queryManager.addAnonymizedQuery(query.qName+"Anonymized", query.query_stmt.toUpperCase().replace(anonConfig.getDataTableName(),anonConfig.getOutputTableName()));
         }
       }
@@ -86,7 +88,7 @@ public class AnonymizationDriver {
 
     // Add the queries specified in the configuration to the original Queryset in the queryMananger.
     for (String querySetName : anonConfig.getQuerysetNames()) {
-      queryManager.addOriginalQueries(Queries.returnQueryList(querySetName));
+      queryManager.addOriginalQueries(queryManager.returnQueryList(querySetName));
     }
     ArrayList<String[]> columnNamesAndTypes =
         util.SQLServerUtils.getColumnNamesAndTypes(conn, anonConfig.getDataTableName());
@@ -111,140 +113,8 @@ public class AnonymizationDriver {
     conn.close();
   }
 
-  /**
-   * Loads a table from a DBMS into the data variable of the datahandler.
-   *
-   * @throws SQLException
-   * @throws IOException
-   */
-  private void loadDataFromDBMS(DatabaseConfiguration dbConfig) throws SQLException, IOException {
-    // The load function has its own connection to the DB server.
-    arxDataHandler.loadJDBC(
-        "jdbc:sqlserver://localhost:1433;encrypt=false;database=" + dbConfig.getDatabase() + ";",
-        dbConfig.getUser(),
-        dbConfig.getPassword(),
-        anonConfig.getDataTableName());
+  private static void printTechnique(String technique){
+    System.out.println(technique);
   }
 
-  private void loadDataFromFile() throws Exception {
-    // TODO Not implemented currently.
-    throw new Exception(
-        "Loading a data from file has not yet been implemented. Please refer to loading data from a DBMS");
-    // this.dataHandler.loadFile(anonConfig.getDataFileName(),AnonymizationConfiguration.charset,'|');
-  }
-
-  private String cleanseResultAndToString(
-      ARXResult arxResult, String elementDelimiter, String rowDelimiter) {
-    // Get Information for cleansing. Notably Transforming String intervals to integer intervals
-    // ([x,y[ --> x).
-    // Retrieve the column Names which contain intervals.
-    Set<String> intervalColumns = new HashSet<>();
-    for (Map.Entry<String, String> hierarchyType : hierarchyManager.getHierarchyType().entrySet()) {
-      if (hierarchyType.getValue().equals("interval")) {
-        intervalColumns.add(hierarchyType.getKey());
-      }
-    }
-    // Retrieve the column indexes in the data representation for the columns that contain
-    // intervals.
-    Set<Integer> intervalColumnsIndexes = new HashSet<>();
-    for (String intervalCol : intervalColumns) {
-      intervalColumnsIndexes.add(arxResult.getOutput().getColumnIndexOf(intervalCol.toUpperCase()));
-    }
-
-    Iterator<String[]> outputIterator = arxResult.getOutput(false).iterator();
-    StringBuilder stringBuilderTable = new StringBuilder();
-    boolean header = true;
-    while (outputIterator.hasNext()) {
-      String[] row = outputIterator.next();
-      StringBuilder stringBuilderRow = new StringBuilder();
-      // Skip header containing the column names.
-      if (header) {
-        header = false;
-        continue;
-      }
-      // Transform interval per element per row. Append elements in each row delimited by a specific
-      // character.
-      for (int i = 0; i < row.length; i++) {
-        if (intervalColumnsIndexes.contains(i)) {
-          row[i] = (ARXUtils.removeInterval(row[i]));
-        }
-        if (i == row.length - 1) {
-          stringBuilderRow.append(row[i]);
-        } else {
-          stringBuilderRow.append(row[i] + elementDelimiter);
-        }
-      }
-      stringBuilderTable.append(stringBuilderRow.toString() + rowDelimiter);
-    }
-    return stringBuilderTable.toString();
-  }
-
-  private AnonymizationStatistics arxAnonymization(Connection conn, DatabaseConfiguration dbConfig)
-      throws SQLException, Exception {
-    // Build the hierarchies needed later on during the anonymization algorithm.
-    XMLConfiguration hierarchyConf = Utils.buildXMLConfiguration(hierarchiesFile);
-    this.hierarchyManager = new HierarchyManager(hierarchyConf);
-    this.hierarchyManager.buildHierarchies();
-    HierarchyStore hierarchies = hierarchyManager.getHierarchyStore();
-    this.arxDataHandler = new ARXDataHandler();
-    ArrayList<String[]> columnNamesAndTypes =
-        util.SQLServerUtils.getColumnNamesAndTypes(conn, anonConfig.getDataTableName());
-    ArrayList<String> colNamesUppercase = new ArrayList<>();
-    ArrayList<String> colTypes = new ArrayList<>();
-    for (String[] colNameAndType : columnNamesAndTypes) {
-      colNamesUppercase.add(colNameAndType[0].toUpperCase());
-      String type = (colNameAndType[1]);
-      if (type.contains("char")) {
-        colTypes.add(type + " " + Utils.surroundWithParentheses(colNameAndType[2]));
-      } else {
-        colTypes.add(type);
-      }
-    }
-
-    // Load the data and all other information needed from the DB server.
-    if (anonConfig.getDataStorageMethod().equalsIgnoreCase("dbms")) {
-      this.loadDataFromDBMS(dbConfig);
-    } else {
-      this.loadDataFromFile();
-    }
-
-    // Enhance the data with the information contained in the configuration and add the hierarchies.
-    arxDataHandler.applyConfigToData(anonConfig);
-    arxDataHandler.addHierarchiesToData(hierarchies);
-
-    // Run the dataset anonymization.
-    ARXAnonymizer anonymizer = new ARXAnonymizer();
-    ARXResult arxResult =
-        anonymizer.anonymize(arxDataHandler.getArxdata(), anonConfig.getARXConfig());
-
-    // Store the hierarchies for all hierarchies that are built using a HierarchyBuilder, i.e. by a
-    // logic rather than an existing hierarchy file. Hierarchies are only built during the
-    // anonymization process. Thus, they cannot be stored ahead of it.
-    hierarchyManager.storeMaterializedHierarchies(arxDataHandler.getArxdata(), arxResult);
-    hierarchyManager.storeMaterializedHierarchiesToFile();
-    AnonymizationStatistics statistics = new AnonymizationStatistics(arxResult, colNamesUppercase);
-    Utils.strToFile(statistics.printStats(), statsFile);
-
-    // Anonym.printResult(arxResult, data);
-    // TODO if not result possible with ldiversity. Check if can get ouput or output null.
-
-    // Transform the arxResult data representation to a String no longer containing intervals.
-    String outputString = cleanseResultAndToString(arxResult, "|", System.lineSeparator());
-    Utils.strToFile(outputString, anonConfig.getOutputFileName());
-    System.out.println("Wrote anonymized Data to " + anonConfig.getOutputFileName());
-
-    // Insert the output of the anonymization in a new Table in the database.
-    DataManager dataManger = new DataManager(conn);
-    String[] cN = new String[colNamesUppercase.size()];
-    String[] cT = new String[colTypes.size()];
-    dataManger.newTable(
-        anonConfig.getOutputTableName(),
-        Driver.getSourcePath() + "/" + anonConfig.getOutputFileName(),
-        colTypes.toArray(cT),
-        colNamesUppercase.toArray(cN),
-        "|",
-        System.lineSeparator());
-
-    return statistics;
-  }
 }

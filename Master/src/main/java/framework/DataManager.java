@@ -78,7 +78,7 @@ public class DataManager {
           newTable(newTbl, file, colTypes, colNames, fieldTerminator, rowTerminator);
           break;
         case "updateTable":
-          updateTable(tbl, newTbl, true, pk, colTypes, colNames, file,defaultFieldTerminator);
+          updateTable(tbl, newTbl, true, pk, colTypes, colNames, file, defaultFieldTerminator);
           break;
         case "addToTable":
           updateTable(tbl, newTbl, false, pk, colTypes, colNames, file, defaultFieldTerminator);
@@ -107,12 +107,16 @@ public class DataManager {
     for (int i = 1; i <= amount; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manIndex[" + i + "]");
       String tableName = subConfig.getString("table");
-      String newTableName = subConfig.getString("newTable");
+
       boolean clustered = subConfig.getBoolean("clustered");
       String indexName = subConfig.getString("indexName");
       String[] columns = subConfig.getStringArray("columns");
-      copyTable(tableName, newTableName);
-      createIndex(clustered, indexName, newTableName, columns);
+      if (subConfig.containsKey("newTable")){
+        String newTableName = subConfig.getString("newTable");
+        copyTable(tableName, newTableName);
+        tableName= newTableName;
+      }
+      createIndex(clustered, indexName, tableName, columns);
     }
   }
 
@@ -157,13 +161,7 @@ public class DataManager {
       String[] columnTypes,
       String[] columnNames,
       String fieldTerminator) {
-    newTable(
-        newTableName,
-        file,
-        columnTypes,
-        columnNames,
-        fieldTerminator,
-        "0x0A");
+    newTable(newTableName, file, columnTypes, columnNames, fieldTerminator, "0x0A");
   }
 
   /**
@@ -188,7 +186,7 @@ public class DataManager {
   }
 
   public void createTable(String newTableName, ArrayList<String[]> columnNamesAndTypes)
-          throws SQLException {
+      throws SQLException {
     // Format the column arrays into a String that specifies the layout of the table.
 
     String tableSpecifications = Utils.joinArrays(columnNamesAndTypes, " ", ",");
@@ -199,7 +197,6 @@ public class DataManager {
     stmt.executeUpdate(sqlStmt);
     System.out.println("Created table: " + newTableName);
   }
-
 
   /**
    * Creates a new table containing the columns of an initial table and the columns of a datafile.
@@ -226,8 +223,7 @@ public class DataManager {
       String[] columnTypes,
       String[] columnNames,
       String dataFile,
-      String fieldTerminator
-  ) {
+      String fieldTerminator) {
     // Drop columns in original table.
     if (drop) {
       StringBuilder colnamesForDrop = new StringBuilder();
@@ -271,19 +267,14 @@ public class DataManager {
   }
 
   public void updateColumn(
-      String tbl,
-      String pk,
-      String column,
-      String keytype,
-      String type,
-      String dataFile) {
+      String tbl, String pk, String column, String keytype, String type, String dataFile) {
     String newTbl = tbl + "_" + column + "updated";
     updateColumn(tbl, newTbl, pk, column, keytype, type, dataFile);
   }
 
   /**
    * Creates a new Table where a single column has been updated with regard to the initial table.
-   * The updated column must have a different name than the original column. The initial table is
+   * The initial table is
    * preserved. The new Table is created by using the updateTable function to add the updated column
    * to the table. Once this is done, the old column is dropped.
    *
@@ -307,12 +298,13 @@ public class DataManager {
       String dataFile) {
     try {
       String[] typeArray = {keytype, type};
-      String[] columnNames ={"Identifier","updatedColumn"};
+      String[] columnNames = {"Identifier", "updatedColumn"};
       updateTable(tbl, newTbl, false, pk, typeArray, columnNames, dataFile, defaultFieldTerminator);
       Statement stmt = conn.createStatement();
       String sqlStmt = String.format("ALTER TABLE %s DROP COLUMN %s", newTbl, column);
       stmt.executeUpdate(sqlStmt);
-      sqlStmt = String.format("EXEC sp_RENAME '%s.%s' , '%s', 'COLUMN'", newTbl, columnNames[1], column);
+      sqlStmt =
+          String.format("EXEC sp_RENAME '%s.%s' , '%s', 'COLUMN'", newTbl, columnNames[1], column);
       stmt.executeUpdate(sqlStmt);
     } catch (java.sql.SQLException e) {
       e.printStackTrace();
@@ -321,7 +313,8 @@ public class DataManager {
   /**
    * Executes an SQL statement.
    *
-   * @param sqlStmt
+   * @param sqlStmt An SQL statement that is not allowed to return anything. Can be an INSERT,
+   *     UPDATE, DELETE statement or and DDL statement for example.
    */
   public void update(String sqlStmt) {
     try {

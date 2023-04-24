@@ -60,8 +60,9 @@ public class ARXUtils {
     // If the String does not actually contain an interval.
     if (commaIndex == -1) {
       if (inputInterval.contains("*")){
-        String exceptionMsg = String.format("%s is not an interval Value. Check you interval hierarchies that they include all values.", inputInterval);
-        throw new RuntimeException(exceptionMsg);
+        return "-1";
+        //String exceptionMsg = String.format("%s is not an interval Value. Check you interval hierarchies that they include all values.", inputInterval);
+        //throw new RuntimeException(exceptionMsg);
       }
 
     }

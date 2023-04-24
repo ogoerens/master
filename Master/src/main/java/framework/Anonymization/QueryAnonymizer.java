@@ -61,7 +61,7 @@ public class QueryAnonymizer {
   }
 
   /**
-   * Checks if the QueryAnonimyzer is in possession of a materialized hierarchy for a given column.
+   * Checks if the the column has actually been anonymized.
    *
    * @param column The column for which the check is executed.
    * @return
@@ -198,7 +198,6 @@ public class QueryAnonymizer {
       if (node == null) {
         continue;
       }
-      SqlKind sqlKind = node.getKind();
       if (node instanceof SqlNodeList) {
         continue;
       }
@@ -242,6 +241,10 @@ public class QueryAnonymizer {
   }
 
   private String createAnonymizedValue(String column, String originalValue) {
+    // If attribute has not been generalized, the anonymized values is the same than the original value.
+    if (anonymizationStatistics.getGeneralizationLevels().get(column)==0){
+      return originalValue;
+    }
     Map<String, HierarchyBuilder> builders =
         hierarchyManager.getHierarchyStore().getHierarchyBuilders();
     if (builders.get(column) instanceof HierarchyBuilderIntervalBased) {

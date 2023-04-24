@@ -30,17 +30,20 @@ public abstract class GenericQuery {
   }
 
 
-  public void runAndStore(Connection connection, int numberOfArguments, String delimiter, String fileName) throws SQLException{
+  public void runAndStore(Connection connection, int numberOfArguments, String delimiter, String fileName, String header) throws SQLException{
     StringBuilder result = new StringBuilder();
+    result.append(header);
     try (PreparedStatement stmt = getStatement(connection);
          ResultSet rs = stmt.executeQuery()) {
       while (rs.next()) {
         for (int i=0; i< numberOfArguments; i++){
-          result.append(rs.getString(1));
-          result.append(delimiter);
+          result.append(rs.getString(i+1));
+          if (i < numberOfArguments-1){
+            result.append(delimiter);
+          }
         }
         // System.out.println(rs.getString(1));
-        result.append("\n");
+        result.append(System.lineSeparator());
       }
     }
     Utils.strToFile(result.toString(),fileName);

@@ -54,16 +54,28 @@ public class Transformer {
         columnNamesAndTypesOriginal);
   }
 
+  /**
+   * Transforms the indicated columns using a specified transform function. A new table is created
+   * to store the table with the new values.
+   *
+   * @param transformFunction Function used to transform the columns.
+   * @param tablename Name of the old table with the not yet transformed columns.
+   * @param newTablename Name of the new table containing the transformed columns.
+   * @param columnsToTransform Names of the columns that should be transformed.
+   * @param columnsToProject Names of the columsn that should be kept in the new table.
+   * @param newTableColumnTypes Type of the columns after applying the transformFunction.
+   * @return
+   * @throws SQLException
+   */
   public AnonymizationStatistics transform(
       String transformFunction,
       String tablename,
       String newTablename,
       String[] columnsToTransform,
-      String[] columnsToSelect,
+      String[] columnsToProject,
       ArrayList<String[]> newTableColumnTypes)
       throws SQLException {
-    // Create new table.
-    // Need to retrieve columnNames and Types.
+    // Retrieve columnNames and Types from the original table.
     DataManager dataManager = new DataManager(this.connection);
     ArrayList<String[]> columnNamesAndTypesOriginal = newTableColumnTypes;
     HashMap<String, String[]> columnnameToType = new HashMap<>();
@@ -72,14 +84,14 @@ public class Transformer {
       columnnameToType.put(colNameAndType[0], type);
     }
 
-    // REORDER ColumnNamesANdTypes according to selection.
+    // Reorder ColumnNamesANdTypes according to projection.
     String[][] columnNamesAndTypesArray;
     HashMap<String, Integer> columnIndex = new HashMap<>();
-    for (int i = 0; i < columnsToSelect.length; i++) {
-      columnIndex.put(columnsToSelect[i], i);
+    for (int i = 0; i < columnsToProject.length; i++) {
+      columnIndex.put(columnsToProject[i], i);
     }
-    if (!(columnsToSelect.length == 1 && columnsToSelect[0].equals("*"))) {
-      columnNamesAndTypesArray = new String[(columnsToSelect.length)][3];
+    if (!(columnsToProject.length == 1 && columnsToProject[0].equals("*"))) {
+      columnNamesAndTypesArray = new String[(columnsToProject.length)][3];
       for (int i = 0; i < columnNamesAndTypesOriginal.size(); i++) {
         String columnOriginal = columnNamesAndTypesOriginal.get(i)[0];
         if (columnIndex.containsKey(columnOriginal)) {
@@ -96,82 +108,102 @@ public class Transformer {
     ArrayList<String[]> columnNamesAndTypes =
         new ArrayList<>(Arrays.asList(columnNamesAndTypesArray));
 
-
     // Gather collation information which may be needed in the transform function.
     this.collationInformation = gatherCollationInformation(connection, tablename);
 
-    try {
-      int batchSize = 50;
-
-      String selectionString = Utils.StrArrayToString(columnsToSelect, ",", false);
-      String retrieveQueryString = "SELECT " + selectionString + " FROM " + tablename;
+    if (transformFunction.equalsIgnoreCase("project")){
+      String projectionString = Utils.StrArrayToString(columnsToProject, ",", false);
+      String retrieveQueryString = "SELECT " + projectionString + " INTO "+ newTablename  +" FROM " + tablename;
 
       PreparedStatement stmt = this.connection.prepareStatement(retrieveQueryString);
-      ResultSet rs = stmt.executeQuery();
-      ResultSetMetaData rsMetaData = rs.getMetaData();
+      stmt.executeUpdate();
+    } else {
 
-      ArrayList<String[]> columnNamesAndTypes2 = new ArrayList<>();
-      // create types based on metadata and input types
-      for (int i = 1; i <= rsMetaData.getColumnCount(); i++) {
-        String[] nameandtype = {
-          rsMetaData.getColumnName(i),
-          columnnameToType.get(rsMetaData.getColumnName(i))[0],
-          columnnameToType.get(rsMetaData.getColumnName(i))[1]
-        };
-        columnNamesAndTypes2.add(nameandtype);
-      }
-      DBUtils.createTable(dataManager, columnNamesAndTypes2, newTablename);
+      try {
+        int batchSize = 50;
 
-      int columnCount = rsMetaData.getColumnCount();
+        // Retrieve the old table from the DBMS.
+        String projectionString = Utils.StrArrayToString(columnsToProject, ",", false);
+        String retrieveQueryString = "SELECT " + projectionString + " FROM " + tablename;
 
-      this.connection.setAutoCommit(false);
-      String columnPlaceHolders = "?,".repeat(columnCount);
-      String storeQueryString =
-          String.format(
-              "INSERT INTO %s VALUES (%s)",
-              newTablename, columnPlaceHolders.substring(0, columnPlaceHolders.length() - 1));
-      PreparedStatement storeStatement = connection.prepareStatement(storeQueryString);
+        PreparedStatement stmt = this.connection.prepareStatement(retrieveQueryString);
+        ResultSet rs = stmt.executeQuery();
+        ResultSetMetaData rsMetaData = rs.getMetaData();
 
-      int counter = 0;
-      while (rs.next()) {
-        ArrayList<String> row = new ArrayList<>();
-        for (int i = 1; i <= columnCount; i++) {
-          row.add(rs.getString(i));
-          //storeStatement.setString(i, rs.getString(i));
+        // Create types based on metadata and input types.
+        ArrayList<String[]> columnNamesAndTypesNewTable = new ArrayList<>();
+        String s= rsMetaData.getColumnName(1);
+        for (int i = 1; i <= rsMetaData.getColumnCount(); i++) {
+          String[] nameandtype = {
+            rsMetaData.getColumnName(i).toUpperCase(),
+            columnnameToType.get(rsMetaData.getColumnName(i).toUpperCase())[0],
+            columnnameToType.get(rsMetaData.getColumnName(i).toUpperCase())[1]
+          };
+          columnNamesAndTypesNewTable.add(nameandtype);
         }
+        // Create the new table that will store the transformed dataset.
+        DBUtils.createTable(dataManager, columnNamesAndTypesNewTable, newTablename);
 
-        ArrayList<String> transformedRow =
-            transformRow(transformFunction, row, columnNamesAndTypes2, columnsToTransform);
-        for (int i = 0; i < columnCount; i++) {
-          storeStatement.setString(i + 1, transformedRow.get(i));
+        this.connection.setAutoCommit(false);
+        // Create the SQL statement that inserted the transformed rows into the new table.
+        int columnCount = rsMetaData.getColumnCount();
+        String columnPlaceHolders = "?,".repeat(columnCount);
+        String storeQueryString =
+            String.format(
+                "INSERT INTO %s VALUES (%s)",
+                newTablename, columnPlaceHolders.substring(0, columnPlaceHolders.length() - 1));
+        PreparedStatement storeStatement = connection.prepareStatement(storeQueryString);
+
+        // Run the tansformation function and insertion statement for each row in the resultset. The
+        // insertion is batched.
+        int counter = 0;
+        while (rs.next()) {
+          ArrayList<String> row = new ArrayList<>();
+          for (int i = 1; i <= columnCount; i++) {
+            row.add(rs.getString(i));
+          }
+          ArrayList<String> transformedRow =
+              transformRow(transformFunction, row, columnNamesAndTypesNewTable, columnsToTransform);
+          for (int i = 0; i < columnCount; i++) {
+            storeStatement.setString(i + 1, transformedRow.get(i));
+          }
+          storeStatement.addBatch();
+          counter++;
+          if (counter == batchSize) {
+            int[] updateCounts = storeStatement.executeBatch();
+            counter = 0;
+          }
         }
-        storeStatement.addBatch();
-        counter++;
-        if (counter == batchSize) {
-          int[] updateCounts = storeStatement.executeBatch();
-          counter = 0;
+        if (counter != 0) {
+          storeStatement.executeBatch();
         }
-        // System.out.println(rs.getString(1));
-        // do nothing
-        // System.out.println("x");
+        connection.commit();
+      } catch (SQLException e) {
+        e.printStackTrace();
+      } finally {
+        connection.setAutoCommit(true);
       }
-      if (counter != 0) {
-        storeStatement.executeBatch();
-      }
-      connection.commit();
-    } catch (SQLException e) {
-      e.printStackTrace();
-    } finally {
-      connection.setAutoCommit(true);
     }
-
     return new AnonymizationStatistics(this.collationInformation);
   }
 
+  /**
+   * Transforms and stores the transformed table in a file. Otherwise same as transform.
+   *
+   * @param transformFunction
+   * @param tablename
+   * @param filename
+   * @param columnsToTransform
+   * @param columnsToSelect
+   * @param delimiter
+   * @param withHeader
+   * @return
+   * @throws SQLException
+   */
   public AnonymizationStatistics transformAndStore(
       String transformFunction,
       String tablename,
-      String newTablename,
+      String filename,
       String[] columnsToTransform,
       String[] columnsToSelect,
       String delimiter,
@@ -230,7 +262,7 @@ public class Transformer {
         stringBuilderOutput.append(Utils.arrayListToString(transformedRow, delimiter));
         stringBuilderOutput.append("\n");
       }
-      Utils.strToFile(stringBuilderOutput.toString(), newTablename + ".csv");
+      Utils.strToFile(stringBuilderOutput.toString(), filename + ".csv");
     } catch (SQLException e) {
       e.printStackTrace();
     }
@@ -238,6 +270,15 @@ public class Transformer {
     return new AnonymizationStatistics(this.collationInformation);
   }
 
+  /**
+   * Transforms a single row with the indicated transformfunction.
+   *
+   * @param transformFunction
+   * @param row
+   * @param columnNamesAndTypes
+   * @param hashingColumns
+   * @return
+   */
   private ArrayList<String> transformRow(
       String transformFunction,
       ArrayList<String> row,
@@ -351,6 +392,14 @@ public class Transformer {
     return result;
   }
 
+  /**
+   * Applies the hash function SHA256 to the columns.
+   *
+   * @param row
+   * @param columnNamesAndTypes
+   * @param hashingColumns
+   * @return
+   */
   private ArrayList<String> transformRowSHA256(
       ArrayList<String> row, ArrayList<String[]> columnNamesAndTypes, String[] hashingColumns) {
     ArrayList<String> result = new ArrayList<>();
@@ -367,7 +416,7 @@ public class Transformer {
       // can differ for each column.
       // TODO: Further differ between the different numeric types.
       if (columnNamesAndTypes.get(i)[1].contains("char")) {
-        if (this.collationInformation.get(column).equals("insenstive")) {
+        if (this.collationInformation.get(column).equals("insensitive")) {
           value = value.toUpperCase();
         }
         String hash = DigestUtils.sha256Hex(value.trim());
@@ -385,11 +434,18 @@ public class Transformer {
       }
     }
 
-    AnonymizationStatistics anonymizationStatistics =
-        new AnonymizationStatistics(this.collationInformation);
     return result;
   }
 
+
+  /**
+   * Gathers the collation information for a specific table in a database server.
+   *
+   * @param conn The SQL connection to a DBMS server.
+   * @param tablename The tablename of the table for which the collation information is retrieved,
+   * @return
+   * @throws SQLException
+   */
   public UppercaseHashMap<String> gatherCollationInformation(Connection conn, String tablename)
       throws SQLException {
     UppercaseHashMap<String> collationInformationMap = new UppercaseHashMap();

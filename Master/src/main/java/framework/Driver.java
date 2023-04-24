@@ -11,6 +11,7 @@ import java.sql.SQLException;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 import framework.Anonymization.AnonymizationDriver;
+import framework.Anonymization.Transformer;
 import microbench.Queries;
 import microbench.Query;
 import org.apache.commons.cli.*;
@@ -27,7 +28,7 @@ public class Driver {
   private static final String latenciesFile = sourcePath + "/latencies.csv";
   private static final String latenciesFileAVG = sourcePath + "/latenciesAverage.csv";
   private static final int numberWorkers = 1;
-  private static int numberOfQueryExecutions = 11;
+  private static int numberOfQueryExecutions = 6;
 
   public static void main(String[] args) throws Exception {
 
@@ -39,8 +40,21 @@ public class Driver {
 
     QueryManager queryManager = new QueryManager();
     ArrayList<Query> queriesForExecution;
+
+    // Add queries to the Query Manager.
+
+
+    if (argsLine.hasOption("q")) {
+      if (argsLine.hasOption("numExecutions")) {
+        numberOfQueryExecutions = Integer.parseInt(argsLine.getOptionValue("numExecution"));
+      }
+      String queriesFile = argsLine.getOptionValue("q");
+      queryManager.loadQueries(queriesFile,";\n","InputQueries_");
+    }
+
     // Check if data should be anonymized, i.e. option "a" is set and configuration file is passed
     // as argument.
+    //Must be run after option "-q" as otherwise personalized queries are not yet saved in queryManager.
     if (argsLine.hasOption("a")) {
       AnonymizationDriver ad =
           new AnonymizationDriver(argsLine.getOptionValue("a"), argsLine.getOptionValue("c"));
@@ -48,8 +62,8 @@ public class Driver {
       ad.anonymize(queryManager);
     }
 
-    // Add queries to the Query Manager.
 
+    //must be run after oterwise queries noty et anonymized.
     if (argsLine.hasOption("e")) {
       if (argsLine.hasOption("numExecutions")) {
         numberOfQueryExecutions = Integer.parseInt(argsLine.getOptionValue("numExecution"));
@@ -59,6 +73,7 @@ public class Driver {
         queryManager.addQueriesForExecution(querySetName);
       }
     }
+
 
     // Check if Generator is used. If so, create generator configuration and execute generator. File
     // should be: genconfig.xml.
@@ -94,23 +109,26 @@ public class Driver {
         ArrayList<Query> qList = new ArrayList<>();
         if (argsLine.getOptionValue("d").equals("anon")) {
           String[] droptable = {
+                  "customerbefore",
             "anonymizedCustomer",
             "transformedData",
             "RemainingData",
             "SynthesizedData",
             "Result",
-            "CorrectSynthesizedData"
+            "CorrectSynthesizedData",
+                  "maindata",
+                  "modifieddata"
           };
           qList.addAll(Query.QueryGenerator.generateDropQueries(droptable, "table"));
         } else {
           qList.addAll(Query.QueryGenerator.generateDropQueries(Queries.tables, "table"));
         }
-        for (Query q : qList) {
+        for (Query qqq : qList) {
           try {
-            q.update(conn);
+            qqq.update(conn);
           } catch (SQLServerException e) {
             System.err.println(
-                q.query_stmt
+                qqq.query_stmt
                     + " failed because the table does not exist or you do not have permission.");
           }
         }
@@ -151,7 +169,6 @@ public class Driver {
       Worker worker = new Worker(conn, transactionQueue, rand, numberWorkers);
       worker.work(config.getDatabase());
 
-      // Close database connection.
 
       // Store cardinalities in a file.
       Files.createDirectories(Paths.get(CardinalityDirectory));
@@ -275,6 +292,7 @@ public class Driver {
     options.addOption("dm", true, "DataManger is executed when set");
     options.addOption("g", true, "Generator is executed when set");
     options.addOption("c", true, "Connection is established when set");
+    options.addOption("q", true, "Executes queries provided in specified file");
     Option optionE = new Option("e", true, "Executes queries of specified benchmarks when set");
     optionE.setArgs(Option.UNLIMITED_VALUES);
     optionE.setValueSeparator(',');

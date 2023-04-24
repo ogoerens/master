@@ -37,7 +37,10 @@ public class AnonymizationConfiguration {
   private String specifiedAnonymizationAlgorithm;
   private HashMap<String,Integer> maximalGeneralizationLevels;
   private String hashingFunction;
+  private  String hierarchyFile;
   private String[] hashingColumns;
+  private String[] columnsForSynth;
+  private String[] remainingColumns;
 
   private double suppressionLimit = 1000;
 
@@ -49,6 +52,9 @@ public class AnonymizationConfiguration {
 
   public AnonymizationConfiguration(XMLConfiguration config) throws RuntimeException {
     this.anonymizationStrategy = config.getString("AnonymizationStrategy");
+    if (this.anonymizationStrategy.equalsIgnoreCase("hash")){
+      this.anonymizationStrategy = "Hash";
+    }
 
 
     HierarchicalConfiguration dataSubconfig = config.configurationAt("Data");
@@ -86,6 +92,9 @@ public class AnonymizationConfiguration {
     if (this.anonymizationStrategy.equalsIgnoreCase("Synth")){
       HierarchicalConfiguration synthSubconfig = config.configurationAt("Synth");
       this.domainFileLocation = synthSubconfig.getString("domainLocation");
+      this.columnsForSynth = synthSubconfig.getStringArray("columnsForSynth");
+      this.remainingColumns = synthSubconfig.getStringArray("remainingCols");
+
     }
 
     //Retrieve the remaining arguments for the other anonymization techniques.
@@ -96,7 +105,7 @@ public class AnonymizationConfiguration {
               "No output file name specified in anonymization configuration. Please specifiy output file name using the tag: outputFileName.");
     }
 
-
+    this.hierarchyFile = config.getString("hierarchyFile");
 
     gatherMaximalGeneralizationLevels(config);
 
@@ -134,6 +143,10 @@ public class AnonymizationConfiguration {
     return arxConfig;
   }
 
+  public String[] getColumnsForSynth() {
+    return columnsForSynth;
+  }
+
   public String getDataFileName() {
     return dataFileName;
   }
@@ -157,12 +170,23 @@ public class AnonymizationConfiguration {
     return hashingColumns;
   }
 
+  public String getHierarchyFile() throws Exception{
+    if (hierarchyFile == null){
+      throw new Exception("The field hierarchyFile has not been set in the anonymization configuration. ");
+    }
+    return hierarchyFile;
+  }
+
   public ArrayList<String> getIdentifyingAttributes() {
     return identifyingAttributes;
   }
 
   public ArrayList<String> getInsensitiveAttributes() {
     return insensitiveAttributes;
+  }
+
+  public String[] getRemainingColumns() {
+    return remainingColumns;
   }
 
   public ArrayList<String> getSensitiveAttributes() {

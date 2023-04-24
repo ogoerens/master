@@ -137,7 +137,7 @@ public class Queries {
           "q3b");
   public static AbstractQuery aq4 =
       new AbstractQuery(
-          "SELECT c_mktsegment, avg(c_ACCTBAL) " + "FROM %1$s " + "GROUP BY c_mktsegment", "q4");
+          "SELECT avg(c_ACCTBAL) " + "FROM %1$s " + "GROUP BY c_mktsegment", "q4");
   public static String[] aq4Tables = {
     "customer",
     "customer_numericmktseg",
@@ -154,7 +154,7 @@ public class Queries {
       new AbstractQuery("SELECT * FROM %1$s WHERE corr1 > %2$s and corr2 > %3$s", "q6");
   public static String[] aq6Tables = aq5Tables;
   public static AbstractQuery aq7 =
-      new AbstractQuery("SELECT distinct c_nationkey FROM %s Where c_custkey%%2!=0", "q7");
+      new AbstractQuery("SELECT distinct c_nationkey FROM %s Where corr1%%2!=0", "q7");
   public static String[] aq7Tables = {
     "customer", "customer_largerNation", "customer_smallerNation"
   };
@@ -180,7 +180,7 @@ public class Queries {
   public static String[] aq11Tables = indexTablesCustkey;
   public static AbstractQuery aq12 =
       new AbstractQuery(
-          "SELECT DISTINCT(c_custkey) from %1$s where c_custkey >%2$s and c_custkey< %3$s", "q12");
+          "SELECT DISTINCT(c_custkey) from %1$s where c_custkey >=%2$s and c_custkey< %3$s", "q12");
   public static String[] aq12Tables = {
     "CustomerClusteredIndex", "CustomerClusteredIndex_custkeyNonDistinct"
   };
@@ -311,7 +311,12 @@ public class Queries {
           new AbstractQuery(
                   "SELECT count(*) FROM %1$s where corr1 >%2$s and corr1 <%3$s and corr2 >%4$s and corr2 <%5$s",
                   "q41");
-  public static String[] aq41Tables = correlationTablesCorr;
+  public static String[] aq41Tables =correlationTablesCorr;
+
+  public static AbstractQuery aq42 =
+          new AbstractQuery(
+                  "SELECT count(*) FROM %1$s where corr1 =%2$s","q42");
+
   /**
    * Generates the queries that are used in the microbenchmark.
    *
@@ -499,6 +504,20 @@ public class Queries {
     microbenchmarkQueries.addAll(aq29b.generateQueries(aq29bargs));
 
 
+
+    Query[] queries = new Query[microbenchmarkQueries.size()];
+    queries = microbenchmarkQueries.toArray(queries);
+    return queries;
+  }
+
+  public static Query[] generateAddtitionalMicrobenchmarkQueries(int scalefactor) {
+    ArrayList<Query> microbenchmarkQueries = new ArrayList<>();
+    //Q15
+    String[] aq15vals = {"0", "250", "500", "750", "1000", "1500"};
+    String[][] aq15args = Utils.combineArrays(aq15Tables,aq15vals);
+    microbenchmarkQueries.addAll(aq15.generateQueries(aq15args));
+    microbenchmarkQueries.addAll(aq4.generateQueries(aq4Tables));
+
     Query[] queries = new Query[microbenchmarkQueries.size()];
     queries = microbenchmarkQueries.toArray(queries);
     return queries;
@@ -577,9 +596,6 @@ public class Queries {
     // q17.
     String[][] aq17Args = {
       {"customer", "Automobile"},
-      {"customer_bloated2mktseg", "394omobile"},
-      {"customer_numericmktseg", "194734533"},
-      {"customer_bloated2numericmktseg", "194735759"}
     };
     microbenchmarkQueries.addAll(aq17.generateQueries(aq17Args));
     // q18.
@@ -606,6 +622,7 @@ public class Queries {
     return queries;
   }
 
+
   /**
    * Generates a special set of queries that are used to test the different anonymized datasets.
    *
@@ -620,7 +637,8 @@ public class Queries {
     ArrayList<Query> anonQueries = new ArrayList<>();
     String[] anonymizationTable = {"Customer"};
     Generator g = new Generator(new Random());
-    int[] randomNationkey = g.generateUniform(10, 0, 25);
+    //int[] randomNationkey = g.generateUniform(10, 0, 25);
+    int[] randomNationkey = {1, 2, 3, 4, 5, 7, 12, 15, 20, 23};
     String[] randomNationkeyString = Utils.convertIntArrayToStrArray(randomNationkey);
     int[] randomCustkey = g.generateUniform(10, 0, 150000 * scalefactor);
     String[] randomCustkeyString = Utils.convertIntArrayToStrArray(randomCustkey);
@@ -646,14 +664,7 @@ public class Queries {
     // Q25.
     String[][] aq25Args = Utils.combineArrays(anonymizationTable, randomAcctbalString);
     anonQueries.addAll(aq25.generateQueries(aq25Args));
-    // Grouping.
-    // Q3.
-    String[] aq3Vals = {"1", "5", "10", "50", "100", "250", "500", "1000", "10000"};
-    String[][] aq3Args = Utils.combineArrays(anonymizationTable, aq3Vals);
-    anonQueries.addAll(aq3.generateQueries(aq3Args));
-    // q26.
-    String[][] aq26Args = aq3Args;
-    anonQueries.addAll(aq26.generateQueries(aq26Args));
+    //range
     // q27
     String[] aq27Vals = {"1", "5", "10", "20", "30", "50", "100"};
     String[][] aq27Args = Utils.combineArrays(anonymizationTable, aq27Vals);
@@ -666,10 +677,45 @@ public class Queries {
     String[] aq29Vals = {"1", "5", "10", "20", "30", "50", "100"};
     String[][] aq29Args = Utils.combineArrays(anonymizationTable, aq29Vals);
     anonQueries.addAll(aq29.generateQueries(aq29Args));
-    // Q3b.
-    // Q4.
 
+    // Grouping.
+    // Q3.
+    String[] aq3Vals = {"1", "5", "10", "50", "100", "250", "500", "1000", "10000"};
+    String[][] aq3Args = Utils.combineArrays(anonymizationTable, aq3Vals);
+    anonQueries.addAll(aq3.generateQueries(aq3Args));
+    //q4
     anonQueries.addAll(aq4.generateQueries(anonymizationTable));
+    //q5
+    String[] aq5Vals = aq3Vals;
+    String[][] aq5Args = Utils.combineArrays(anonymizationTable, aq5Vals);
+    anonQueries.addAll(aq5.generateQueries(aq5Args));
+    // q26.
+    String[][] aq26Args = aq3Args;
+    anonQueries.addAll(aq26.generateQueries(aq26Args));
+
+    // Q8
+    anonQueries.add(aq8.generateQuery(anonymizationTable));
+    // Q18
+    anonQueries.add(aq18.generateQuery(anonymizationTable));
+    // Q22
+    anonQueries.add(aq22.generateQuery(anonymizationTable));
+    // Q23
+    String[][] aq23Vals = {{"10000", "15000", "13"},{"100000", "115000", "21"},{"0", "5000", "22"}};
+    String[][] aq23Args = Utils.combineArrayWithArrayOfArray(anonymizationTable, aq23Vals);
+    anonQueries.addAll(aq23.generateQueries(aq23Args));
+    //Q9
+
+    //Q16
+    String[] aq16Vals = {"%ure","Furniture","automobile", "%uilding%"};
+    String[][] aq16Args = Utils.combineArrays(anonymizationTable, aq16Vals);
+    anonQueries.addAll(aq16.generateQueries(aq16Args));
+
+    //Q42
+    String[] randomCorrValues={"42", "183", "209","365", "734"};
+    String[][] aq42args = Utils.combineArrays(anonymizationTable,randomCorrValues);
+    anonQueries.addAll(aq42.generateQueries(aq42args));
+
+
     Queries.generatedQueries = anonQueries;
     Queries.generated = true;
     return anonQueries;
@@ -683,25 +729,5 @@ public class Queries {
    * @param queryListName
    * @return
    */
-  public static Query[] returnQueryList(String queryListName) {
-    switch (queryListName) {
-      case "oldOriginalQueries":
-        return OldQueries.originalQueries;
-      case "microbenchmark":
-        // return OldQueries.microbenchmarkQueries; Original microbench
-        return generateMicrobenchmarkQueries(1);
-      case "original":
-        return generateQueriesOnTable("customer");
-      case "anonymization":
-        ArrayList<Query> anonQueries = generateAnonymizationQueries();
-        Query[] anonQueriesArray = new Query[anonQueries.size()];
-        for (int i = 0; i < anonQueries.size(); i++) {
-          anonQueriesArray[i] = anonQueries.get(i);
-        }
-        return anonQueriesArray;
-      default:
-        Query[] s = {};
-        return s;
-    }
-  }
+
 }

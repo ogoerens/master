@@ -72,45 +72,48 @@ public class LatencyRecord {
    * @return
    */
   public static String extractDistribution(String str) {
-
+    String anon = "";
+    if (str.toLowerCase().contains("anonymized")){
+      anon= "anon";
+    }
     if (str.toLowerCase().contains("binomial2")) {
-      return "binomial2";
+      return "binomial2"+anon;
     }
     if (str.toLowerCase().contains("binomial3")) {
-      return "binomial3";
+      return "binomial3"+anon;
     }
     if (str.toLowerCase().contains("binomial")) {
-      return "binomial";
+      return "binomial"+anon;
     }
 
     if (str.toLowerCase().contains("zipf1")) {
-      return "zipf1";
+      return "zipf1"+anon;
     }
     if (str.toLowerCase().contains("zipf2")) {
-      return "zipf2";
+      return "zipf2"+anon;
     }
     if (str.toLowerCase().contains("zipf3")) {
-      return "zipf3";
+      return "zipf3"+anon;
     }
     if (str.toLowerCase().contains("zipf")) {
-      return "zipf";
+      return "zipf"+anon;
     }
     if (str.toLowerCase().contains("uncorrelated")) {
-      return "uncorrelated";
+      return "uncorrelated"+anon;
     }
     if (str.toLowerCase().contains("fd")) {
-      return "fd";
+      return "fd"+anon;
     }
     if (str.toLowerCase().contains("biggerdomain")) {
-      return "biggerdomain";
+      return "biggerdomain"+anon;
     }
     if (str.toLowerCase().contains("lowerdomain")) {
-      return "lowerdomain";
+      return "lowerdomain"+anon;
     }
     if (str.toLowerCase().contains("customer-")) {
-      return "uniform";
+      return "uniform"+anon;
     }
-    return "-1";
+    return "-1"+anon;
   }
 
   public int[] getLatenciesAsArray() {
