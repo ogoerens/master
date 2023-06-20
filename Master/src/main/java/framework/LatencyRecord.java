@@ -10,10 +10,23 @@ public class LatencyRecord {
   private long startNanosecond;
   private long endNanosecond;
 
+  /**
+   * Adds a latency sample in the latency record.
+   *
+   * @param start Start time of the query.
+   * @param end End time of the query.
+   * @param workerID Worker that executed the event.
+   * @param qName Name of the query.
+   */
   public void addLatency(long start, long end, int workerID, String qName) {
     values.add(new Sample(start, end, workerID, qName));
   }
 
+  /**
+   * Adds a latency sample to the latency record.
+   *
+   * @param sample Sample containing all the relevant latency information.
+   */
   public void addLatency(Sample sample) {
     values.add(sample);
   }
@@ -22,14 +35,11 @@ public class LatencyRecord {
     return values.size();
   }
 
-  public Sample getLatency(int i) {
-    return values.get(i);
-  }
-
   /**
-   * Groups all Latencies per queryname that is associated with the query.
+   * Maps each latency sample contained in the latency record to its queryname.
    *
-   * @return Linked HashMap that contains the latencies per queryname.
+   * @return Linked HashMap that contains multiple latency records, each one only containing
+   *     latencies for a single queryname.
    */
   public LinkedHashMap<String, LatencyRecord> groupQueriesPerName() {
     LinkedHashMap<String, LatencyRecord> timesPerQuery = new LinkedHashMap<>();
@@ -65,57 +75,62 @@ public class LatencyRecord {
 
   /**
    * Extracts the distribution out of the String. Distributions can be followed by an integer if
-   * there are multiple datasets with this distribution. TODO: If QueryName implementation gets
-   * updated, extract by position not match.
+   * there are multiple datasets with this distribution. TODO: Create a queryname convention. To
+   * simplify distribution extraction, i.e extract by position not by matching. Would avoid
+   * hardcoding of distributions.
    *
    * @param str
    * @return
    */
   public static String extractDistribution(String str) {
     String anon = "";
-    if (str.toLowerCase().contains("anonymized")){
-      anon= "anon";
+    if (str.toLowerCase().contains("anonymized")) {
+      anon = "anon";
     }
     if (str.toLowerCase().contains("binomial2")) {
-      return "binomial2"+anon;
+      return "binomial2" + anon;
     }
     if (str.toLowerCase().contains("binomial3")) {
-      return "binomial3"+anon;
+      return "binomial3" + anon;
     }
     if (str.toLowerCase().contains("binomial")) {
-      return "binomial"+anon;
+      return "binomial" + anon;
     }
 
     if (str.toLowerCase().contains("zipf1")) {
-      return "zipf1"+anon;
+      return "zipf1" + anon;
     }
     if (str.toLowerCase().contains("zipf2")) {
-      return "zipf2"+anon;
+      return "zipf2" + anon;
     }
     if (str.toLowerCase().contains("zipf3")) {
-      return "zipf3"+anon;
+      return "zipf3" + anon;
     }
     if (str.toLowerCase().contains("zipf")) {
-      return "zipf"+anon;
+      return "zipf" + anon;
     }
     if (str.toLowerCase().contains("uncorrelated")) {
-      return "uncorrelated"+anon;
+      return "uncorrelated" + anon;
     }
     if (str.toLowerCase().contains("fd")) {
-      return "fd"+anon;
+      return "fd" + anon;
     }
     if (str.toLowerCase().contains("biggerdomain")) {
-      return "biggerdomain"+anon;
+      return "biggerdomain" + anon;
     }
     if (str.toLowerCase().contains("lowerdomain")) {
-      return "lowerdomain"+anon;
+      return "lowerdomain" + anon;
     }
     if (str.toLowerCase().contains("customer-")) {
-      return "uniform"+anon;
+      return "uniform" + anon;
     }
-    return "-1"+anon;
+    return "-1" + anon;
   }
 
+  /**
+   * Returns the latencies only of each sample in the latency record store in an array.
+   * @return
+   */
   public int[] getLatenciesAsArray() {
     int[] times = new int[values.size()];
     for (int i = 0; i < values.size(); ++i) {
@@ -137,10 +152,16 @@ public class LatencyRecord {
       this.queryName = queryName;
     }
 
+    /**
+     * Returns the latency of the latency sample.
+     */
     public int getLatencyMicroSecond() {
       return latency;
     }
 
+    /**
+     * Returns the query name of the latency sample.
+     */
     public String getQueryName() {
       return queryName;
     }

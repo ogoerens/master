@@ -11,7 +11,6 @@ import java.sql.SQLException;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 import framework.Anonymization.AnonymizationDriver;
-import framework.Anonymization.Transformer;
 import microbench.Queries;
 import microbench.Query;
 import org.apache.commons.cli.*;
@@ -32,29 +31,33 @@ public class Driver {
 
   public static void main(String[] args) throws Exception {
 
+    // Parse user options.
     CommandLineParser parser = new DefaultParser();
     Options options = buildOptions();
     CommandLine argsLine = parser.parse(options, args);
 
     Random rand = new Random();
 
+    // Check if Generator is used. If so, create generator configuration and execute generator.
+    if (argsLine.hasOption("g")) {
+      XMLConfiguration genConfiguration = Utils.buildXMLConfiguration(argsLine.getOptionValue("g"));
+      Generator g = new Generator(rand);
+      g.generate(genConfiguration);
+    }
+
+    // Add user-provided queries to the Query Manager.
     QueryManager queryManager = new QueryManager();
-    ArrayList<Query> queriesForExecution;
-
-    // Add queries to the Query Manager.
-
-
     if (argsLine.hasOption("q")) {
       if (argsLine.hasOption("numExecutions")) {
         numberOfQueryExecutions = Integer.parseInt(argsLine.getOptionValue("numExecution"));
       }
       String queriesFile = argsLine.getOptionValue("q");
-      queryManager.loadQueries(queriesFile,";\n","InputQueries_");
+      queryManager.loadQueries(queriesFile, ";\n", "InputQueries_");
     }
 
-    // Check if data should be anonymized, i.e. option "a" is set and configuration file is passed
-    // as argument.
-    //Must be run after option "-q" as otherwise personalized queries are not yet saved in queryManager.
+    // Check if data should be anonymized.
+    // Must be run after option "-q" as otherwise personalized queries are not yet stored in
+    // queryManager.
     if (argsLine.hasOption("a")) {
       AnonymizationDriver ad =
           new AnonymizationDriver(argsLine.getOptionValue("a"), argsLine.getOptionValue("c"));
@@ -62,8 +65,7 @@ public class Driver {
       ad.anonymize(queryManager);
     }
 
-
-    //must be run after oterwise queries noty et anonymized.
+    // Check if queries should be executed.
     if (argsLine.hasOption("e")) {
       if (argsLine.hasOption("numExecutions")) {
         numberOfQueryExecutions = Integer.parseInt(argsLine.getOptionValue("numExecution"));
@@ -75,15 +77,6 @@ public class Driver {
     }
 
 
-    // Check if Generator is used. If so, create generator configuration and execute generator. File
-    // should be: genconfig.xml.
-
-    if (argsLine.hasOption("g")) {
-      XMLConfiguration genConfiguration = Utils.buildXMLConfiguration(argsLine.getOptionValue("g"));
-      Generator g = new Generator(rand);
-      g.generate(genConfiguration);
-    }
-
     // Check if option "-c" is set. If not, no connection to a database is established and the
     // program will exit.
     if (!argsLine.hasOption("c")) {
@@ -93,7 +86,7 @@ public class Driver {
       System.exit(0);
     }
 
-    // Option "-c" is set. Create DB connection configuration  from configuration file.
+    // Option "-c" is set. Create DB connection configuration from configuration file.
     String dbConfigFile = argsLine.getOptionValue("c");
     XMLConfiguration dbConfiguration = Utils.buildXMLConfiguration(dbConfigFile);
     DatabaseConfiguration config = new DatabaseConfiguration(dbConfiguration);
@@ -103,21 +96,26 @@ public class Driver {
       Connection conn = config.makeConnection();
       if (conn != null) {
         System.out.println("Connected.");
+      } else {
+        throw new Exception("Connection to DB could not be established");
       }
 
+      // Drop the tables that have been created during previous executions.
+      // If value "anon" is passed as argument, the tables that are created during the anonymizatin
+      // process are dropped.
       if (argsLine.hasOption("d")) {
         ArrayList<Query> qList = new ArrayList<>();
         if (argsLine.getOptionValue("d").equals("anon")) {
           String[] droptable = {
-                  "customerbefore",
+            "customerbefore",
             "anonymizedCustomer",
             "transformedData",
             "RemainingData",
             "SynthesizedData",
             "Result",
             "CorrectSynthesizedData",
-                  "maindata",
-                  "modifieddata"
+            "maindata",
+            "modifieddata"
           };
           qList.addAll(Query.QueryGenerator.generateDropQueries(droptable, "table"));
         } else {
@@ -136,10 +134,8 @@ public class Driver {
         System.exit(0);
       }
 
-      // Check if DataManager is used. If so, create DM configuration and execute DM. File should
-      // be: manageconfig.xml.
+      // Check if DataManager is used. If so, create DM configuration and execute DM.
       // DataManager is used to create/update the tables with generated data from files.
-
       if (argsLine.hasOption("dm")) {
         XMLConfiguration manConfiguration =
             Utils.buildXMLConfiguration(argsLine.getOptionValue("dm"));
@@ -147,10 +143,8 @@ public class Driver {
         dm.manage(manConfiguration);
       }
 
-      // TODO check at what qid query generation starts! And clean up this mess.
-
       // Add queries to transactionqueue. Queries are only timed, if they are equal to the previous
-      // query.
+      // query. This is done such that timed queries only run on a hot cache.
       ArrayList<QueryBool> transactionQueue = new ArrayList<>();
       String prevQuery = "";
 
@@ -168,7 +162,6 @@ public class Driver {
       // Execute the Queries.
       Worker worker = new Worker(conn, transactionQueue, rand, numberWorkers);
       worker.work(config.getDatabase());
-
 
       // Store cardinalities in a file.
       Files.createDirectories(Paths.get(CardinalityDirectory));
@@ -226,17 +219,15 @@ public class Driver {
       // Stats for all queries together.
       Statistics stats =
           Statistics.computeStatistics(worker.getLatencyRecord().getLatenciesAsArray());
-      //statsPerQueryName.put("Overall", stats);
+      // statsPerQueryName.put("Overall", stats);
 
       // group by query number
-
-
-
 
       LinkedHashMap<String, ArrayList<Statistics>> statsPerQueryNumber = new LinkedHashMap<>();
       for (Map.Entry<String, Statistics> entry : statsPerQueryName.entrySet()) {
         String distribution = LatencyRecord.extractDistribution(entry.getKey());
-        String querynumber = entry.getKey().substring(0, entry.getKey().indexOf("_"))+ distribution;
+        String querynumber =
+            entry.getKey().substring(0, entry.getKey().indexOf("_")) + distribution;
         if (!statsPerQueryNumber.containsKey(querynumber)) {
           statsPerQueryNumber.put(querynumber, new ArrayList<>());
         }
@@ -287,6 +278,10 @@ public class Driver {
     }
   }
 
+  /**
+   * Creates the different options that user cans set when he runs the program
+   * @return
+   */
   private static Options buildOptions() {
     Options options = new Options();
     options.addOption("dm", true, "DataManger is executed when set");
@@ -313,7 +308,7 @@ public class Driver {
     StringBuilder stringBuilderStats = new StringBuilder();
     stringBuilderStats.append("Queries,  Average time(us) \n");
     for (Map.Entry<String, ArrayList<Statistics>> entry : stats.entrySet()) {
-      stringBuilderStats.append(entry.getKey() );
+      stringBuilderStats.append(entry.getKey());
       for (Statistics statistics : entry.getValue()) {
         stringBuilderStats.append("," + statistics.getAverage());
       }
@@ -321,10 +316,6 @@ public class Driver {
     }
     Utils.strToFile(stringBuilderStats.toString(), resultOverviewFile);
   }
-
-
-
-
 
   public static class QueryBool {
     public GenericQuery query;

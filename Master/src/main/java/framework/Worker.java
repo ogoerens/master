@@ -26,10 +26,16 @@ public class Worker {
     this.workerID = id;
   }
 
+  /**
+   * Returns the latency record containing all the latency sample of queries that the worker has executed.
+   */
   public LatencyRecord getLatencyRecord() {
     return latencies;
   }
 
+  /**
+   * Returns the cardinalities of all the queries that the worker has executed. For each query name, a single cardinality value is stored.
+   */
   public HashMap<String, Integer> getCardinalities() {
     return cardinalities;
   }

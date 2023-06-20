@@ -22,9 +22,6 @@ public class QueryPlanManager {
     this.cardinalities = new HashMap<>();
   }
 
-  public HashMap<String, Integer> getCardinalities() {
-    return cardinalities;
-  }
   /**
    * Retrieves and stores the query plan and the query text from the last query that was executed on
    * a specified database by analyzing the stats of this database. It does also retrieve the number
@@ -66,7 +63,6 @@ public class QueryPlanManager {
         String qp = rs.getString(1);
         String sqlText = rs.getString(2);
         int total_rows = rs.getInt(3);
-        // System.out.println(sqlText);
 
         String filenameQP = "qid" + qid + "QueryPlan";
         String filenameSQL = "qid" + qid + "SQLText";

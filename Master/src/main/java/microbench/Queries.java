@@ -1,15 +1,13 @@
 package microbench;
 
 import framework.Generator;
-import org.apache.commons.math3.analysis.function.Abs;
-import org.checkerframework.checker.units.qual.A;
 import util.Utils;
 
 import java.util.ArrayList;
 import java.util.Random;
 
 public class Queries {
-  private static final int scalefactor = 1;
+  private static final int scalefactor = 10;
   private static boolean generated = false;
   private static ArrayList<Query> generatedQueries;
   public static String[] tables = {
@@ -338,7 +336,7 @@ public class Queries {
     String[][] nationPhoneCombinations = {
       {"24", "34-%"}, {"17", "27-%"}, {"21", "31-%"}, {"2", "12-%"}
     };
-    String[][] aq2Args = Utils.combineArrayWithArrayOfArray(aq2Tables, nationPhoneCombinations);
+    String[][] aq2Args = Utils.combineArrayWithSubarrays(aq2Tables, nationPhoneCombinations);
     microbenchmarkQueries.addAll(aq2.generateQueries(aq2Args));
     // q3.
     String[] aq3Vals = {"1", "5", "10", "50", "100", "250", "500", "1000", "10000"};
@@ -346,8 +344,8 @@ public class Queries {
     microbenchmarkQueries.addAll(aq3.generateQueries(aq3Args));
     String[][] aq3bCond = {{"3000", "5999"}};
     String[][] aq3bArgs =
-        Utils.combineArrayWithArrayOfArray(
-            aq3Tables, Utils.combineArrayWithArrayOfArray(aq3Vals, aq3bCond));
+        Utils.combineArrayWithSubarrays(
+            aq3Tables, Utils.combineArrayWithSubarrays(aq3Vals, aq3bCond));
     microbenchmarkQueries.addAll(aq3b.generateQueries(aq3bArgs));
     // q4.
     microbenchmarkQueries.addAll(aq4.generateQueries(aq4Tables));
@@ -357,7 +355,7 @@ public class Queries {
     microbenchmarkQueries.addAll(aq5.generateQueries(aq5Args));
     // q6.
     String[][] aq6Vals = {{"500", "500"}, {"500", "525"}, {"500", "550"}};
-    String[][] aq6Args = Utils.combineArrayWithArrayOfArray(aq6Tables, aq6Vals);
+    String[][] aq6Args = Utils.combineArrayWithSubarrays(aq6Tables, aq6Vals);
     microbenchmarkQueries.addAll(aq6.generateQueries(aq6Args));
     // q7.
     microbenchmarkQueries.addAll(aq7.generateQueries(aq7Tables));
@@ -377,7 +375,7 @@ public class Queries {
     microbenchmarkQueries.addAll(aq11.generateQueries(aq11Args));
     // q12.
     String[][] aq12Vals = {{"7500", "15000"}};
-    String[][] aq12Args = Utils.combineArrayWithArrayOfArray(aq12Tables, aq12Vals);
+    String[][] aq12Args = Utils.combineArrayWithSubarrays(aq12Tables, aq12Vals);
     microbenchmarkQueries.addAll(aq12.generateQueries(aq12Args));
     // q13.
     microbenchmarkQueries.addAll(aq13.generateQueries(aq13Tables));
@@ -413,7 +411,7 @@ public class Queries {
     microbenchmarkQueries.addAll(aq22.generateQueries(aq22Tables));
     // q23.
     String[][] aq23Vals = {{"10000", "15000", "13"}};
-    String[][] aq23Args = Utils.combineArrayWithArrayOfArray(aq23Tables, aq23Vals);
+    String[][] aq23Args = Utils.combineArrayWithSubarrays(aq23Tables, aq23Vals);
     microbenchmarkQueries.addAll(aq23.generateQueries(aq23Args));
     // q25.
     String[] aq25Vals = {"0", "2500", "5000", "7500", "9000"};
@@ -423,7 +421,7 @@ public class Queries {
     String[][] aq30Vals = {
       {"-1000", "1000"}, {"1000", "3000"}, {"3000", "5000"}, {"5000", "8000"}, {"8000", "11000"}
     };
-    String[][] aq30args = Utils.combineArrayWithArrayOfArray(aq30Tables, aq30Vals);
+    String[][] aq30args = Utils.combineArrayWithSubarrays(aq30Tables, aq30Vals);
     microbenchmarkQueries.addAll(aq30.generateQueries(aq30args));
     // Q31.
     int[] val31 = {
@@ -454,7 +452,7 @@ public class Queries {
     microbenchmarkQueries.addAll(aq34.generateQueries(aq34Args));
     // Q35
     String[][] aq35Vals = {{"0", "5"}, {"5", "10"}, {"10", "15"}, {"15", "20"}, {"20", "25"}};
-    String[][] aq35Args = Utils.combineArrayWithArrayOfArray(aq35Tables, aq35Vals);
+    String[][] aq35Args = Utils.combineArrayWithSubarrays(aq35Tables, aq35Vals);
     microbenchmarkQueries.addAll(aq35.generateQueries(aq35Args));
 
     // Q36
@@ -489,12 +487,12 @@ public class Queries {
     microbenchmarkQueries.addAll(aq29.generateQueries(aq29args));
 
     String[][] aq40Vals ={{"100","200","0","300"},{"200","300","100","400"},{"500","600","400","700"}};
-    String[][] aq40args = Utils.combineArrayWithArrayOfArray(aq40Tables,aq40Vals);
+    String[][] aq40args = Utils.combineArrayWithSubarrays(aq40Tables,aq40Vals);
     microbenchmarkQueries.addAll(aq40.generateQueries(aq40args));
 
     //Q41.
     String[][] aq41Vals ={{"100","200","0","300"},{"200","300","100","400"},{"500","600","400","700"}};
-    String[][] aq41args = Utils.combineArrayWithArrayOfArray(aq41Tables,aq41Vals);
+    String[][] aq41args = Utils.combineArrayWithSubarrays(aq41Tables,aq41Vals);
     microbenchmarkQueries.addAll(aq41.generateQueries(aq41args));
 
     //q29b
@@ -540,7 +538,7 @@ public class Queries {
     String[][] nationPhoneCombinations = {
       {"24", "34-%"}, {"17", "27-%"}, {"21", "31-%"}, {"2", "12-%"}
     };
-    String[][] aq2Args = Utils.combineArrayWithArrayOfArray(tables, nationPhoneCombinations);
+    String[][] aq2Args = Utils.combineArrayWithSubarrays(tables, nationPhoneCombinations);
     microbenchmarkQueries.addAll(aq2.generateQueries(aq2Args));
     // q3.
     String[] aq3Vals = {"1", "5", "10", "50", "100", "250", "500", "1000", "10000"};
@@ -548,8 +546,8 @@ public class Queries {
     microbenchmarkQueries.addAll(aq3.generateQueries(aq3Args));
     String[][] aq3bCond = {{"3000", "5999"}};
     String[][] aq3bArgs =
-        Utils.combineArrayWithArrayOfArray(
-            tables, Utils.combineArrayWithArrayOfArray(aq3Vals, aq3bCond));
+        Utils.combineArrayWithSubarrays(
+            tables, Utils.combineArrayWithSubarrays(aq3Vals, aq3bCond));
     microbenchmarkQueries.addAll(aq3b.generateQueries(aq3bArgs));
     // q4.
     microbenchmarkQueries.addAll(aq4.generateQueries(tables));
@@ -559,7 +557,7 @@ public class Queries {
     microbenchmarkQueries.addAll(aq5.generateQueries(aq5Args));
     // q6.
     String[][] aq6Vals = {{"500", "500"}, {"500", "525"}, {"500", "550"}};
-    String[][] aq6Args = Utils.combineArrayWithArrayOfArray(tables, aq6Vals);
+    String[][] aq6Args = Utils.combineArrayWithSubarrays(tables, aq6Vals);
     microbenchmarkQueries.addAll(aq6.generateQueries(aq6Args));
     // q7.
     microbenchmarkQueries.addAll(aq7.generateQueries(tables));
@@ -579,7 +577,7 @@ public class Queries {
     microbenchmarkQueries.addAll(aq11.generateQueries(aq11Args));
     // q12.
     String[][] aq12Vals = {{"7500", "15000"}};
-    String[][] aq12Args = Utils.combineArrayWithArrayOfArray(tables, aq12Vals);
+    String[][] aq12Args = Utils.combineArrayWithSubarrays(tables, aq12Vals);
     microbenchmarkQueries.addAll(aq12.generateQueries(aq12Args));
     // q13.
     microbenchmarkQueries.addAll(aq13.generateQueries(tables));
@@ -614,7 +612,7 @@ public class Queries {
     microbenchmarkQueries.addAll(aq22.generateQueries(tables));
     // q23.
     String[][] aq23Vals = {{"10000", "15000", "13"}};
-    String[][] aq23Args = Utils.combineArrayWithArrayOfArray(tables, aq23Vals);
+    String[][] aq23Args = Utils.combineArrayWithSubarrays(tables, aq23Vals);
     microbenchmarkQueries.addAll(aq23.generateQueries(aq23Args));
 
     Query[] queries = new Query[microbenchmarkQueries.size()];
@@ -701,7 +699,7 @@ public class Queries {
     anonQueries.add(aq22.generateQuery(anonymizationTable));
     // Q23
     String[][] aq23Vals = {{"10000", "15000", "13"},{"100000", "115000", "21"},{"0", "5000", "22"}};
-    String[][] aq23Args = Utils.combineArrayWithArrayOfArray(anonymizationTable, aq23Vals);
+    String[][] aq23Args = Utils.combineArrayWithSubarrays(anonymizationTable, aq23Vals);
     anonQueries.addAll(aq23.generateQueries(aq23Args));
     //Q9
 

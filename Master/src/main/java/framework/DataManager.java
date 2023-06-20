@@ -22,8 +22,8 @@ public class DataManager {
   }
 
   /**
-   * Executes the operations as declared in the configuration. Checks how many SQL statement and
-   * general Updates are declared in the configuration file. It then executes first the SQL update
+   * Responsible for creating and updating tables in a database. Checks how many SQL statements and
+   * updates are declared in the configuration file, then executes first the SQL update
    * statements, before continuing with the general updates. The general updates are divided in
    * column updates and table updates. Depending on the case, a different function is called that
    * takes care of the update.
@@ -45,6 +45,11 @@ public class DataManager {
     System.out.println("Data Managing has been done!");
   }
 
+  /**
+   * Executes the updates that rely on data in a file.
+   * @param amount Indicates the number of updates.
+   * @param conf The configuration file that indicates what updates should be executed.
+   */
   public void manageFile(int amount, XMLConfiguration conf) {
     for (int i = 1; i <= amount; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manFile[" + i + "]");
@@ -95,6 +100,12 @@ public class DataManager {
     }
   }
 
+
+  /**
+   * Executes the updates that only rely on an SQL statement.
+   * @param amount Indicates the number of updates.
+   * @param conf
+   */
   public void manageSQL(int amount, XMLConfiguration conf) {
     for (int i = 1; i <= amount; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manSQL[" + i + "]");
@@ -103,6 +114,11 @@ public class DataManager {
     }
   }
 
+  /**
+   * Executes updates that create an index on a table.
+   * @param amount Indicates the number of updates.
+   * @param conf
+   */
   public void manageIndex(int amount, XMLConfiguration conf) {
     for (int i = 1; i <= amount; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manIndex[" + i + "]");
@@ -137,7 +153,7 @@ public class DataManager {
       String fieldTerminator,
       String rowTerminator) {
     try {
-      // Creat Table without contents.
+      // Create Table without contents.
       createTable(newTableName, columnTypes, columnNames);
       // Create an SQL string for the filename
       String fileSQL = "'" + file + "'";
@@ -177,19 +193,6 @@ public class DataManager {
       throws SQLException {
     // Format the column arrays into a String that specifies the layout of the table.
     String tableSpecifications = Utils.alternate2ArraysToString(columnNames, columnTypes, " ", ",");
-    tableSpecifications = Utils.surroundWithParentheses(tableSpecifications);
-    // Create the SQL statement and execute it.
-    Statement stmt = conn.createStatement();
-    String sqlStmt = String.format("CREATE table %s %s", newTableName, tableSpecifications);
-    stmt.executeUpdate(sqlStmt);
-    System.out.println("Created table: " + newTableName);
-  }
-
-  public void createTable(String newTableName, ArrayList<String[]> columnNamesAndTypes)
-      throws SQLException {
-    // Format the column arrays into a String that specifies the layout of the table.
-
-    String tableSpecifications = Utils.joinArrays(columnNamesAndTypes, " ", ",");
     tableSpecifications = Utils.surroundWithParentheses(tableSpecifications);
     // Create the SQL statement and execute it.
     Statement stmt = conn.createStatement();
@@ -325,8 +328,13 @@ public class DataManager {
     }
   }
 
-  public void copyTable(String tableName, String copyyTableName) {
-    String sqlStmt = String.format("SELECT * INTO %s FROM %s", copyyTableName, tableName);
+  /**
+   *Executes an SQL statement that copies an existing table into anew table.
+   * @param tableName Table name of the original table.
+   * @param copyTableName Table name of the copy.
+   */
+  public void copyTable(String tableName, String copyTableName) {
+    String sqlStmt = String.format("SELECT * INTO %s FROM %s", copyTableName, tableName);
     try {
       PreparedStatement stmt = conn.prepareStatement(sqlStmt);
       stmt.executeUpdate();
@@ -335,6 +343,13 @@ public class DataManager {
     }
   }
 
+  /**
+   * Executes the SQL statement that creates an index on a table.
+   * @param clustered Indicates if the index should be clustered or non-clustered.
+   * @param indexName Name of the index.
+   * @param tableName Name of the table on which an index is created.
+   * @param columns Columns which are included in the index.
+   */
   public void createIndex(boolean clustered, String indexName, String tableName, String[] columns) {
     String cluster = clustered ? "clustered" : "";
     String joinedColumns = Utils.StrArrayToString(columns, ",", true);

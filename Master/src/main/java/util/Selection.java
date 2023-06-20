@@ -15,7 +15,7 @@ public class Selection extends GenericQuery{
 
     public Selection(String tbl, ArrayList<String> column, String criteria){
         this.tbl=tbl;
-        this.column= Utils.arrayListToString(column, ", ");
+        this.column= Utils.join(column, ", ");
         this.criteria=criteria;
     }
 

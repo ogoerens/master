@@ -1,12 +1,9 @@
 package framework;
 
-import jdk.jshell.execution.Util;
 import org.apache.commons.lang.StringUtils;
-import util.StringUtil;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -19,6 +16,15 @@ public class Inserter {
   }
   private static String csvDelimiter = ",|\\n";
 
+  /**
+   * Insert values from a file into a DB table.
+   * @param tablename Name of the table in which the data is stored.
+   * @param filename Name of the file containing the data.
+   * @param withHeader File contains a header row at the top.
+   * @param withIndex The first column in the file is an index column.
+   * @throws SQLException
+   * @throws FileNotFoundException
+   */
   public void insert(
       String tablename,
       String filename,

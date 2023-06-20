@@ -114,6 +114,11 @@ public class Statistics {
     return new Statistics(valuesAsMicroseconds.length, percentiles, average, standardDeviation);
   }
 
+  /**
+   * Prints the statistics that are passed in the argument.
+   * @param statsAttributes Statistics that should be printed.
+   * @return
+   */
   public String print(ArrayList<String> statsAttributes) {
     StringBuilder stringBuilder = new StringBuilder();
     for (int i=0; i< statsAttributes.size();i++) {

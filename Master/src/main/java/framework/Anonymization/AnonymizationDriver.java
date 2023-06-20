@@ -29,6 +29,12 @@ public class AnonymizationDriver {
     this.anonConfig = new AnonymizationConfiguration(this.anonConfigFile);
   }
 
+  /**
+   * Anonymizes the data following the configuration specified by the Anonymization driver.
+   * @param queryManager
+   * @throws SQLException
+   * @throws Exception
+   */
   public void anonymize(QueryManager queryManager) throws SQLException, Exception {
     XMLConfiguration xmlDbConfiguration = Utils.buildXMLConfiguration(dbConfigFile);
     DatabaseConfiguration dbConfiguration = new DatabaseConfiguration(xmlDbConfiguration);

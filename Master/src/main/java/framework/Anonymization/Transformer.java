@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Random;
 
 public class Transformer {
-  // Query a whole table and insert transformed values in new table
+  // Queries entire table and insert transformed values in new table
   // Needs: connection to db, tablename, new tablename, transforming function.
   // Transforming function consists of: actual transformation for each column.
   Connection connection;
@@ -60,9 +60,9 @@ public class Transformer {
    *
    * @param transformFunction Function used to transform the columns.
    * @param tablename Name of the old table with the not yet transformed columns.
-   * @param newTablename Name of the new table containing the transformed columns.
+   * @param newTablename Name of the new table that will contain the transformed columns.
    * @param columnsToTransform Names of the columns that should be transformed.
-   * @param columnsToProject Names of the columsn that should be kept in the new table.
+   * @param columnsToProject Names of the columns that should be kept in the new table.
    * @param newTableColumnTypes Type of the columns after applying the transformFunction.
    * @return
    * @throws SQLException
@@ -105,9 +105,6 @@ public class Transformer {
         columnNamesAndTypesArray[i] = columnNamesAndTypesOriginal.get(i);
       }
     }
-    ArrayList<String[]> columnNamesAndTypes =
-        new ArrayList<>(Arrays.asList(columnNamesAndTypesArray));
-
     // Gather collation information which may be needed in the transform function.
     this.collationInformation = gatherCollationInformation(connection, tablename);
 
@@ -259,7 +256,7 @@ public class Transformer {
         }
         ArrayList<String> transformedRow =
             transformRow(transformFunction, row, columnNamesAndTypes, columnsToTransform);
-        stringBuilderOutput.append(Utils.arrayListToString(transformedRow, delimiter));
+        stringBuilderOutput.append(Utils.join(transformedRow, delimiter));
         stringBuilderOutput.append("\n");
       }
       Utils.strToFile(stringBuilderOutput.toString(), filename + ".csv");
@@ -290,7 +287,7 @@ public class Transformer {
             row,
             columnNamesAndTypes,
             hashingColumns,
-            Utils.createReverseCategoricalMapping(MicrobenchUtils.mktsegmentValues));
+            Utils.createMapping(MicrobenchUtils.mktsegmentValues));
       case "SYNTH":
         return transformRowSynth(
             row,

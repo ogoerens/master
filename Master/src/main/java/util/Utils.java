@@ -1,13 +1,11 @@
 package util;
 
-import microbench.MicrobenchUtils;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.tree.xpath.XPathExpressionEngine;
-import org.apache.commons.lang.StringUtils;
 
 import java.io.*;
 import java.util.*;
@@ -41,10 +39,6 @@ public class Utils {
     return stringBuilder.toString();
   }
 
-  public static ArrayList<String> arrayToArrayList(String[] array) {
-    return new ArrayList<>(Arrays.asList(array));
-  }
-
   /**
    * Creates a Mapping from String values to Integers.
    *
@@ -61,7 +55,7 @@ public class Utils {
     return mapping;
   }
 
-  public static HashMap<Integer, String> createReverseCategoricalMapping(String[] values) {
+  public static HashMap<Integer, String> createMapping(String[] values) {
     HashMap<Integer, String> mapping = new HashMap<>();
     for (int i = 0; i < values.length; i++) {
       mapping.put(i, values[i]);
@@ -69,17 +63,46 @@ public class Utils {
     return mapping;
   }
 
-  public static String join(String[] array, String delimiter) {
+  public static String join(String[] array, String connector) {
     StringBuilder stringBuilder = new StringBuilder();
-    String delim = "";
+    String conn = "";
     for (String str : array) {
-      stringBuilder.append(delim);
+      stringBuilder.append(conn);
       stringBuilder.append(str);
-      delim = delimiter;
+      conn = connector;
     }
     return stringBuilder.toString();
   }
 
+  /**
+   * Joins the strings of an input String ArrayList into a single String preserving the order by
+   * adding a connector between every String element. No connector at the beginning or end of the
+   * resulting String.
+   *
+   * @param strings ArrayList containing the input Strings.
+   * @param connector Connector added between every two Strings.
+   * @return
+   */
+  public static String join(ArrayList<String> strings, String connector) {
+    StringBuilder stringBuilder = new StringBuilder();
+    String conn = "";
+    for (String str : strings) {
+      stringBuilder.append(conn);
+      stringBuilder.append(str);
+      conn = connector;
+    }
+    return stringBuilder.toString();
+  }
+
+  /**
+   * Creates a single String by joining all arrays. Delimiters between arrays and elements are given
+   * separately.
+   *
+   * @param arrayList
+   * @param arrayDelimiter
+   * @param listDelimiter
+   * @return
+   */
   public static String joinArrays(
       ArrayList<String[]> arrayList, String arrayDelimiter, String listDelimiter) {
     StringBuilder stringBuilder = new StringBuilder();
@@ -94,7 +117,8 @@ public class Utils {
 
   /**
    * Creates all possible combinations with the values in the arrays. If an array contains a value
-   * multiple times, the combinations with this value will be contained multiple times in the output.
+   * multiple times, the combinations with this value will be contained multiple times in the
+   * output.
    *
    * @param arrays
    * @return
@@ -123,26 +147,37 @@ public class Utils {
   }
 
   /**
-   * Adds each String of the first array at the beginning of each  inner String array in the second array.
+   * This function combines a given one-dimensional array with a two-dimensional array into a
+   * two-dimensional array. Each string from the first array is paired with each sub-array from the
+   * second array, creating a new sub-array with the first element from the first array and the rest
+   * from the sub-array of the second array.
+   *
    * @param arr1
    * @param arr2
    * @return
    */
-  public static String[][] combineArrayWithArrayOfArray(String[] arr1, String[][] arr2){
-    String[][] result = new String[arr1.length*arr2.length][];
-    for (int i=0; i< arr1.length; i++){
-      for(int j=0; j<arr2.length;j++){
-        result[(i*arr2.length)+j] = new String[arr2[j].length+1];
-        result[(i*arr2.length)+j][0] = arr1[i];
-        for (int k = 0; k<arr2[j].length;k++){
-          result[(i*arr2.length)+j][k+1] = arr2[j][k];
+  public static String[][] combineArrayWithSubarrays(String[] arr1, String[][] arr2) {
+    String[][] result = new String[arr1.length * arr2.length][];
+    for (int i = 0; i < arr1.length; i++) {
+      for (int j = 0; j < arr2.length; j++) {
+        result[(i * arr2.length) + j] = new String[arr2[j].length + 1];
+        result[(i * arr2.length) + j][0] = arr1[i];
+        for (int k = 0; k < arr2[j].length; k++) {
+          result[(i * arr2.length) + j][k + 1] = arr2[j][k];
         }
       }
-
     }
     return result;
   }
 
+  /**
+   * This function creates and returns an XMLConfiguration object from a provided filename. It uses
+   * Apache's FileBasedConfigurationBuilder to construct the XMLConfiguration. The delimiter handler
+   * for list processing is set to comma and the expression engine is set to XPathExpressionEngine.
+   *
+   * @param filename
+   * @return
+   */
   public static XMLConfiguration buildXMLConfiguration(String filename) {
 
     XMLConfiguration conf = new XMLConfiguration();
@@ -160,80 +195,50 @@ public class Utils {
     try {
       conf = builder.getConfiguration();
     } catch (Exception e) {
-      System.out.println("Configuration problem: " + e);
+      System.out.println("Configuration problem:");
+      e.printStackTrace();
     }
     return conf;
   }
 
-  public static ArrayList<Integer> gaussianIntegers(int quantity, int mean, int std) {
-    Random rand = new Random();
-    ArrayList<Integer> gaussian_ints = new ArrayList<Integer>(quantity);
-    for (int i = 0; i < quantity; i++) {
-      double r = rand.nextGaussian(mean, std);
-      int intr = (int) Math.round(r);
-      gaussian_ints.add(i, intr);
-    }
-    return gaussian_ints;
-  }
-
-  public static String arrayListToString(ArrayList<String> strs, String connector) {
-    String res = "";
-    boolean comma = false;
-    for (String str : strs) {
-      if (comma) {
-        res += connector + str;
-      } else {
-        comma = true;
-        res += str;
-      }
-    }
-    return res;
-  }
-
+  /**
+   * Increases the number of distinct elements in the input by a given multiplication factor. The
+   * modification of each string includes appending the current index of the multiplication loop to
+   * the original string. The append operation is done after cutting off as many characters from the
+   * start of the original string as the length of the string representation of the current index.
+   * The index starts from 0 and goes up to multiplication factor - 1. Note: If the length of the
+   * string representation of the current index is longer than the original string, the resulting
+   * string will only contain the current index as all characters of the original string will be cut
+   * off. Note: Resulting cardinality = multFactor * originalCardinality, only if shortened original
+   * strings are distinct.
+   *
+   * @param inputStrings
+   * @param multiplicationFactor
+   * @return
+   */
   public static String[] bloatCardinality(String[] inputStrings, int multiplicationFactor) {
     String[] resultStrings = new String[inputStrings.length * multiplicationFactor];
     for (int i = 0; i < multiplicationFactor; i++) {
       for (int j = 0; j < inputStrings.length; j++) {
-        String newStr =
-            i + inputStrings[j].substring(Integer.toString(i).length());
+        String newStr = i + inputStrings[j].substring(Integer.toString(i).length());
         resultStrings[i * inputStrings.length + j] = newStr;
       }
     }
     return resultStrings;
   }
 
+  /**
+   * Converts an array of integers to an array of Strings.
+   *
+   * @param intArray
+   * @return
+   */
   public static String[] convertIntArrayToStrArray(int[] intArray) {
     String[] strArray = new String[intArray.length];
     for (int i = 0; i < intArray.length; i++) {
       strArray[i] = String.valueOf(intArray[i]);
     }
     return strArray;
-  }
-
-  public static void intArrayToFile(int[] values, String fileName, boolean withIndex) {
-    try (PrintStream out = new PrintStream(fileName)) {
-      int i = 1;
-      for (int x : values) {
-        if (withIndex) {
-          out.print(i + " ");
-          i++;
-        }
-        out.println(x);
-      }
-    } catch (FileNotFoundException e) {
-      System.out.println(e);
-    }
-  }
-
-  public static void doubleArrayToFile(double[] values, String fileName, Boolean withIndex) {
-    try (PrintStream out = new PrintStream(fileName)) {
-      for (int i = 0; i < values.length; i++) {
-        if (withIndex) out.print((i + 1) + " ");
-        out.println(values[i]);
-      }
-    } catch (FileNotFoundException e) {
-      System.out.println(e);
-    }
   }
 
   /**
@@ -294,14 +299,13 @@ public class Utils {
     Utils.strToFile(stringBuffer.toString(), fileName);
   }
 
-  public static String[] surroundAllWith(String[] strArray, String surroundText) {
-    String[] resultArray = new String[strArray.length];
-    for (int i = 0; i < strArray.length; i++) {
-      resultArray[i] = surroundWith(strArray[i], surroundText);
-    }
-    return resultArray;
-  }
-
+  /**
+   * Adds a given String at the beginning and the end of a value String.
+   *
+   * @param str
+   * @param surroundText
+   * @return
+   */
   public static String surroundWith(String str, String surroundText) {
     return surroundText + str + surroundText;
   }
@@ -325,7 +329,7 @@ public class Utils {
     return joinedString.toString();
   }
 
-  public static void multCharArrayToFile(
+  public static void CharArrayArrayListToFile(
       ArrayList<char[]> arrays, String fileName, Boolean withIndex) {
     int nOfValuesPerArray = arrays.get(0).length;
     try (PrintStream out = new PrintStream(fileName)) {
@@ -388,6 +392,13 @@ public class Utils {
     }
   }
 
+  /**
+   * Store the ASCII character for all integer values in the input array in a file.
+   *
+   * @param inputarray Array containing the integer values.
+   * @param fileName Name of the file in which the ASCII characters are stored.
+   * @param withIndex Adds an index infront of each element if set to true.
+   */
   public static void storeIntAsChar(int[] inputarray, String fileName, Boolean withIndex) {
     try (PrintStream out = new PrintStream(fileName)) {
       for (int j = 0; j < inputarray.length; j++) {
@@ -468,14 +479,6 @@ public class Utils {
     return num + x;
   }
 
-  public static String[] mapIntArrayToStrArray(HashMap<Integer, String> map, int[] intArr) {
-    String[] strArr = new String[intArr.length];
-    for (int i = 0; i < intArr.length; i++) {
-      strArr[i] = map.get(intArr[i]);
-    }
-    return strArr;
-  }
-
   public static String[] mapIntArrayToStrArray(String[] strs, int[] intArr) {
     String[] strArr = new String[intArr.length];
     for (int i = 0; i < intArr.length; i++) {
@@ -484,26 +487,13 @@ public class Utils {
     return strArr;
   }
 
-  public static ArrayList<Integer> fileToIntArrayList(String fileName) {
-    ArrayList<Integer> ints = new ArrayList<>();
-    try {
-      Scanner sc = new Scanner(new File("fileName"));
-      while (sc.hasNextInt()) {
-        ints.add(sc.nextInt());
-      }
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    }
-    return ints;
-  }
-
   public static int[] randomizeArrayWithFixedStart(int[] inputArray, int outputsize) {
     return randomizeArrayWithFixedStart(inputArray, -1, outputsize);
   }
 
   /**
-   * Places a specified number at the start of the resulting array if it is contained in the input array.
-   * Randomizes the order of the other array elements. The reordering is done in-place.
+   * Places a specified number at the start of the resulting array if it is contained in the input
+   * array. Randomizes the order of the other array elements. The reordering is done in-place.
    *
    * @param inputArray
    * @param fixedStart Number which should be placed at index 0 of the resulting array if contained
@@ -564,6 +554,14 @@ public class Utils {
     } else return "";
   }
 
+  /**
+   * Checks if a configuration contains a certain key. If so it reutrns the array assosciated to
+   * that key. Otherwise it returns an empty array.
+   *
+   * @param key
+   * @param config
+   * @return
+   */
   public static String[] checkAndGetArray(String key, Configuration config) {
     if (config.containsKey(key)) {
       return config.getStringArray(key);

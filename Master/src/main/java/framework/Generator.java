@@ -31,21 +31,24 @@ public class Generator {
 
   /**
    * Analyzes an XML configuration file and generates datasets as specified in the configuration
-   * file. The generated datasets are stored in a file, where the filename is specified for each
-   * generation individually.
+   * file. Each generated datasets is stored in a file, with the filename specified in the
+   * configuration.
    *
-   * @param conf Contains an element indicating the number of dataset generations. Each dataset
-   *     generation is then specified on its own.
+   * @param conf Configuration that contains all the information needed to generate the datasets.
+   *     Must contain an integer indicating the number of dataset generations and a default size for
+   *     each dataset.
    */
   public void generate(XMLConfiguration conf) {
-    // Create "generated" directory if it does not yet exist
+    // Create directory ("generated") containing all datasets if it does not yet exist.
     try {
       Files.createDirectories(Paths.get("generated"));
     } catch (IOException e) {
       e.printStackTrace();
     }
+    // Retrieve the common arguments amount and size.
     int amount = conf.getInt("amount");
     int size = conf.getInt("defaultSize");
+    // Create subconfiguration for all dataset and handle them one-by-one.
     for (int i = 1; i <= amount; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("gens/gen[" + i + "]");
       if (subConfig.containsKey("size")) {
@@ -56,6 +59,7 @@ public class Generator {
       int[] generatedValues = new int[0];
       String[] generatedStringValues = new String[0];
       String returnType = "int";
+      // Match the subconfiguration against predefined generation possibilities.
       switch (distribution) {
         case "binomial":
           boolean shifted = subConfig.containsKey("shift");
@@ -150,37 +154,31 @@ public class Generator {
           generatedStringValues = generateFromStringArray(size, mktsegValues);
       }
 
+      // Check if configuration asks for correlated arrays af values. If so, generate them.
+      // Afterwards store all the generated arrays in the specified file.
+
+      //Correlation for char.
       if (returnType.equals("char")) {
-        if (subConfig.containsKey("correlation")) {
-          ArrayList<char[]> arrays = generateCorrelationChar(generatedValues, subConfig);
-          Utils.multCharArrayToFile(
-              arrays, storagefolder + file, subConfig.getBoolean("withIndex"));
-        } else {
-          Utils.storeIntAsChar(
-              generatedValues, storagefolder + file, subConfig.getBoolean("withIndex"));
+        try {
+          generateCorrelationChar(subConfig, generatedValues, file);
+        }
+        catch (Exception e){
+          e.printStackTrace();
         }
         continue;
       }
-
+      //Correlation for String.
       if (returnType.equals("String")) {
         if (!(subConfig.containsKey("correlation"))) {
           Utils.StrArrayToFile(
               generatedStringValues, storagefolder + file, subConfig.getBoolean("withIndex"));
         } else {
-          ArrayList<int[]> arrays = checkAndGenerateCorrelation(generatedValues, subConfig);
-          ArrayList<String[]> stringArrays = new ArrayList<>();
-          for (int[] intArray : arrays) {
-            stringArrays.add(Utils.transformIntArrayToHexArray(intArray));
-          }
-          Utils.multStringArrayToFile(
-              stringArrays, storagefolder + file, subConfig.getBoolean("withIndex"));
+          generateCorrelationString(subConfig, generatedValues, file);
         }
-
-        // TODO: correlation for string fields
         continue;
       }
-      // Check if configuration asks for correlated arrays af values. If so, generate them.
-      // Afterwards store all the generated arrays in the specified file.
+
+      //Correlation for Numbers.
       ArrayList<int[]> arrays = checkAndGenerateCorrelation(generatedValues, subConfig);
       if (returnType.equals("double")) {
         storeDoubleArrays(storagefolder + file, arrays, subConfig.getBoolean("withIndex"));
@@ -189,6 +187,45 @@ public class Generator {
         storeIntArrays(storagefolder + file, arrays, subConfig.getBoolean("withIndex"));
       }
     }
+  }
+
+  public void generateCorrelationChar(
+      HierarchicalConfiguration subConfig, int[] generatedValues, String file) throws Exception {
+    if (subConfig.containsKey("correlation")) {
+      String correlationType = subConfig.getString("correlation");
+      ArrayList<char[]> arrays = new ArrayList<>();
+      char[] inputArrayChar = new char[generatedValues.length];
+      char[] correlatedArrayChar = new char[generatedValues.length];
+      if (correlationType.equals("functional dependent")) {
+        String expr = subConfig.getString("expression");
+        int[] correlatedArray = generateFunctionalDependency(generatedValues, expr);
+        for (int i = 0; i < generatedValues.length; i++) {
+          inputArrayChar[i] = (char) (generatedValues[i]);
+          correlatedArrayChar[i] =
+                  (char) (((correlatedArray[i] - firstLetter) % numberOfChars) + firstLetter);
+        }
+      } else {
+        throw new Exception("This correlation type is not yet supported");
+      }
+      arrays.add(inputArrayChar);
+      arrays.add(correlatedArrayChar);
+      Utils.CharArrayArrayListToFile(
+          arrays, storagefolder + file, subConfig.getBoolean("withIndex"));
+    } else {
+      Utils.storeIntAsChar(
+          generatedValues, storagefolder + file, subConfig.getBoolean("withIndex"));
+    }
+  }
+
+  public void generateCorrelationString(
+      HierarchicalConfiguration subConfig, int[] generatedValues, String file) {
+    ArrayList<int[]> arrays = checkAndGenerateCorrelation(generatedValues, subConfig);
+    ArrayList<String[]> stringArrays = new ArrayList<>();
+    for (int[] intArray : arrays) {
+      stringArrays.add(Utils.transformIntArrayToHexArray(intArray));
+    }
+    Utils.multStringArrayToFile(
+        stringArrays, storagefolder + file, subConfig.getBoolean("withIndex"));
   }
 
   /**
@@ -215,27 +252,6 @@ public class Generator {
     return arrays;
   }
 
-  public ArrayList<char[]> generateCorrelationChar(int[] inputArray, Configuration config) {
-    String correlationType = config.getString("correlation");
-    ArrayList<char[]> arrays = new ArrayList<>();
-    char[] inputArrayChar = new char[inputArray.length];
-    char[] correlatedArrayChar = new char[inputArray.length];
-    if (correlationType.equals("functional dependent")) {
-      String expr = config.getString("expression");
-      int[] correlatedArray = generateFunctionalDependency(inputArray, expr);
-      for (int i = 0; i < inputArray.length; i++) {
-        inputArrayChar[i] = (char) (inputArray[i]);
-        correlatedArrayChar[i] =
-            (char) (((correlatedArray[i] - firstLetter) % numberOfChars) + firstLetter);
-      }
-    } else {
-      // throw new Exception("This correlation type is not yet supported");
-      System.out.println("This correlation type is not yet supported");
-    }
-    arrays.add(inputArrayChar);
-    arrays.add(correlatedArrayChar);
-    return arrays;
-  }
 
   /**
    * Stores the arrays contained in an ArrayList to a file.
@@ -263,18 +279,16 @@ public class Generator {
     Utils.multDoubleArrayToFile(resultingDoubleArrays, file, withIndex);
   }
 
+  /**
+   * Generates a String array of length "size" with Strings drawn uniformly from an inputString array.
+   * @param size The length of the resulting array.
+   * @param inputStrings The Strings that can be included in the resulting array.
+   * @return
+   */
   public String[] generateFromStringArray(int size, String[] inputStrings) {
     String[] resultingStrings = new String[size];
     for (int i = 0; i < size; i++) {
       resultingStrings[i] = inputStrings[rand.nextInt(inputStrings.length)];
-    }
-    return resultingStrings;
-  }
-
-  public char[] generateUniformChar(int size) {
-    char[] resultingStrings = new char[size];
-    for (int i = 0; i < size; i++) {
-      resultingStrings[i] = (char) (rand.nextInt(numberOfChars) + 'a');
     }
     return resultingStrings;
   }
@@ -292,8 +306,8 @@ public class Generator {
 
   /**
    * @param quantity Number of elements in the resulting array.
-   * @param tokens String values which each element in the resulting array can take
-   * @return Generates an array containing uniformly distributed String values
+   * @param tokens String values which each element in the resulting array can take.
+   * @return Generates an array containing uniformly distributed String values.
    */
   public String[] generateUniformMapped(int quantity, String[] tokens) {
     int upperbound = tokens.length;
@@ -308,7 +322,7 @@ public class Generator {
   /**
    * @param v1 Double Array containing the values one variable.
    * @param v2 Double Array containing the values for the other variable.
-   * @return the PearsonsCorrelation coefficient
+   * @return the PearsonsCorrelation coefficient.
    */
   public static double correlationCoeff(double[] v1, double[] v2) {
     PearsonsCorrelation pc = new PearsonsCorrelation();
@@ -316,35 +330,38 @@ public class Generator {
   }
 
   /**
-   * Genereates an array containing values correlated (1-to-many) to the input array. The correlated
-   * values are generated by adding a different random value of [-correlationDomain;correlationDomain] to each value in the original array.
+   * Generates an array containing values correlated (1-to-many) to the input array. The correlated
+   * values are generated by adding a different random value of
+   * [-correlationDomain;correlationDomain] to each value in the original array.
    *
    * @param v original data array
-   * @param correlationDomain Indicates the distance that the correlated value can be away from the original value.
+   * @param correlationDomain Indicates the distance that the correlated value can be away from the
+   *     original value.
    */
   public int[] generateCorrelated(int[] v, int correlationDomain) {
     int quantity = v.length;
     int[] corr = new int[quantity];
     for (int i = 0; i < quantity; i++) {
-      int x = 2 * correlationDomain+1;
+      int x = 2 * correlationDomain + 1;
       int z = rand.nextInt(x);
       corr[i] = v[i] + (z - (x / 2));
     }
     return corr;
   }
 
-  public int[] generateFunctionalDependency(int[] v, String expr) {
-    int quantity = v.length;
+  /**
+   * Generates for each element in the array a functional dependent element using the same expression.
+   * @param inputarray Contains the elements.
+   * @param expr Expression used to generate the functional dependent elements.
+   * @return
+   */
+  public int[] generateFunctionalDependency(int[] inputarray, String expr) {
+    int quantity = inputarray.length;
     int[] fd = new int[quantity];
     for (int i = 0; i < quantity; i++) {
-      fd[i] = (int) Utils.eval(expr, v[i]);
+      fd[i] = (int) Utils.eval(expr, inputarray[i]);
     }
     return fd;
-  }
-
-  public int[] generatePoisson(int quantity, double p) {
-    PoissonDistribution pd = new PoissonDistribution(p);
-    return pd.sample(quantity);
   }
 
   /**
@@ -392,24 +409,15 @@ public class Generator {
   }
 
   /**
-   * @param quantity indicates the total number of elements drawn from the distribution
-   * @param elements contains the values of the distribution. Elements at the beginning of the list
+   * @param quantity Indicates the total number of elements drawn from the distribution.
+   * @param elements Contains the values of the distribution. Elements at the beginning of the list
    *     will have higher cardinality.
-   * @param exponent ,see defintion of ZipfDistribution for definition
+   * @param exponent See defintion of ZipfDistribution for definition.
    * @return
    */
   public String[] generateZipfMappedtoString(int quantity, String[] elements, int exponent) {
     ZipfDistribution zd = new ZipfDistribution(elements.length, exponent);
     String[] res = new String[quantity];
-    for (int i = 0; i < quantity; i++) {
-      res[i] = elements[zd.sample() - 1];
-    }
-    return res;
-  }
-
-  public int[] generateZipfMappedtoInt(int quantity, int[] elements, int exponent) {
-    ZipfDistribution zd = new ZipfDistribution(elements.length, exponent);
-    int[] res = new int[quantity];
     for (int i = 0; i < quantity; i++) {
       res[i] = elements[zd.sample() - 1];
     }

@@ -70,6 +70,12 @@ public class Query extends GenericQuery {
       return generatedQueries;
     }
 
+    /**
+     * Generates Queries to drop DB objects. During each function call a single object type can be dropped.
+     * @param objectNames The names of the DB objects to be dropped.
+     * @param objectType The object type that is dropped.
+     * @return
+     */
     public static ArrayList<Query> generateDropQueries(String[] objectNames, String objectType) {
       ArrayList<Query> generatedQueries = new ArrayList<>();
       for (String object : objectNames) {

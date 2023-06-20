@@ -80,7 +80,10 @@ public class DatabaseConfiguration {
     System.out.println("Using DataBase "+ this.database +".");
   }
 
-  // sets up the driver for the JDBC connection to the database
+
+  /**
+   * Sets up the driver for the JDBC connection to the database.
+   */
   public void init() {
     try {
       // DriverManager.registerDriver(new SQLServerDriver());

@@ -4,6 +4,11 @@ import org.apache.commons.io.IOUtils;
 
 public class PythonLauncher {
 
+    /**
+     * Launches a Python program. The arguments passed to the function are
+     * @param args
+     * @throws Exception
+     */
     public void launch(String... args) throws Exception{
         String[] arguments = new String[args.length+1];
         arguments[0] = "python3";
