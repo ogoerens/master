@@ -1,2 +1,0 @@
-Average Latency (millisecond),Minimum Latency (millisecond),25th Percentile Latency (millisecond),Median Latency (millisecond),75th Percentile Latency (millisecond),90th Percentile Latency (millisecond),95th Percentile Latency (millisecond),99th Percentile Latency (millisecond),Maximum Latency (millisecond),tp (req/s) scaled
-67.535,2.156,26.268,35.689,108.397,162.683,191.056,210.531,336.600,0.015
