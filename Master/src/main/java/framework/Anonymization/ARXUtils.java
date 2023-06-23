@@ -59,6 +59,7 @@ public class ARXUtils {
     int commaIndex = inputInterval.indexOf(',');
     // If the String does not actually contain an interval.
     if (commaIndex == -1) {
+      // "*" is the value for an element that has been suppressed.
       if (inputInterval.contains("*")){
         return "-1";
         //String exceptionMsg = String.format("%s is not an interval Value. Check you interval hierarchies that they include all values.", inputInterval);

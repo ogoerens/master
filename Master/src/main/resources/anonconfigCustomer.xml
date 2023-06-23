@@ -5,20 +5,22 @@
     <!-- Connection details -->
     ///Indicate where data is stored. Possibilities: file, DBMS
     ///Strategy either Hash, Synth or Arx
-    <AnonymizationStrategy>arx</AnonymizationStrategy>
+    <AnonymizationStrategy>Synth</AnonymizationStrategy>
     <Hash>
-        <HashingFunction>SHA256</HashingFunction>
-        <Columns>c_custkey,c_nationkey,c_name,c_acctbal,c_mktsegment</Columns>
+        <HashingFunction>sha256</HashingFunction>
+        <Columns>c_custkey,c_nationkey,c_name,c_acctbal,c_mktsegment,corr1,corr2</Columns>
     </Hash>
     <Synth>
-        <domainLocation>src/main/resources/domainSMALL.json</domainLocation>
+        <domainLocation>src/main/resources/domain.json</domainLocation>
+        <columnsForSynth>C_CUSTKEY,C_NATIONKEY,C_ACCTBAL, CORR1, CORR2,C_MKTSEGMENT, C_PHONE</columnsForSynth>
+        <remainingCols>C_CUSTKEY,C_NAME, C_ADDRESS, C_COMMENT</remainingCols>
     </Synth>
     <Data>
         <StorageMethod>dbms</StorageMethod>
         <StorageName>customer</StorageName> <!-- Name of table that should be anonymized -->
         <outputFileName>anonymizedData.tbl</outputFileName>
         <outputTableName>anonymizedCustomer</outputTableName>
-        <querysetName>anonymization, original</querysetName>
+        <querysetName>anonymization</querysetName>
     </Data>
     /// Indicate the anonymization model. Possibilities: KAnonyimity, DistinctLDiverstiy, OrderedDistanceTClosenss
     <anonymizationCriterias>KAnonymity</anonymizationCriterias>
@@ -29,17 +31,18 @@
     </DistinctLDiversity>
     <OrderedDistanceTCloseness>
     </OrderedDistanceTCloseness>
+    <hierarchyFile>src/main/resources/hierarchies.xml</hierarchyFile>
     <anonymizationAlgorithm>OPTIMAL</anonymizationAlgorithm>
     <InsensitiveAttributes>c_comment,c_address</InsensitiveAttributes>
     <SensitiveAttributes></SensitiveAttributes>
-    <IdentifyingAttributes></IdentifyingAttributes>
-    <QuasiIdentifyingAttributes>c_custkey,c_name,c_nationkey,c_acctbal, c_phone, c_mktsegment,corr1, corr2</QuasiIdentifyingAttributes>
+    <IdentifyingAttributes>c_custkey,c_name</IdentifyingAttributes>
+    <QuasiIdentifyingAttributes>c_nationkey,c_acctbal, c_phone, c_mktsegment,corr1, corr2</QuasiIdentifyingAttributes>
     <SuppressionLimit>0</SuppressionLimit>
     <GeneralizationLevels>
-        <Count>1</Count>
+        <Count>0</Count>
         <Instance>
             <Column>c_mktsegment</Column>
-            <Level>1</Level>
+            <Level>0</Level>
         </Instance>
     </GeneralizationLevels>
 

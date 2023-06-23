@@ -24,13 +24,14 @@ public class AnonymizationDriver {
 
   public AnonymizationDriver(String xmlConfig, String dbConfigFile) {
     this.anonConfigFile = xmlConfig;
-    this.dbConfigFile =dbConfigFile;
+    this.dbConfigFile = dbConfigFile;
     // Create the configuration for the anonymization process.
     this.anonConfig = new AnonymizationConfiguration(this.anonConfigFile);
   }
 
   /**
    * Anonymizes the data following the configuration specified by the Anonymization driver.
+   *
    * @param queryManager
    * @throws SQLException
    * @throws Exception
@@ -41,9 +42,10 @@ public class AnonymizationDriver {
     Connection conn = dbConfiguration.makeConnection();
 
     // Decide based on the anonymization strategy how the anonymization takes place.
+    // Anonymize using hash.
     if (anonConfig.getAnonymizationStrategy().equalsIgnoreCase("hash")) {
       printTechnique("Hash");
-      // anonymizeUsingHash
+
       Transformer transformer = new Transformer(conn);
       String[] selectionCols = {"*"};
       this.anonymizationStatistics =
@@ -54,45 +56,58 @@ public class AnonymizationDriver {
               anonConfig.getHashingColumns(),
               selectionCols);
     } else {
+      // Anonymize using Synthetic Data.
       if (anonConfig.getAnonymizationStrategy().equalsIgnoreCase("Synth")) {
         printTechnique("Synth");
-        //anonymizeUsingSyntheticData
         Synthesizer s = new Synthesizer(conn);
+        s.synthesize(anonConfig, "src/main/resources/private-pgm/mechanisms/mst.py");
 
-        s.synthesize(anonConfig,"src/main/resources/private-pgm/mechanisms/mst.py");
-
-        String [] cols = {"*"};
+        String[] cols = {"*"};
         Transformer t = new Transformer(conn, new Random());
-        t.transform("SYNTHBACK","RESULT", anonConfig.getOutputTableName(), cols,cols, util.SQLServerUtils.getColumnNamesAndTypes(conn, "customer"));
+        t.transform(
+            "SYNTHBACK",
+            "RESULT",
+            anonConfig.getOutputTableName(),
+            cols,
+            cols,
+            util.SQLServerUtils.getColumnNamesAndTypes(conn, "customer"));
 
       } else {
-        // anonyimizeUSingArx
+        // Anonymize using the ARX library, i.e. using a syntactic privacy model.
         printTechnique("ARX");
-        XMLConfiguration hierarchyConf =
-                Utils.buildXMLConfiguration(anonConfig.getHierarchyFile());
+        XMLConfiguration hierarchyConf = Utils.buildXMLConfiguration(anonConfig.getHierarchyFile());
         this.hierarchyManager = new HierarchyManager(hierarchyConf);
-        ARXAnonymizationHandler arxAnonymizationHandler = new ARXAnonymizationHandler(hierarchyManager, anonConfig);
-        this.anonymizationStatistics = arxAnonymizationHandler.arxAnonymization(conn, dbConfiguration);
+        ARXAnonymizationHandler arxAnonymizationHandler =
+            new ARXAnonymizationHandler(hierarchyManager, anonConfig);
+        this.anonymizationStatistics =
+            arxAnonymizationHandler.arxAnonymization(conn, dbConfiguration);
       }
     }
 
-    // QueryAnonimization if set.
+    // Anonymization is finished, if Query anonymization is not asked for.
     if (!anonConfig.getQueryAnonimization()) {
       return;
     }
 
-    //For synthetic data, queries do not change. Except for tablename.
+    // For synthetic data, queries do not change, except for the table.
+    // First, the original queries are stored in the QueryManager, then they are anonymized and also
+    // stored in the QueryManager.
     if (anonConfig.getAnonymizationStrategy().equalsIgnoreCase("Synth")) {
       for (String querySetName : anonConfig.getQuerysetNames()) {
         queryManager.addOriginalQueries(queryManager.returnQueryList(querySetName));
-        for (microbench.Query query: queryManager.returnQueryList(querySetName)){
-          queryManager.addAnonymizedQuery(query.qName+"Anonymized", query.query_stmt.toUpperCase().replace(anonConfig.getDataTableName(),anonConfig.getOutputTableName()));
+        for (microbench.Query query : queryManager.returnQueryList(querySetName)) {
+          queryManager.addAnonymizedQuery(
+              query.qName + "Anonymized",
+              query
+                  .query_stmt
+                  .toUpperCase()
+                  .replace(anonConfig.getDataTableName(), anonConfig.getOutputTableName()));
         }
       }
       return;
     }
 
-    // Add the queries specified in the configuration to the original Queryset in the queryMananger.
+    // For the methods using hashing or the ARX library, the query anonimzation process is the same.
     for (String querySetName : anonConfig.getQuerysetNames()) {
       queryManager.addOriginalQueries(queryManager.returnQueryList(querySetName));
     }
@@ -107,7 +122,7 @@ public class AnonymizationDriver {
         queryAnonymizer.anonymize(queryManager.getOriginalQueryStore());
     queryManager.setAnonymizedQueryStore(anonQueries);
 
-    // Print anonymized queries to File.
+    // Print anonymized queries to a File.
     StringBuilder anonQueriesStringBuilder = new StringBuilder();
     for (microbench.Query anonymizedQuery : anonQueries) {
       anonQueriesStringBuilder.append("-".repeat(20));
@@ -119,8 +134,7 @@ public class AnonymizationDriver {
     conn.close();
   }
 
-  private static void printTechnique(String technique){
+  private static void printTechnique(String technique) {
     System.out.println(technique);
   }
-
 }

@@ -1,6 +1,5 @@
 package framework.Anonymization;
 
-import framework.Driver;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.deidentifier.arx.ARXConfiguration;
@@ -18,7 +17,7 @@ import java.util.function.UnaryOperator;
 public class AnonymizationConfiguration {
   public static final Charset charset = StandardCharsets.UTF_8;
   public static final char hierarchyValueDelimiter = ';';
-  private String anonymizationStrategy ="";
+  private String anonymizationStrategy = "";
   private String dataStorageMethod;
   private String dataTableName;
   private String dataFileName;
@@ -32,12 +31,11 @@ public class AnonymizationConfiguration {
   private ArrayList<String> sensitiveAttributes;
   private ArrayList<String> identifyingAttributes;
   private ArrayList<String> quasiIdentifyingAttributes;
-  private final ARXConfiguration.AnonymizationAlgorithm defaultAnonymizationAlgorithm =
-      ARXConfiguration.AnonymizationAlgorithm.OPTIMAL;
+
   private String specifiedAnonymizationAlgorithm;
-  private HashMap<String,Integer> maximalGeneralizationLevels;
+  private HashMap<String, Integer> maximalGeneralizationLevels;
   private String hashingFunction;
-  private  String hierarchyFile;
+  private String hierarchyFile;
   private String[] hashingColumns;
   private String[] columnsForSynth;
   private String[] remainingColumns;
@@ -52,10 +50,9 @@ public class AnonymizationConfiguration {
 
   public AnonymizationConfiguration(XMLConfiguration config) throws RuntimeException {
     this.anonymizationStrategy = config.getString("AnonymizationStrategy");
-    if (this.anonymizationStrategy.equalsIgnoreCase("hash")){
+    if (this.anonymizationStrategy.equalsIgnoreCase("hash")) {
       this.anonymizationStrategy = "Hash";
     }
-
 
     HierarchicalConfiguration dataSubconfig = config.configurationAt("Data");
     this.dataStorageMethod = dataSubconfig.getString("StorageMethod");
@@ -78,31 +75,30 @@ public class AnonymizationConfiguration {
     }
 
     // All configuration arguments for the hashing operation are retrieved.
-    if (this.anonymizationStrategy.equalsIgnoreCase("hash")){
+    if (this.anonymizationStrategy.equalsIgnoreCase("hash")) {
       HierarchicalConfiguration hashSubconfig = config.configurationAt("Hash");
       this.hashingFunction = hashSubconfig.getString("HashingFunction");
       String[] hashingColumnsRandom = hashSubconfig.getStringArray("Columns");
       this.hashingColumns = new String[hashingColumnsRandom.length];
-      for(int i=0; i< hashingColumnsRandom.length; i++){
-        this.hashingColumns[i]= hashingColumnsRandom[i].toUpperCase();
+      for (int i = 0; i < hashingColumnsRandom.length; i++) {
+        this.hashingColumns[i] = hashingColumnsRandom[i].toUpperCase();
       }
       return;
     }
     // All configuration arguments for the hashing operation are retrieved.
-    if (this.anonymizationStrategy.equalsIgnoreCase("Synth")){
+    if (this.anonymizationStrategy.equalsIgnoreCase("Synth")) {
       HierarchicalConfiguration synthSubconfig = config.configurationAt("Synth");
       this.domainFileLocation = synthSubconfig.getString("domainLocation");
       this.columnsForSynth = synthSubconfig.getStringArray("columnsForSynth");
       this.remainingColumns = synthSubconfig.getStringArray("remainingCols");
-
     }
 
-    //Retrieve the remaining arguments for the other anonymization techniques.
+    // Retrieve the remaining arguments for the other anonymization techniques.
     if (dataSubconfig.containsKey("outputFileName")) {
       this.outputFileName = dataSubconfig.getString("outputFileName");
     } else {
       throw new RuntimeException(
-              "No output file name specified in anonymization configuration. Please specifiy output file name using the tag: outputFileName.");
+          "No output file name specified in anonymization configuration. Please specifiy output file name using the tag: outputFileName.");
     }
 
     this.hierarchyFile = config.getString("hierarchyFile");
@@ -139,16 +135,13 @@ public class AnonymizationConfiguration {
   public String getAnonymizationStrategy() {
     return anonymizationStrategy;
   }
+
   public ARXConfiguration getARXConfig() {
     return arxConfig;
   }
 
   public String[] getColumnsForSynth() {
     return columnsForSynth;
-  }
-
-  public String getDataFileName() {
-    return dataFileName;
   }
 
   public String getDataTableName() {
@@ -166,13 +159,15 @@ public class AnonymizationConfiguration {
   public String getHashingFunction() {
     return hashingFunction;
   }
+
   public String[] getHashingColumns() {
     return hashingColumns;
   }
 
-  public String getHierarchyFile() throws Exception{
-    if (hierarchyFile == null){
-      throw new Exception("The field hierarchyFile has not been set in the anonymization configuration. ");
+  public String getHierarchyFile() throws Exception {
+    if (hierarchyFile == null) {
+      throw new Exception(
+          "The field hierarchyFile has not been set in the anonymization configuration. ");
     }
     return hierarchyFile;
   }
@@ -279,16 +274,19 @@ public class AnonymizationConfiguration {
 
   /**
    * Retrieve the maximal generalizationLevels.
+   *
    * @param config
    */
-  private void gatherMaximalGeneralizationLevels(XMLConfiguration config){
+  private void gatherMaximalGeneralizationLevels(XMLConfiguration config) {
     this.maximalGeneralizationLevels = new HashMap<>();
     HierarchicalConfiguration generalizationLevelsConfig =
-            config.configurationAt("GeneralizationLevels");
+        config.configurationAt("GeneralizationLevels");
     int instanceCount = generalizationLevelsConfig.getInt("Count");
     for (int i = 1; i <= instanceCount; i++) {
-      HierarchicalConfiguration instance = generalizationLevelsConfig.configurationAt("Instance["+i+"]");
-      maximalGeneralizationLevels.put(instance.getString("Column").toUpperCase(), instance.getInt("Level"));
+      HierarchicalConfiguration instance =
+          generalizationLevelsConfig.configurationAt("Instance[" + i + "]");
+      maximalGeneralizationLevels.put(
+          instance.getString("Column").toUpperCase(), instance.getInt("Level"));
     }
   }
 

@@ -8,7 +8,7 @@
     <url>jdbc:sqlserver://localhost:1433;encrypt=false;</url>
     <createDatabase>false</createDatabase>
     <database>microbench</database>
-    <scalefactor>10</scalefactor>
+    <scalefactor>1</scalefactor>
     <username>sa</username>
     <password>.+.QET21adg.+.</password>
 
