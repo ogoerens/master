@@ -7,7 +7,12 @@ The application is built using Maven. To install, follow these steps:
 
 1.  Clone the repository to your local machine using `git clone https://github.com/ogoerens/master.git`.
 2.  Navigate to the `Master` directory with `cd master/Master`.
-3.  Run `mvn clean install` to build and install the application.
+3.  Run `mvn clean compile assembly:single` to build and install the application.
+
+## Run
+To run the application use:
+`java -jar /target/Master-1-jar-with-dependencies.jar -x` where -x has to be substituted by one of the options explained below.
+
 
 ## Usage
 The framework provides several command line options:
