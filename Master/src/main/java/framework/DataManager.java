@@ -4,24 +4,26 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 
 import org.apache.commons.beanutils.converters.SqlDateConverter;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import util.BulkInsert;
+import util.GenericQuery;
 import util.Utils;
 
 public class DataManager {
   private Connection conn;
   private final String defaultFieldTerminator = "-1";
 
-  DataManager(Connection conn) {
+  public DataManager(Connection conn) {
     this.conn = conn;
   }
 
   /**
-   * Executes the operations as declared in the configuration. Checks how many SQL statement and
-   * general Updates are declared in the configuration file. It then executes first the SQL update
+   * Responsible for creating and updating tables in a database. Checks how many SQL statements and
+   * updates are declared in the configuration file, then executes first the SQL update
    * statements, before continuing with the general updates. The general updates are divided in
    * column updates and table updates. Depending on the case, a different function is called that
    * takes care of the update.
@@ -34,17 +36,26 @@ public class DataManager {
     int amountFile = conf.getInt("amountFile");
     int amountIndex = conf.getInt("amountIndex");
     // Index for configurationAt method starts at 1!
-    manageFile(amountFile,conf);
-    manageSQL(amountSQL,conf);
-    manageIndex(amountIndex,conf);
+    System.out.println("Working on files");
+    manageFile(amountFile, conf);
+    System.out.println("Working on SQL commands");
+    manageSQL(amountSQL, conf);
+    System.out.println("Working on SQL commands - Indexes");
+    manageIndex(amountIndex, conf);
+    System.out.println("Data Managing has been done!");
   }
 
-  public void manageFile(int amount, XMLConfiguration conf){
+  /**
+   * Executes the updates that rely on data in a file.
+   * @param amount Indicates the number of updates.
+   * @param conf The configuration file that indicates what updates should be executed.
+   */
+  public void manageFile(int amount, XMLConfiguration conf) {
     for (int i = 1; i <= amount; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manFile[" + i + "]");
       String directory = System.getProperty("user.dir") + "/generated";
       String op = subConfig.getString("operation");
-      String file = "'" + directory + "/" + subConfig.getString("fileName") + "'";
+      String file = directory + "/" + subConfig.getString("fileName");
       String tbl = "";
       String newTbl = subConfig.getString("newTable");
       String pk = "";
@@ -54,23 +65,32 @@ public class DataManager {
         tbl = subConfig.getString("table");
         pk = subConfig.getString("primaryKey");
       }
-
+      System.out.println("Working on : " + file);
       switch (op) {
         case "newTable":
           String fieldTerminator;
+          String rowTerminator;
           if (subConfig.containsKey("fieldTerminator")) {
             fieldTerminator = subConfig.getString("fieldTerminator");
           } else {
             fieldTerminator = defaultFieldTerminator;
           }
-          newTable(newTbl, file, colTypes, colNames, fieldTerminator);
+          if (subConfig.containsKey("rowTerminator")) {
+            rowTerminator = subConfig.getString("rowTerminator");
+          } else {
+            rowTerminator = "0x0A";
+          }
+          newTable(newTbl, file, colTypes, colNames, fieldTerminator, rowTerminator);
           break;
         case "updateTable":
-          updateTable(tbl, newTbl, pk, colTypes, colNames, file);
+          updateTable(tbl, newTbl, true, pk, colTypes, colNames, file, defaultFieldTerminator);
+          break;
+        case "addToTable":
+          updateTable(tbl, newTbl, false, pk, colTypes, colNames, file, defaultFieldTerminator);
           break;
         case "updateColumn":
           String column = subConfig.getString("column");
-          updateColumn(tbl, newTbl, pk, column, colTypes[0], colTypes[1], colNames, file);
+          updateColumn(tbl, newTbl, pk, column, colTypes[0], colTypes[1], file);
           break;
         case "createIndexOnCopy":
 
@@ -79,7 +99,14 @@ public class DataManager {
       }
     }
   }
-  public void manageSQL(int amount, XMLConfiguration conf){
+
+
+  /**
+   * Executes the updates that only rely on an SQL statement.
+   * @param amount Indicates the number of updates.
+   * @param conf
+   */
+  public void manageSQL(int amount, XMLConfiguration conf) {
     for (int i = 1; i <= amount; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manSQL[" + i + "]");
       String sqlStmt = subConfig.getString("SQLStmt");
@@ -87,16 +114,25 @@ public class DataManager {
     }
   }
 
-  public void manageIndex(int amount, XMLConfiguration conf){
+  /**
+   * Executes updates that create an index on a table.
+   * @param amount Indicates the number of updates.
+   * @param conf
+   */
+  public void manageIndex(int amount, XMLConfiguration conf) {
     for (int i = 1; i <= amount; i++) {
       HierarchicalConfiguration subConfig = conf.configurationAt("manIndex[" + i + "]");
       String tableName = subConfig.getString("table");
-      String newTableName = subConfig.getString("newTable");
+
       boolean clustered = subConfig.getBoolean("clustered");
       String indexName = subConfig.getString("indexName");
       String[] columns = subConfig.getStringArray("columns");
-      copyTable(tableName, newTableName);
-      createIndex(clustered, indexName, newTableName, columns);
+      if (subConfig.containsKey("newTable")){
+        String newTableName = subConfig.getString("newTable");
+        copyTable(tableName, newTableName);
+        tableName= newTableName;
+      }
+      createIndex(clustered, indexName, tableName, columns);
     }
   }
 
@@ -114,21 +150,34 @@ public class DataManager {
       String file,
       String[] columnTypes,
       String[] columnNames,
-      String fieldTerminator) {
+      String fieldTerminator,
+      String rowTerminator) {
     try {
-      // Creat Table without contents.
+      // Create Table without contents.
       createTable(newTableName, columnTypes, columnNames);
+      // Create an SQL string for the filename
+      String fileSQL = "'" + file + "'";
       // Add data with a Bulk Insert statement.
       BulkInsert qNew;
       if (fieldTerminator.equals(defaultFieldTerminator)) {
-        qNew = new BulkInsert(file, newTableName);
+        qNew = new BulkInsert(fileSQL, newTableName);
       } else {
-        qNew = new BulkInsert(file, newTableName, fieldTerminator);
+        qNew = new BulkInsert(fileSQL, newTableName, fieldTerminator, rowTerminator);
       }
       qNew.update(conn);
+      System.out.println("populated table with data");
     } catch (SQLException e) {
       e.printStackTrace();
     }
+  }
+
+  public void newTable(
+      String newTableName,
+      String file,
+      String[] columnTypes,
+      String[] columnNames,
+      String fieldTerminator) {
+    newTable(newTableName, file, columnTypes, columnNames, fieldTerminator, "0x0A");
   }
 
   /**
@@ -149,6 +198,7 @@ public class DataManager {
     Statement stmt = conn.createStatement();
     String sqlStmt = String.format("CREATE table %s %s", newTableName, tableSpecifications);
     stmt.executeUpdate(sqlStmt);
+    System.out.println("Created table: " + newTableName);
   }
 
   /**
@@ -171,11 +221,33 @@ public class DataManager {
   public void updateTable(
       String tbl,
       String newTbl,
+      Boolean drop,
       String primaryKey,
       String[] columnTypes,
       String[] columnNames,
-      String dataFile) {
-    newTable("temporary1", dataFile, columnTypes, columnNames, defaultFieldTerminator);
+      String dataFile,
+      String fieldTerminator) {
+    // Drop columns in original table.
+    if (drop) {
+      StringBuilder colnamesForDrop = new StringBuilder();
+      for (int i = 1; i < columnNames.length; i++) {
+        colnamesForDrop.append("column ");
+        colnamesForDrop.append(columnNames[i]);
+        if (i != columnNames.length - 1) {
+          colnamesForDrop.append(",");
+        }
+      }
+      try {
+        Statement stmt = conn.createStatement();
+        String sqlStmt =
+            String.format("ALTER TABLE %s DROP %s", newTbl, colnamesForDrop.toString());
+        stmt.executeUpdate(sqlStmt);
+      } catch (java.sql.SQLException e) {
+        e.printStackTrace();
+      }
+    }
+    // Create temporary table with file content.
+    newTable("temporary1", dataFile, columnTypes, columnNames, fieldTerminator);
     StringBuilder stringBuilder = new StringBuilder();
     int numberOfColumns = columnTypes.length;
     for (int i = 1; i < numberOfColumns; i++) {
@@ -198,20 +270,14 @@ public class DataManager {
   }
 
   public void updateColumn(
-      String tbl,
-      String pk,
-      String column,
-      String keytype,
-      String type,
-      String[] colNames,
-      String dataFile) {
+      String tbl, String pk, String column, String keytype, String type, String dataFile) {
     String newTbl = tbl + "_" + column + "updated";
-    updateColumn(tbl, newTbl, pk, column, keytype, type, colNames, dataFile);
+    updateColumn(tbl, newTbl, pk, column, keytype, type, dataFile);
   }
 
   /**
    * Creates a new Table where a single column has been updated with regard to the initial table.
-   * The updated column must have a different name than the original column. The initial table is
+   * The initial table is
    * preserved. The new Table is created by using the updateTable function to add the updated column
    * to the table. Once this is done, the old column is dropped.
    *
@@ -221,7 +287,6 @@ public class DataManager {
    * @param column The name of the column which is updated.
    * @param keytype The datatype of the primary key.
    * @param type The datatype of the column that is updated.
-   * @param columNames Contains the names for the updated column.
    * @param dataFile The file containing the values to update the column. The file contains two
    *     columns. The first one is an FK column for tbl, the second contains the values for the
    *     updated column.
@@ -233,23 +298,26 @@ public class DataManager {
       String column,
       String keytype,
       String type,
-      String[] columNames,
       String dataFile) {
     try {
       String[] typeArray = {keytype, type};
-      updateTable(tbl, newTbl, pk, typeArray, columNames, dataFile);
+      String[] columnNames = {"Identifier", "updatedColumn"};
+      updateTable(tbl, newTbl, false, pk, typeArray, columnNames, dataFile, defaultFieldTerminator);
       Statement stmt = conn.createStatement();
       String sqlStmt = String.format("ALTER TABLE %s DROP COLUMN %s", newTbl, column);
+      stmt.executeUpdate(sqlStmt);
+      sqlStmt =
+          String.format("EXEC sp_RENAME '%s.%s' , '%s', 'COLUMN'", newTbl, columnNames[1], column);
       stmt.executeUpdate(sqlStmt);
     } catch (java.sql.SQLException e) {
       e.printStackTrace();
     }
   }
-
   /**
    * Executes an SQL statement.
    *
-   * @param sqlStmt
+   * @param sqlStmt An SQL statement that is not allowed to return anything. Can be an INSERT,
+   *     UPDATE, DELETE statement or and DDL statement for example.
    */
   public void update(String sqlStmt) {
     try {
@@ -260,8 +328,13 @@ public class DataManager {
     }
   }
 
-  public void copyTable(String tableName, String copyyTableName) {
-    String sqlStmt = String.format("SELECT * INTO %s FROM %s", copyyTableName, tableName);
+  /**
+   *Executes an SQL statement that copies an existing table into anew table.
+   * @param tableName Table name of the original table.
+   * @param copyTableName Table name of the copy.
+   */
+  public void copyTable(String tableName, String copyTableName) {
+    String sqlStmt = String.format("SELECT * INTO %s FROM %s", copyTableName, tableName);
     try {
       PreparedStatement stmt = conn.prepareStatement(sqlStmt);
       stmt.executeUpdate();
@@ -270,6 +343,13 @@ public class DataManager {
     }
   }
 
+  /**
+   * Executes the SQL statement that creates an index on a table.
+   * @param clustered Indicates if the index should be clustered or non-clustered.
+   * @param indexName Name of the index.
+   * @param tableName Name of the table on which an index is created.
+   * @param columns Columns which are included in the index.
+   */
   public void createIndex(boolean clustered, String indexName, String tableName, String[] columns) {
     String cluster = clustered ? "clustered" : "";
     String joinedColumns = Utils.StrArrayToString(columns, ",", true);

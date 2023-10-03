@@ -1,6 +1,5 @@
 package framework.Anonymization;
 
-import framework.Driver;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.deidentifier.arx.ARXConfiguration;
@@ -12,66 +11,205 @@ import util.Utils;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
+import java.util.function.UnaryOperator;
 
 public class AnonymizationConfiguration {
   public static final Charset charset = StandardCharsets.UTF_8;
   public static final char hierarchyValueDelimiter = ';';
+  private String anonymizationStrategy = "";
+  private String dataStorageMethod;
+  private String dataTableName;
+  private String dataFileName;
+  private String domainFileLocation;
+  private String outputFileName;
+  private String outputTableName;
+  private String[] querysetNames;
+  private boolean queryAnonimization = false;
   private ArrayList<PrivacyModelArguments> privacyModels;
   private ArrayList<String> insensitiveAttributes;
   private ArrayList<String> sensitiveAttributes;
   private ArrayList<String> identifyingAttributes;
   private ArrayList<String> quasiIdentifyingAttributes;
-  private final ARXConfiguration.AnonymizationAlgorithm defaultAnonymizationAlgorithm =
-      ARXConfiguration.AnonymizationAlgorithm.OPTIMAL;
+
   private String specifiedAnonymizationAlgorithm;
+  private HashMap<String, Integer> maximalGeneralizationLevels;
+  private String hashingFunction;
+  private String hierarchyFile;
+  private String[] hashingColumns;
+  private String[] columnsForSynth;
+  private String[] remainingColumns;
 
-  private double suppressionLimit = 0;
+  private double suppressionLimit = 1000;
 
-  private ARXConfiguration config;
+  private ARXConfiguration arxConfig;
 
-  public AnonymizationConfiguration(String configurationFile)
-  {
-    this(Driver.buildXMLConfiguration(configurationFile));
+  public AnonymizationConfiguration(String configurationFile) {
+    this(Utils.buildXMLConfiguration(configurationFile));
   }
-  public AnonymizationConfiguration(XMLConfiguration config) {
+
+  public AnonymizationConfiguration(XMLConfiguration config) throws RuntimeException {
+    this.anonymizationStrategy = config.getString("AnonymizationStrategy");
+    if (this.anonymizationStrategy.equalsIgnoreCase("hash")) {
+      this.anonymizationStrategy = "Hash";
+    }
+
+    HierarchicalConfiguration dataSubconfig = config.configurationAt("Data");
+    this.dataStorageMethod = dataSubconfig.getString("StorageMethod");
+    String storageName = dataSubconfig.getString("StorageName");
+    if (this.dataStorageMethod.equalsIgnoreCase("file")) {
+      this.dataFileName = storageName;
+    } else {
+      this.dataTableName = storageName.toUpperCase();
+    }
+
+    if (dataSubconfig.containsKey("outputTableName")) {
+      this.outputTableName = dataSubconfig.getString("outputTableName").toUpperCase();
+    } else {
+      throw new RuntimeException(
+          "No output table name specified in anonymization configuration. Please specifiy output table name using the tag: outputTableName.");
+    }
+    if (dataSubconfig.containsKey("querysetName")) {
+      this.queryAnonimization = true;
+      this.querysetNames = dataSubconfig.getStringArray("querysetName");
+    }
+
+    // All configuration arguments for the hashing operation are retrieved.
+    if (this.anonymizationStrategy.equalsIgnoreCase("hash")) {
+      HierarchicalConfiguration hashSubconfig = config.configurationAt("Hash");
+      this.hashingFunction = hashSubconfig.getString("HashingFunction");
+      String[] hashingColumnsRandom = hashSubconfig.getStringArray("Columns");
+      this.hashingColumns = new String[hashingColumnsRandom.length];
+      for (int i = 0; i < hashingColumnsRandom.length; i++) {
+        this.hashingColumns[i] = hashingColumnsRandom[i].toUpperCase();
+      }
+      return;
+    }
+    // All configuration arguments for the hashing operation are retrieved.
+    if (this.anonymizationStrategy.equalsIgnoreCase("Synth")) {
+      HierarchicalConfiguration synthSubconfig = config.configurationAt("Synth");
+      this.domainFileLocation = synthSubconfig.getString("domainLocation");
+      this.columnsForSynth = synthSubconfig.getStringArray("columnsForSynth");
+      this.remainingColumns = synthSubconfig.getStringArray("remainingCols");
+    }
+
+    // Retrieve the remaining arguments for the other anonymization techniques.
+    if (dataSubconfig.containsKey("outputFileName")) {
+      this.outputFileName = dataSubconfig.getString("outputFileName");
+    } else {
+      throw new RuntimeException(
+          "No output file name specified in anonymization configuration. Please specifiy output file name using the tag: outputFileName.");
+    }
+
+    this.hierarchyFile = config.getString("hierarchyFile");
+
+    gatherMaximalGeneralizationLevels(config);
+
     gatherprivacyModels(config);
 
     insensitiveAttributes =
-        new ArrayList<>(Arrays.asList(Utils.checkAndGetArray("InsensitiveAttributes", config)));
+        new ArrayList<>(
+            transformStringArrayToList(
+                Utils.checkAndGetArray("InsensitiveAttributes", config), String::toUpperCase));
     sensitiveAttributes =
-        new ArrayList<>(Arrays.asList(Utils.checkAndGetArray("SensitiveAttributes", config)));
+        new ArrayList<>(
+            transformStringArrayToList(
+                Utils.checkAndGetArray("SensitiveAttributes", config), String::toUpperCase));
     identifyingAttributes =
-        new ArrayList<>(Arrays.asList(Utils.checkAndGetArray("IdentifyingAttributes", config)));
+        new ArrayList<>(
+            transformStringArrayToList(
+                Utils.checkAndGetArray("IdentifyingAttributes", config), String::toUpperCase));
     quasiIdentifyingAttributes =
         new ArrayList<>(
-            Arrays.asList(Utils.checkAndGetArray("QuasiIdentifyingAttributes", config)));
+            transformStringArrayToList(
+                Utils.checkAndGetArray("QuasiIdentifyingAttributes", config), String::toUpperCase));
     if (config.containsKey("SuppressionLimit")) {
       suppressionLimit = config.getDouble("SuppressionLimit");
     }
     this.specifiedAnonymizationAlgorithm =
         Utils.checkAndGetString("anonymizationAlgorithm", config);
+
+    createARXConfig();
+  }
+
+  public String getAnonymizationStrategy() {
+    return anonymizationStrategy;
   }
 
   public ARXConfiguration getARXConfig() {
-    return config;
+    return arxConfig;
   }
 
-  public ArrayList<String> getSensitiveAttributes() {
-    return sensitiveAttributes;
+  public String[] getColumnsForSynth() {
+    return columnsForSynth;
+  }
+
+  public String getDataTableName() {
+    return dataTableName;
+  }
+
+  public String getDataStorageMethod() {
+    return dataStorageMethod;
+  }
+
+  public String getDomainFileLocation() {
+    return domainFileLocation;
+  }
+
+  public String getHashingFunction() {
+    return hashingFunction;
+  }
+
+  public String[] getHashingColumns() {
+    return hashingColumns;
+  }
+
+  public String getHierarchyFile() throws Exception {
+    if (hierarchyFile == null) {
+      throw new Exception(
+          "The field hierarchyFile has not been set in the anonymization configuration. ");
+    }
+    return hierarchyFile;
+  }
+
+  public ArrayList<String> getIdentifyingAttributes() {
+    return identifyingAttributes;
   }
 
   public ArrayList<String> getInsensitiveAttributes() {
     return insensitiveAttributes;
   }
 
+  public String[] getRemainingColumns() {
+    return remainingColumns;
+  }
+
+  public ArrayList<String> getSensitiveAttributes() {
+    return sensitiveAttributes;
+  }
+
   public ArrayList<String> getQuasiIdentifyingAttributes() {
     return quasiIdentifyingAttributes;
   }
 
-  public ArrayList<String> getIdentifyingAttributes() {
-    return identifyingAttributes;
+  public Boolean getQueryAnonimization() {
+    return this.queryAnonimization;
+  }
+
+  public String[] getQuerysetNames() {
+    return querysetNames;
+  }
+
+  public String getOutputFileName() {
+    return outputFileName;
+  }
+
+  public String getOutputTableName() {
+    return outputTableName;
+  }
+
+  public HashMap<String, Integer> getMaximalGeneralizationLevels() {
+    return maximalGeneralizationLevels;
   }
 
   /**
@@ -80,22 +218,23 @@ public class AnonymizationConfiguration {
    * adds the Privacy Models to the ARXConfiguration and sets several configuration variables.
    */
   public void createARXConfig() {
-    this.config = ARXConfiguration.create();
-    setARXAnonymizationAlgorithm(specifiedAnonymizationAlgorithm, this.config);
-    this.config.setSuppressionLimit(this.suppressionLimit);
+    this.arxConfig = ARXConfiguration.create();
+    setARXAnonymizationAlgorithm(specifiedAnonymizationAlgorithm, this.arxConfig);
+    this.arxConfig.setSuppressionLimit(this.suppressionLimit);
+    this.arxConfig.setHeuristicSearchThreshold(100000000);
     for (PrivacyModelArguments args : this.privacyModels) {
       switch (args.privacyModel) {
         case "KAnonymity":
-          config.addPrivacyModel(new KAnonymity((Integer) args.factor));
+          arxConfig.addPrivacyModel(new KAnonymity((Integer) args.factor));
           continue;
         case "DistinctLDiversity":
-          config.addPrivacyModel(new DistinctLDiversity(args.argument, (Integer) args.factor));
+          arxConfig.addPrivacyModel(new DistinctLDiversity(args.argument, (Integer) args.factor));
           continue;
         case "EntropyLDiversity":
-          config.addPrivacyModel(new EntropyLDiversity(args.argument, (Double) args.factor));
+          arxConfig.addPrivacyModel(new EntropyLDiversity(args.argument, (Double) args.factor));
           continue;
         case "OrderedDistanceTCloseness":
-          config.addPrivacyModel(
+          arxConfig.addPrivacyModel(
               new OrderedDistanceTCloseness(args.argument, (Double) args.factor));
       }
     }
@@ -134,8 +273,25 @@ public class AnonymizationConfiguration {
   }
 
   /**
-   * Gathers the privacy models from the configuration file and adds them to the
-   * PrivacyModel list.
+   * Retrieve the maximal generalizationLevels.
+   *
+   * @param config
+   */
+  private void gatherMaximalGeneralizationLevels(XMLConfiguration config) {
+    this.maximalGeneralizationLevels = new HashMap<>();
+    HierarchicalConfiguration generalizationLevelsConfig =
+        config.configurationAt("GeneralizationLevels");
+    int instanceCount = generalizationLevelsConfig.getInt("Count");
+    for (int i = 1; i <= instanceCount; i++) {
+      HierarchicalConfiguration instance =
+          generalizationLevelsConfig.configurationAt("Instance[" + i + "]");
+      maximalGeneralizationLevels.put(
+          instance.getString("Column").toUpperCase(), instance.getInt("Level"));
+    }
+  }
+
+  /**
+   * Gathers the privacy models from the configuration file and adds them to the PrivacyModel list.
    *
    * @param config XMLConfiguration that contains the anonymization configuration.
    */
@@ -190,8 +346,8 @@ public class AnonymizationConfiguration {
   }
 
   /**
-   * Adds a privacy model to the Privacy Model list. A single call can add multiple
-   * instance of a single privacy model.
+   * Adds a privacy model to the Privacy Model list. A single call can add multiple instance of a
+   * single privacy model.
    *
    * @param criteria The privacy Model that gets added.
    * @param factors Contains the factors for each instance of the privacy model.
@@ -210,8 +366,8 @@ public class AnonymizationConfiguration {
   }
 
   /**
-   * Adds a privacy model to the Privacy Model list. A single call can add mulitple
-   * instance of a single privacy model.
+   * Adds a privacy model to the Privacy Model list. A single call can add mulitple instance of a
+   * single privacy model.
    *
    * @param criteria The privacy Model that gets added.
    * @param factors Contains the factors for each instance of the privacy model.
@@ -243,6 +399,12 @@ public class AnonymizationConfiguration {
             "Missing the factors for the %s privacy model. Please check that the factors are specified in the anonymization configuration file using the tag <factors>.",
             criteria);
     throw new RuntimeException(errMsg);
+  }
+
+  private List transformStringArrayToList(String[] strArray, UnaryOperator<String> unaryOperator) {
+    List list = Arrays.asList(strArray);
+    list.replaceAll(unaryOperator);
+    return list;
   }
 
   /**

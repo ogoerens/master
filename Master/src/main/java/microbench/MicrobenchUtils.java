@@ -5,18 +5,15 @@ import util.Utils;
 import java.util.Random;
 
 public class MicrobenchUtils {
+  // Variables and functions related to the microbenchmark conducted during the "Secure Database
+  // Performance" master's thesis.
+
   public static String[] mktsegmentValues = {
     "FURNITURE", "BUILDING", "HOUSEHOLD", "MACHINERY", "AUTOMOBILE"
   };
   private static int[] phonePrefixes = {
     10, 11, 12, 13, 14, 15, 16, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34
   };
-  // c_acctbal range -999.99 to 9999.99
-
-
-  private static String generatePhoneNumber(int[] prefixes) {
-    return generatePhoneNumber(prefixes, false);
-  }
 
   private static String generatePhoneNumber(int[] prefixes, boolean onlyPrefix) {
     String dash = "-";

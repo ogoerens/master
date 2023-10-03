@@ -1,7 +1,6 @@
 package framework;
 
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,48 +9,76 @@ import java.util.*;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import experimental.Anonym;
-import experimental.stuff;
+import com.microsoft.sqlserver.jdbc.SQLServerException;
 import framework.Anonymization.AnonymizationDriver;
 import microbench.Queries;
 import microbench.Query;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
-import org.apache.commons.configuration2.builder.fluent.Parameters;
-import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
-import org.apache.commons.configuration2.tree.xpath.XPathExpressionEngine;
+import org.apache.commons.cli.*;
 import org.apache.commons.configuration2.XMLConfiguration;
 
 import util.ResultWriter;
 import util.GenericQuery;
+import util.Utils;
 
 public class Driver {
-  public static void main(String[] args) throws Exception {
-    AnonymizationDriver ad = new AnonymizationDriver();
-    ad.anonymize();
-    //Anonym a = new Anonym();
-    //a.work();
+  public static final String sourcePath = System.getProperty("user.dir");
+  private static final String outputDirectory = sourcePath + "/Results";
+  private static final String CardinalityDirectory = sourcePath + "/QueryCardinality";
+  private static final String latenciesFile = sourcePath + "/latencies.csv";
+  private static final String latenciesFileAVG = sourcePath + "/latenciesAverage.csv";
+  private static final int numberWorkers = 1;
+  private static int numberOfQueryExecutions = 6;
 
+  public static void main(String[] args) throws Exception {
+
+    // Parse user options.
     CommandLineParser parser = new DefaultParser();
     Options options = buildOptions();
     CommandLine argsLine = parser.parse(options, args);
 
     Random rand = new Random();
 
-    // Check if Generator is used. If so, create generator configuration and execute generator. File
-    // should be: genconfig.xml.
-
+    // Check if Generator is used. If so, create generator configuration and execute generator.
     if (argsLine.hasOption("g")) {
-      String s = argsLine.getOptionValue("g");
-      XMLConfiguration genConfiguration = buildXMLConfiguration(argsLine.getOptionValue("g"));
+      XMLConfiguration genConfiguration = Utils.buildXMLConfiguration(argsLine.getOptionValue("g"));
       Generator g = new Generator(rand);
       g.generate(genConfiguration);
     }
 
-    // Create DB configuration  from configuration file.
+    // Add user-provided queries to the Query Manager.
+    QueryManager queryManager = new QueryManager();
+    if (argsLine.hasOption("q")) {
+      if (argsLine.hasOption("numExecutions")) {
+        numberOfQueryExecutions = Integer.parseInt(argsLine.getOptionValue("numExecution"));
+      }
+      String queriesFile = argsLine.getOptionValue("q");
+      queryManager.loadQueries(queriesFile, ";\n", "InputQueries_");
+    }
+
+    // Check if data should be anonymized.
+    // Must be run after option "-q" as otherwise personalized queries are not yet stored in
+    // queryManager.
+    if (argsLine.hasOption("a")) {
+      AnonymizationDriver ad =
+          new AnonymizationDriver(argsLine.getOptionValue("a"), argsLine.getOptionValue("c"));
+      // TODO: Detail what arguments anonymization driver takes.
+      ad.anonymize(queryManager);
+    }
+
+    // Check if queries should be executed.
+    if (argsLine.hasOption("e")) {
+      if (argsLine.hasOption("numExecutions")) {
+        numberOfQueryExecutions = Integer.parseInt(argsLine.getOptionValue("numExecution"));
+      }
+      String[] querySetNames = argsLine.getOptionValues("e");
+      for (String querySetName : querySetNames) {
+        queryManager.addQueriesForExecution(querySetName);
+      }
+    }
+
+
+    // Check if option "-c" is set. If not, no connection to a database is established and the
+    // program will exit.
     if (!argsLine.hasOption("c")) {
       System.out.println(
           "No Connection was established as argument -c was not set. "
@@ -59,181 +86,244 @@ public class Driver {
       System.exit(0);
     }
 
+    // Option "-c" is set. Create DB connection configuration from configuration file.
     String dbConfigFile = argsLine.getOptionValue("c");
-    XMLConfiguration dbConfiguration = buildXMLConfiguration(dbConfigFile);
-    BenchConfiguration config = new BenchConfiguration(dbConfiguration);
-    config.init();
+    XMLConfiguration dbConfiguration = Utils.buildXMLConfiguration(dbConfigFile);
+    DatabaseConfiguration config = new DatabaseConfiguration(dbConfiguration);
 
+    // Connect to the database.
     try {
-      // Connect to database
       Connection conn = config.makeConnection();
       if (conn != null) {
         System.out.println("Connected.");
+      } else {
+        throw new Exception("Connection to DB could not be established");
       }
 
-      // Check if DataManager is used. If so, create DM configuration and execute DM. File should
-      // be: manageconfig.xml.
-      // DataManager is used to create/update the tables with generated data from files.
+      // Drop the tables that have been created during previous executions.
+      // If value "anon" is passed as argument, the tables that are created during the anonymizatin
+      // process are dropped.
+      if (argsLine.hasOption("d")) {
+        ArrayList<Query> qList = new ArrayList<>();
+        if (argsLine.getOptionValue("d").equals("anon")) {
+          String[] droptable = {
+            "customerbefore",
+            "anonymizedCustomer",
+            "transformedData",
+            "RemainingData",
+            "SynthesizedData",
+            "Result",
+            "CorrectSynthesizedData",
+            "maindata",
+            "modifieddata"
+          };
+          qList.addAll(Query.QueryGenerator.generateDropQueries(droptable, "table"));
+        } else {
+          qList.addAll(Query.QueryGenerator.generateDropQueries(Queries.tables, "table"));
+        }
+        for (Query qqq : qList) {
+          try {
+            qqq.update(conn);
+          } catch (SQLServerException e) {
+            System.err.println(
+                qqq.query_stmt
+                    + " failed because the table does not exist or you do not have permission.");
+          }
+        }
+        System.out.println("Drop was performed. Exiting");
+        System.exit(0);
+      }
 
+      // Check if DataManager is used. If so, create DM configuration and execute DM.
+      // DataManager is used to create/update the tables with generated data from files.
       if (argsLine.hasOption("dm")) {
-        XMLConfiguration manConfiguration = buildXMLConfiguration(argsLine.getOptionValue("dm"));
+        XMLConfiguration manConfiguration =
+            Utils.buildXMLConfiguration(argsLine.getOptionValue("dm"));
         DataManager dm = new DataManager(conn);
         dm.manage(manConfiguration);
       }
 
-      // Create queries from QueryString and add to transaction queue.
-      int numberOfQueryExecutions = 10;
-      ArrayList<Integer> qIDtoqName = new ArrayList<>();
-      ArrayList<String> qIDtoqNameS = new ArrayList<>();
-      ArrayList<String> qString = new ArrayList<>(Queries.count);
-      qString.add(Queries.q0);
-      qIDtoqName.add(-1);
-      qIDtoqNameS.add("none");
-      /*
+      // Add queries to transactionqueue. Queries are only timed, if they are equal to the previous
+      // query. This is done such that timed queries only run on a hot cache.
+      ArrayList<QueryBool> transactionQueue = new ArrayList<>();
+      String prevQuery = "";
+
+      for (Query query : queryManager.getQueriesForExecution()) {
         for (int i = 0; i < numberOfQueryExecutions; i++) {
-          int j = 0;
-          for (String query : Queries.queryList) {
-            qString.add(query);
-            qIDtoqName.add(j);
-            qIDtoqNameS.add(Queries.queryListNames[j]);
-            j++;
+          if (prevQuery.equals(query.qName + query.query_stmt)) {
+            transactionQueue.add(new QueryBool(query, true));
+          } else {
+            transactionQueue.add(new QueryBool(query, false));
+            prevQuery = query.qName + query.query_stmt;
           }
         }
-      */
-
-      int j = 0;
-      for (String query : Queries.queryList) {
-        for (int i = 0; i < numberOfQueryExecutions; i++) {
-          qString.add(query);
-          qIDtoqName.add(j);
-          qIDtoqNameS.add(Queries.queryListNames[j]);
-        }
-        j++;
       }
-
-      ArrayList<Query> qList = Query.QueryGenerator.generateQueries(qString);
-
-      // Could also define each Query as its own class.
-      // Q0 q0 = new Q0();
-
-      ArrayList<GenericQuery> transactionqueue = new ArrayList<>(qList);
 
       // Execute the Queries.
-      int numberWorkers = 1;
-      Worker w = new Worker(conn, transactionqueue, rand, numberWorkers);
-      w.work(config.getDatabase());
+      Worker worker = new Worker(conn, transactionQueue, rand, numberWorkers);
+      worker.work(config.getDatabase());
 
       // Store cardinalities in a file.
+      Files.createDirectories(Paths.get(CardinalityDirectory));
+      Path path = Paths.get(CardinalityDirectory + "/" + "queryCardinalitiesOverview.txt");
+      Files.deleteIfExists(path);
+      HashMap<String, Integer> qNameToCardinality = worker.getCardinalities();
+      Utils.writeMapToFile(
+          qNameToCardinality,
+          CardinalityDirectory + "/" + "queryCardinalitiesOverview.txt",
+          " : ",
+          "\n");
 
-      String directoryCardinality = "QueryCardinality";
-      Path p = Paths.get(directoryCardinality + "/" + "total_rows.txt");
-      Files.deleteIfExists(p);
-      HashMap<String, Integer> qidToCardinality = new HashMap<>();
-      HashSet<String> done = new HashSet<>();
-      try (FileWriter cardinalityFileWriter =
-          new FileWriter(directoryCardinality + "/" + "total_rows.txt", true)) {
-        for (Map.Entry<Integer, Integer> entry : w.getCardinalities().entrySet()) {
-          String x = qIDtoqNameS.get(entry.getKey());
-          if (!done.contains(x)) {
-            done.add(x);
-            qidToCardinality.put(x, entry.getValue());
-            cardinalityFileWriter.write(x + ": " + (entry.getValue()) + "\n");
-          }
-        }
-        cardinalityFileWriter.flush();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+      // For each query, group the execution per query Name. Compute for each of these groups the
+      // statistics.
+      Files.deleteIfExists(Paths.get(latenciesFile));
+      StringBuilder stringBuilderLatencies = new StringBuilder();
 
-      // Stats per qids individual.
-      LinkedHashMap<String, LatencyRecord> latencyRecPerQid =
-          w.getLatencyRecord().attachToQuery(qIDtoqNameS);
-      LinkedHashMap<String, Statistics> statsPerQid = new LinkedHashMap<>();
-      for (Map.Entry<String, LatencyRecord> entry : latencyRecPerQid.entrySet()) {
-        statsPerQid.put(
+      LinkedHashMap<String, LatencyRecord> latencyRecordPerQueryName =
+          worker.getLatencyRecord().groupQueriesPerName();
+
+      LinkedHashMap<String, LatencyRecord> latencyRecordPerDistribution =
+          worker.getLatencyRecord().groupQueriesPerDistribution();
+
+      LinkedHashMap<String, Statistics> statsPerQueryName = new LinkedHashMap<>();
+      for (Map.Entry<String, LatencyRecord> entry : latencyRecordPerQueryName.entrySet()) {
+        statsPerQueryName.put(
             entry.getKey(), Statistics.computeStatistics(entry.getValue().getLatenciesAsArray()));
+        String latencies =
+            Utils.join(
+                Utils.convertIntArrayToStrArray(entry.getValue().getLatenciesAsArray()), ",");
+        stringBuilderLatencies.append(entry.getKey());
+        stringBuilderLatencies.append(",");
+        stringBuilderLatencies.append(latencies);
+        stringBuilderLatencies.append("\n");
       }
+      Utils.strToFile(stringBuilderLatencies.toString(), latenciesFile);
 
+      // "Clear" stringBuilder.
+      stringBuilderLatencies.setLength(0);
+
+      LinkedHashMap<String, Statistics> statsPerDistribution = new LinkedHashMap<>();
+      for (Map.Entry<String, LatencyRecord> entry : latencyRecordPerDistribution.entrySet()) {
+        statsPerDistribution.put(
+            entry.getKey(), Statistics.computeStatistics(entry.getValue().getLatenciesAsArray()));
+        String latencies =
+            Utils.join(
+                Utils.convertIntArrayToStrArray(entry.getValue().getLatenciesAsArray()), ",");
+        stringBuilderLatencies.append(entry.getKey());
+        stringBuilderLatencies.append(",");
+        stringBuilderLatencies.append(latencies);
+        stringBuilderLatencies.append("\n");
+      }
+      Utils.strToFile(stringBuilderLatencies.toString(), latenciesFileAVG);
+
+      // Stats for all queries together.
+      Statistics stats =
+          Statistics.computeStatistics(worker.getLatencyRecord().getLatenciesAsArray());
+      // statsPerQueryName.put("Overall", stats);
+
+      // group by query number
+
+      LinkedHashMap<String, ArrayList<Statistics>> statsPerQueryNumber = new LinkedHashMap<>();
+      for (Map.Entry<String, Statistics> entry : statsPerQueryName.entrySet()) {
+        String distribution = LatencyRecord.extractDistribution(entry.getKey());
+        String querynumber =
+            entry.getKey().substring(0, entry.getKey().indexOf("_")) + distribution;
+        if (!statsPerQueryNumber.containsKey(querynumber)) {
+          statsPerQueryNumber.put(querynumber, new ArrayList<>());
+        }
+        statsPerQueryNumber.get(querynumber).add(entry.getValue());
+      }
+      printAverageToFile(statsPerQueryNumber);
+
+      ArrayList<String> statAttributes = new ArrayList<>();
+      statAttributes.add("Average");
+      statAttributes.add("Minimum");
+      statAttributes.add("25thPercentile");
+      statAttributes.add("Median");
+      statAttributes.add("75thPercentile");
+      statAttributes.add("90thPercentile");
+      statAttributes.add("Maximum");
+      // Store the statistics for each query group in the overview file.
       String resultOverviewFile = "overview.csv";
-      try (PrintStream ps = new PrintStream(resultOverviewFile)) {
-        ps.println(
-            "Queries,returned rows,time(microseconds),75thPercentile(us), 90thPercentile(us)");
-        for (Map.Entry<String, Statistics> entry : statsPerQid.entrySet()) {
-          System.out.println(entry.getKey() + " : " + entry.getValue().getAverage());
-          ps.println(
-              entry.getKey()
-                  + ","
-                  + qidToCardinality.get(entry.getKey())
-                  + ","
-                  + entry.getValue().getAverage()
-                  + ","
-                  + entry.getValue().get75thPercentile()
-                  + ","
-                  + entry.getValue().get90thPercentile());
-        }
+      StringBuilder stringBuilderStats = new StringBuilder();
+      stringBuilderStats.append(
+          "Queries, Returned rows, Average time(us), Minimum time, 25thPercentile, Median, 75thPercentile(us), 90thPercentile(us), Maximum \n");
+      for (Map.Entry<String, Statistics> entry : statsPerQueryName.entrySet()) {
+        System.out.println(entry.getKey() + " : " + entry.getValue().getAverage());
+        stringBuilderStats.append(
+            entry.getKey()
+                + ","
+                + qNameToCardinality.get(entry.getKey())
+                + ","
+                + entry.getValue().print(statAttributes)
+                + System.lineSeparator());
       }
+      Utils.strToFile(stringBuilderStats.toString(), resultOverviewFile);
 
-      // Stats for all qs together.
-      Statistics stats = Statistics.computeStatistics(w.getLatencyRecord().getLatenciesAsArray());
-      statsPerQid.put("-1", stats);
-      System.out.println(stats.getAverage());
-
-      // Close database connection.
-      conn.close();
-
-      // Write results.
+      // Write a result file per Query Name.
       ResultWriter rw = new ResultWriter();
-      String outputDirectory = "results";
+      Files.createDirectories(Paths.get(outputDirectory));
       String resultsFileName = "results.csv";
-      for (Map.Entry<String, Statistics> entry : statsPerQid.entrySet()) {
-        if (!entry.getKey().equals("-1")) {
-          try (PrintStream ps =
-              new PrintStream(outputDirectory + "/QID" + entry.getKey() + resultsFileName)) {
-            rw.writeResults(entry.getValue(), ps);
-          } catch (FileNotFoundException e) {
-            e.printStackTrace();
-          }
-        } else {
-          try (PrintStream ps = new PrintStream(outputDirectory + "/" + resultsFileName)) {
-            rw.writeResults(entry.getValue(), ps);
-          } catch (FileNotFoundException e) {
-            e.printStackTrace();
-          }
+      for (Map.Entry<String, Statistics> entry : statsPerQueryName.entrySet()) {
+        try (PrintStream ps =
+            new PrintStream(outputDirectory + "/" + entry.getKey() + resultsFileName)) {
+          rw.writeResults(entry.getValue(), ps);
+        } catch (FileNotFoundException e) {
+          e.printStackTrace();
         }
       }
+      conn.close();
     } catch (SQLException ex) {
       ex.printStackTrace();
     }
   }
 
+  /**
+   * Creates the different options that user cans set when he runs the program
+   * @return
+   */
   private static Options buildOptions() {
     Options options = new Options();
     options.addOption("dm", true, "DataManger is executed when set");
     options.addOption("g", true, "Generator is executed when set");
-    // currently ex is not needed to execute
     options.addOption("c", true, "Connection is established when set");
+    options.addOption("q", true, "Executes queries provided in specified file");
+    Option optionE = new Option("e", true, "Executes queries of specified benchmarks when set");
+    optionE.setArgs(Option.UNLIMITED_VALUES);
+    optionE.setValueSeparator(',');
+    options.addOption(optionE);
+    options.addOption("numExecutions", true, "Set number(int) of query executions. Default: 11");
+    options.addOption("d", true, "Drop tables. Only works if c is set.");
+    options.addOption("a", true, "Launches anonymization process");
     return options;
   }
 
-  public static XMLConfiguration buildXMLConfiguration(String filename) {
+  public static String getSourcePath() {
+    return sourcePath;
+  }
 
-    XMLConfiguration conf = new XMLConfiguration();
-    Parameters params = new Parameters();
-
-    FileBasedConfigurationBuilder<XMLConfiguration> builder =
-        new FileBasedConfigurationBuilder<>(XMLConfiguration.class)
-            .configure(
-                params
-                    .xml()
-                    .setFileName(filename)
-                    .setListDelimiterHandler(new DefaultListDelimiterHandler(','))
-                    .setExpressionEngine(new XPathExpressionEngine()));
-
-    try {
-      conf = builder.getConfiguration();
-    } catch (Exception e) {
-      System.out.println("Configuration problem: " + e);
+  public static void printAverageToFile(LinkedHashMap<String, ArrayList<Statistics>> stats) {
+    // Store the statistics for each query group in the overview file.
+    String resultOverviewFile = "averagesPerQueryNumber.csv";
+    StringBuilder stringBuilderStats = new StringBuilder();
+    stringBuilderStats.append("Queries,  Average time(us) \n");
+    for (Map.Entry<String, ArrayList<Statistics>> entry : stats.entrySet()) {
+      stringBuilderStats.append(entry.getKey());
+      for (Statistics statistics : entry.getValue()) {
+        stringBuilderStats.append("," + statistics.getAverage());
+      }
+      stringBuilderStats.append(System.lineSeparator());
     }
-    return conf;
+    Utils.strToFile(stringBuilderStats.toString(), resultOverviewFile);
+  }
+
+  public static class QueryBool {
+    public GenericQuery query;
+    public boolean time;
+
+    QueryBool(GenericQuery q, boolean b) {
+      this.query = q;
+      this.time = b;
+    }
   }
 }

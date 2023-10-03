@@ -35,4 +35,21 @@ public abstract class StringUtil {
   public static String createFileName(String directory, String fileName, String fileType) {
     return directory + "/" + fileName + "." + fileType;
   }
+
+  /**
+   * Removes a specified StrippingString from front an end of a String. If the String  is not surrounded by the specified StrippingString,
+   * then the String is returned unchanged.
+   *
+   * @param str The String from which the StrippingString is removed.
+   * @param strippingString The String that is removed.
+   * @return
+   */
+  public static String stripString(String str,String strippingString) {
+    if (str.substring(0, 1).equals(strippingString)
+        && str.substring(str.length()-1, str.length()).equals(strippingString)) {
+      return str.substring(1, str.length() - 1);
+    } else {
+      return str;
+    }
+  }
 }
