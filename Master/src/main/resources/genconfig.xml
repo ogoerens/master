@@ -2,9 +2,30 @@
 
 <parameters>
     <!-- Generation details -->
-    <amount>29</amount>
+    <amount>37</amount>
     <defaultSize>150000</defaultSize>
     <gens>
+        <gen>
+            <distribution>zipfMapped</distribution>
+            <type>int</type>
+            <lowerbound>0</lowerbound>
+            <upperbound>150000</upperbound>
+            <numberOfElements>5</numberOfElements>
+            <exponent>1</exponent>
+            <correlation>none</correlation>
+            <withIndex>true</withIndex>
+            <fileName>custkey_zipf.txt</fileName>
+        </gen>
+        <gen>
+            <distribution> binomial</distribution>
+            <type>double</type>
+            <shift>0</shift>
+            <trials>150000</trials>
+            <probability>0.5</probability>
+            <correlation>none</correlation>
+            <withIndex>true</withIndex>
+            <fileName>custkey_Binomial.txt</fileName>
+        </gen>
         <gen>
             <distribution>uniform</distribution>
             <type>double</type>
@@ -17,10 +38,17 @@
         <gen>
             <distribution>zipfMapped</distribution>
             <type>String</type>
-            <list>FURNITURE,BUILDING,AUTOMOBILE,MACHINERY,HOUSEHOLD</list>
+            <list>AUTOMOBILE,BUILDING,FURNITURE,HOUSEHOLD,MACHINERY</list>
             <fileName>c_mktseg_zipfMapped.txt</fileName>
             <withIndex>true</withIndex>
-            <exponent>2</exponent>
+            <exponent>1</exponent>
+        </gen>
+        <gen>
+            <distribution>uniformMapped</distribution>
+            <type>String</type>
+            <list>Cancer,Diarrhea,Diabetes,Alzheimer,Cirrhosis, Bronchitis, HIV, Tuberculosis, Ebola, Covid</list>
+            <fileName>disease.txt</fileName>
+            <withIndex>true</withIndex>
         </gen>
         <gen>
             <distribution>zipfMapped</distribution>
@@ -28,7 +56,7 @@
             <list>BUILDING,AUTOMOBILE,FURNITURE,MACHINERY,HOUSEHOLD</list>
             <fileName>c_mktseg_zipfMapped2.txt</fileName>
             <withIndex>true</withIndex>
-            <exponent>2</exponent>
+            <exponent>1</exponent>
         </gen>
         <gen>
             <distribution>zipfMapped</distribution>
@@ -36,7 +64,7 @@
             <list>BUILDING,AUTOMOBILE,MACHINERY,HOUSEHOLD,FURNITURE</list>
             <fileName>c_mktseg_zipfMapped3.txt</fileName>
             <withIndex>true</withIndex>
-            <exponent>2</exponent>
+            <exponent>1</exponent>
         </gen>
         <gen>
             <distribution>uniform</distribution>
@@ -59,6 +87,7 @@
             <lowerbound>0</lowerbound>
             <upperbound>1000</upperbound>
             <correlation>correlated</correlation>
+            <CorrelationDomain>50</CorrelationDomain>
             <withIndex>true</withIndex>
             <fileName>uniform_correlated.txt</fileName>
         </gen>
@@ -67,7 +96,7 @@
             <lowerbound>0</lowerbound>
             <upperbound>1000</upperbound>
             <correlation>functional dependent</correlation>
-            <expression>x*2</expression>
+            <expression>x+25</expression>
             <withIndex>true</withIndex>
             <fileName>uniform_fd.txt</fileName>
         </gen>
@@ -76,7 +105,7 @@
             <numberOfElements>5</numberOfElements>
             <exponent>2</exponent>
             <correlation>functional dependent</correlation>
-            <expression>(x+2)*2</expression>
+            <expression>(x+25)</expression>
             <withIndex>true</withIndex>
             <fileName>gen2_zipf.txt</fileName>
         </gen>
@@ -93,19 +122,41 @@
             <probability>0.5</probability>
         </gen>
         <gen>
+            <distribution>zipfMapped</distribution>
+            <type>int</type>
+            <numberOfElements>25</numberOfElements>
+            <lowerbound>0</lowerbound>
+            <upperbound>25</upperbound>
+            <exponent>1</exponent>
+            <correlation>none</correlation>
+            <withIndex>true</withIndex>
+            <fileName>zipf25_1Mapped.txt</fileName>
+        </gen>
+        <gen>
             <distribution>zipf</distribution>
             <numberOfElements>25</numberOfElements>
+            <exponent>1</exponent>
+            <correlation>none</correlation>
+            <withIndex>true</withIndex>
+            <fileName>zipf25_1.txt</fileName>
+        </gen>
+        <gen>
+            <distribution>zipfMapped</distribution>
+            <type>int</type>
+            <numberOfElements>25</numberOfElements>
+            <lowerbound>0</lowerbound>
+            <upperbound>25</upperbound>
             <exponent>2</exponent>
             <correlation>none</correlation>
             <withIndex>true</withIndex>
-            <fileName>zipf_1500_25_2.txt</fileName>
+            <fileName>zipf25_1_2Mapped.txt</fileName>
         </gen>
         <gen>
             <distribution> zipfMapped</distribution>
             <type>double</type>
             <lowerbound>-99999</lowerbound>
             <upperbound>999999</upperbound>
-            <exponent>2</exponent>
+            <exponent>1</exponent>
             <correlation>none</correlation>
             <withIndex>true</withIndex>
             <fileName>c_acctbalzipf.txt</fileName>
@@ -127,42 +178,64 @@
         </gen>
         <gen>
             <distribution>bloatMktseg</distribution>
-            <multiplicationFactor>10</multiplicationFactor>
+            <multiplicationFactor>100</multiplicationFactor>
             <fileName>customer_bloatedMktseg.txt</fileName>
             <withIndex>true</withIndex>
         </gen>
         <gen>
+        <distribution>bloatMktseg</distribution>
+        <multiplicationFactor>1000</multiplicationFactor>
+        <fileName>customer_bloated2Mktseg.txt</fileName>
+        <withIndex>true</withIndex>
+    </gen>
+        <gen>
             <distribution>zipf</distribution>
             <numberOfElements>10000</numberOfElements>
-            <exponent>2</exponent>
+            <exponent>1</exponent>
             <correlation>functional dependent</correlation>
-            <expression>x*2</expression>
+            <expression>x+25</expression>
             <withIndex>true</withIndex>
             <fileName>zipf_10000_fd.txt</fileName>
         </gen>
         <gen>
             <distribution>uniform</distribution>
             <lowerbound>0</lowerbound>
-            <upperbound>100</upperbound>
+            <upperbound>2500</upperbound>
             <correlation>none</correlation>
             <withIndex>true</withIndex>
-            <fileName>uniform_100.txt</fileName>
+            <fileName>uniform_2500.txt</fileName>
         </gen>
         <gen>
             <distribution>uniform</distribution>
             <lowerbound>0</lowerbound>
-            <upperbound>5</upperbound>
+            <upperbound>25000</upperbound>
             <correlation>none</correlation>
             <withIndex>true</withIndex>
-            <fileName>uniform_5.txt</fileName>
+            <fileName>uniform_25000.txt</fileName>
         </gen>
         <gen>
             <distribution>uniform</distribution>
             <lowerbound>1</lowerbound>
-            <upperbound>750</upperbound>
+            <upperbound>1500000</upperbound>
             <correlation>none</correlation>
             <withIndex>true</withIndex>
-            <fileName>uniform_750.txt</fileName>
+            <fileName>uniform_1500000.txt</fileName>
+        </gen>
+        <gen>
+            <distribution>uniform</distribution>
+            <lowerbound>-500</lowerbound>
+            <upperbound>1500</upperbound>
+            <correlation>none</correlation>
+            <withIndex>true</withIndex>
+            <fileName>uniform_domainbigger.txt</fileName>
+        </gen>
+        <gen>
+            <distribution>uniform</distribution>
+            <lowerbound>0</lowerbound>
+            <upperbound>2000</upperbound>
+            <correlation>none</correlation>
+            <withIndex>true</withIndex>
+            <fileName>uniform_domainright.txt</fileName>
         </gen>
         <gen>
             <distribution> binomial</distribution>

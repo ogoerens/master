@@ -8,8 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class HierarchyStore {
-  public HashMap<String, AttributeType.Hierarchy> hierarchies;
-  public HashMap<String, HierarchyBuilder> hierarchyBuilders;
+  private HashMap<String, AttributeType.Hierarchy> hierarchies;
+  private HashMap<String, HierarchyBuilder> hierarchyBuilders;
   private HashMap<String, Integer> map;
 
   public HierarchyStore() {
@@ -41,6 +41,14 @@ public class HierarchyStore {
    */
   public Boolean contains(String name) {
     return map.containsKey(name);
+  }
+
+  public HashMap<String, AttributeType.Hierarchy> getHierarchies() {
+    return hierarchies;
+  }
+
+  public HashMap<String, HierarchyBuilder> getHierarchyBuilders() {
+    return hierarchyBuilders;
   }
 
   /**

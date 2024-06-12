@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<parameters>
+
+    <!-- Connection details -->
+    <type>sqlserver</type>
+    <driver>com.microsoft.sqlserver.jdbc.SQLServerDriver</driver>
+    <url>jdbc:sqlserver://localhost:1433;encrypt=false;</url>
+    <createDatabase>false</createDatabase>
+    <database>microbench</database>
+    <scalefactor>1</scalefactor>
+    <username>sa</username>
+    <password>.+.QET21adg.+.</password>
+
+</parameters>

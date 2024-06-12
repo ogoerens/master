@@ -15,27 +15,50 @@ public class SQLServerUtils {
     String sqlStmt =
         String.format(
             "SELECT column_name FROM information_schema.columns WHERE table_name ='%s'", tablename);
-    Query q = new Query(sqlStmt);
-    ResultSet rs = q.runAndReturnResultSet(conn, new Random());
+    Query q = new Query(sqlStmt, Query.informationQID);
+    ResultSet rs = q.runAndReturnResultSet(conn);
     while (rs.next()) {
       columnNames.add(rs.getString(1));
     }
     return columnNames;
   }
 
-  public static ArrayList<String[]> getColumnNamesAndTypes(Connection conn, String tablename)
+  /**
+   * Returns the column names, types and character maximum length for a given table.
+   * @param conn The connection to a database on a server.
+   * @param tablename The name of the table for which the names and types are returned.
+   * @return
+   * @throws SQLException
+   */
+  public static ArrayList<String[]> getColumnNamesAndTypes(Connection conn, String tablename, Boolean uppercase)
       throws SQLException {
     ArrayList<String[]> columnNamesAndTypes = new ArrayList<>();
     String sqlStmt =
         String.format(
-            "SELECT column_name, data_type FROM information_schema.columns WHERE table_name ='%s'",
+            "SELECT column_name, data_type, CHARACTER_MAXIMUM_LENGTH FROM information_schema.columns WHERE table_name ='%s'",
             tablename);
-    Query q = new Query(sqlStmt);
-    ResultSet rs = q.runAndReturnResultSet(conn, new Random());
+    Query q = new Query(sqlStmt, Query.informationQID);
+    ResultSet rs = q.runAndReturnResultSet(conn);
     while (rs.next()) {
-      String[] columnNameAndType = {rs.getString(1), rs.getString(2)};
+      String[] columnNameAndType = new String[3];
+      if (uppercase){
+        columnNameAndType[0]=rs.getString(1).toUpperCase();
+      }else{
+        columnNameAndType[0] = rs.getString(1);
+      }
+      columnNameAndType[1] = rs.getString(2);
+      columnNameAndType[2] = rs.getString(3);
       columnNamesAndTypes.add(columnNameAndType);
     }
     return columnNamesAndTypes;
+  }
+
+  public static ArrayList<String[]> getColumnNamesAndTypes(Connection conn, String tablename) throws  SQLException{
+    return getColumnNamesAndTypes(conn,tablename, true);
+  }
+
+
+  public static Boolean isCaseSensitive(String collation){
+    return collation.contains("_CS_");
   }
 }

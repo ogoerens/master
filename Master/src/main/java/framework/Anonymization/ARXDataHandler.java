@@ -1,28 +1,29 @@
 package framework.Anonymization;
 
-import framework.BenchConfiguration;
-import framework.Driver;
-import org.apache.commons.configuration2.XMLConfiguration;
 import org.deidentifier.arx.Data;
 import org.deidentifier.arx.*;
 import util.SQLServerUtils;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Map;
 
-public class DataHandler {
-  private Data data;
-  private BenchConfiguration dbConfiguration;
-  private Connection dbConnection;
+public class ARXDataHandler {
+  private Data arxdata;
 
-    public void connectToDB() throws SQLException{
-      dbConfiguration.init();
-      this.dbConnection = dbConfiguration.makeConnection();
-    }
+
+  public ARXDataHandler() {}
+
+  public ARXDataHandler(Data data) {
+    this.arxdata = data;
+    data.getHandle().getAttributeName(0);
+    data.getHandle().getNumColumns();
+  }
+
   /**
    * Loads Data from a file into the ARX datatype Data.
    *
@@ -33,7 +34,7 @@ public class DataHandler {
    * @throws IOException
    */
   public void loadFile(String filename, char delimiter) throws IOException {
-    this.data = Data.create(filename, AnonymizationConfiguration.charset, delimiter);
+    this.arxdata = Data.create(filename, AnonymizationConfiguration.charset, delimiter);
   }
 
   /**
@@ -54,10 +55,14 @@ public class DataHandler {
     DataSource source = DataSource.createJDBCSource(url, user, password, table);
     Connection connection = DriverManager.getConnection(url, user, password);
     ArrayList<String[]> columnNamesAndTypes =
-        SQLServerUtils.getColumnNamesAndTypes(connection, table);
+        SQLServerUtils.getColumnNamesAndTypes(connection, table, false);
     connection.close();
     addColumnsToDataSource(source, columnNamesAndTypes);
-    this.data = Data.create(source);
+    this.arxdata = Data.create(source);
+  }
+
+  public void loadFile(String filename, Charset charset, char delimiter) throws IOException {
+    this.arxdata = Data.create(filename, charset, delimiter);
   }
 
   /**
@@ -68,7 +73,7 @@ public class DataHandler {
    */
   public void addColumnsToDataSource(DataSource source, ArrayList<String[]> columnNamesAndTypes) {
     for (String[] columnAndType : columnNamesAndTypes) {
-      source.addColumn(columnAndType[0], ARXUtils.convertSQLServerDataType(columnAndType[1]));
+      source.addColumn(columnAndType[0], columnAndType[0].toUpperCase(), ARXUtils.convertSQLServerDataType(columnAndType[1]));
     }
   }
 
@@ -83,55 +88,43 @@ public class DataHandler {
    * @param hierarchies Contains the hierarchy for each attribute.
    */
   public void addHierarchiesToData(HierarchyStore hierarchies) {
-    for (String attribute : data.getDefinition().getQuasiIdentifyingAttributes()) {
+    for (String attribute : arxdata.getDefinition().getQuasiIdentifyingAttributes()) {
       if (hierarchies.getIndexForColumnName(attribute) == 0) {
-        data.getDefinition().setAttributeType(attribute, hierarchies.hierarchies.get(attribute));
+        arxdata.getDefinition()
+            .setAttributeType(attribute, hierarchies.getHierarchies().get(attribute));
       } else {
-        data.getDefinition()
-            .setAttributeType(attribute, hierarchies.hierarchyBuilders.get(attribute));
+        arxdata.getDefinition()
+            .setAttributeType(attribute, hierarchies.getHierarchyBuilders().get(attribute));
       }
     }
   }
 
   /**
-   * Sets the attribute types for the attributes in the data. Attributes can be either
-   * insensitive, sensitive, identifying or quasi-identifying.
+   * Sets the attribute types for the attributes in the data. Attributes can be either insensitive,
+   * sensitive, identifying or quasi-identifying.
    *
    * @param config Contains the information what types the attributes have.
    */
   public void applyConfigToData(AnonymizationConfiguration config) {
     for (String s : config.getInsensitiveAttributes()) {
-      data.getDefinition().setAttributeType(s, AttributeType.INSENSITIVE_ATTRIBUTE);
+      arxdata.getDefinition().setAttributeType(s, AttributeType.INSENSITIVE_ATTRIBUTE);
     }
     for (String s : config.getSensitiveAttributes()) {
-      data.getDefinition().setAttributeType(s, AttributeType.SENSITIVE_ATTRIBUTE);
+      arxdata.getDefinition().setAttributeType(s, AttributeType.SENSITIVE_ATTRIBUTE);
     }
     for (String s : config.getIdentifyingAttributes()) {
-      data.getDefinition().setAttributeType(s, AttributeType.IDENTIFYING_ATTRIBUTE);
+      arxdata.getDefinition().setAttributeType(s, AttributeType.IDENTIFYING_ATTRIBUTE);
     }
     for (String s : config.getQuasiIdentifyingAttributes()) {
-      data.getDefinition().setAttributeType(s, AttributeType.QUASI_IDENTIFYING_ATTRIBUTE);
+      arxdata.getDefinition().setAttributeType(s, AttributeType.QUASI_IDENTIFYING_ATTRIBUTE);
+    }
+    for (Map.Entry<String,Integer> maximalGeneralizationLevel : config.getMaximalGeneralizationLevels().entrySet() ){
+      arxdata.getDefinition().setMaximumGeneralization(maximalGeneralizationLevel.getKey(),maximalGeneralizationLevel.getValue());
     }
   }
 
-  public Data getData() {
-    return data;
+  public Data getArxdata() {
+    return arxdata;
   }
 
-  public BenchConfiguration getDbConfiguration() {
-    return dbConfiguration;
-  }
-
-  public Connection getDbConnection() {
-    return dbConnection;
-  }
-
-  public void setDbConfiguration(BenchConfiguration dbConfiguration) {
-    this.dbConfiguration = dbConfiguration;
-  }
-
-  public void setDbConfiguration(String dbConfigFile){
-    XMLConfiguration dbConfiguration = Driver.buildXMLConfiguration(dbConfigFile);
-    this.dbConfiguration = new BenchConfiguration(dbConfiguration);
-  }
 }

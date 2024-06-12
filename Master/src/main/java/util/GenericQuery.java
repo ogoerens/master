@@ -4,11 +4,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.random.*;
 
 public abstract class GenericQuery {
   public String query_stmt = null;
   public int qid;
+  public String qName;
+
 
   protected abstract PreparedStatement getStatement(Connection conn) throws SQLException;
 
@@ -26,7 +29,38 @@ public abstract class GenericQuery {
     return countRows;
   }
 
-  public ResultSet runAndReturnResultSet(Connection conn, RandomGenerator rand) throws SQLException {
+
+  public void runAndStore(Connection connection, int numberOfArguments, String delimiter, String fileName, String header) throws SQLException{
+    StringBuilder result = new StringBuilder();
+    result.append(header);
+    try (PreparedStatement stmt = getStatement(connection);
+         ResultSet rs = stmt.executeQuery()) {
+      while (rs.next()) {
+        for (int i=0; i< numberOfArguments; i++){
+          result.append(rs.getString(i+1));
+          if (i < numberOfArguments-1){
+            result.append(delimiter);
+          }
+        }
+        // System.out.println(rs.getString(1));
+        result.append(System.lineSeparator());
+      }
+    }
+    Utils.strToFile(result.toString(),fileName);
+  }
+
+  public ArrayList<String> runAndStoreFirstArgument(Connection connection) throws SQLException {
+    ArrayList<String> result = new ArrayList<>();
+    try (PreparedStatement stmt = getStatement(connection);
+        ResultSet rs = stmt.executeQuery()) {
+      while (rs.next()) {
+        result.add(rs.getString(1));
+      }
+    }
+    return result;
+    }
+    
+  public ResultSet runAndReturnResultSet(Connection conn) throws SQLException {
     int countRows = 0;
     PreparedStatement stmt = getStatement(conn);
     ResultSet rs = stmt.executeQuery();

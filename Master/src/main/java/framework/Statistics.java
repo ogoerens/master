@@ -1,5 +1,8 @@
 package framework;
 
+import util.StringUtil;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Statistics {
@@ -109,5 +112,57 @@ public class Statistics {
     }
 
     return new Statistics(valuesAsMicroseconds.length, percentiles, average, standardDeviation);
+  }
+
+  /**
+   * Prints the statistics that are passed in the argument.
+   * @param statsAttributes Statistics that should be printed.
+   * @return
+   */
+  public String print(ArrayList<String> statsAttributes) {
+    StringBuilder stringBuilder = new StringBuilder();
+    for (int i=0; i< statsAttributes.size();i++) {
+      String attribute = statsAttributes.get(i);
+      switch (attribute) {
+        case "Count":
+          stringBuilder.append(count);
+          break;
+        case "Average":
+          stringBuilder.append(average);
+          break;
+        case "StandardDeviation":
+          stringBuilder.append(standardDeviation);
+          break;
+        case "Minimum":
+          stringBuilder.append(percentiles[MINIMUM]);
+          break;
+        case "25thPercentile":
+          stringBuilder.append(percentiles[PERCENTILE_25TH]);
+          break;
+        case "Median":
+          stringBuilder.append(percentiles[MEDIAN]);
+          break;
+        case "75thPercentile":
+          stringBuilder.append(percentiles[PERCENTILE_75TH]);
+          break;
+        case "90thPercentile":
+          stringBuilder.append(percentiles[PERCENTILE_90TH]);
+          break;
+        case "95thPercentile":
+          stringBuilder.append(percentiles[PERCENTILE_95TH]);
+          break;
+        case "99thPercentile":
+          stringBuilder.append(percentiles[PERCENTILE_99TH]);
+          break;
+        case "Maximum":
+          stringBuilder.append(percentiles[MAXIMUM]);
+          break;
+      }
+      if (i<statsAttributes.size()-1){
+        stringBuilder.append(",");
+      }
+    }
+
+    return stringBuilder.toString();
   }
 }
